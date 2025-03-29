@@ -6,6 +6,8 @@ type EnvConfigType = {
 };
 
 export const EnvConfig = (): EnvConfigType => {
+  console.log(process.env.NEXT_PUBLIC_MODEs);
+
   const mode = process.env.NEXT_PUBLIC_MODE || "development";
   const api =
     mode === "production"
