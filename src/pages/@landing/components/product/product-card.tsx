@@ -25,7 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     };
 
     return (
-        <div className="bg-white border m-2 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             <IonRouterLink routerLink={`/products/${product.id}`}>
                 <div className="relative aspect-square overflow-hidden">
                     <IonImg
