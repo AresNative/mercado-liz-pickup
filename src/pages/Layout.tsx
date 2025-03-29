@@ -1,6 +1,6 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from '@ionic/react';
 
-const Home: React.FC = () => {
+const Layout: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
@@ -15,4 +15,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default Layout;
