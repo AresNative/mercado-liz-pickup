@@ -30,10 +30,8 @@ const ProductGrid: React.FC = () => {
                 id: "1",
                 image: "",
                 title: "test",
-                discount: 100,
                 category: "teste",
-                price: 245,
-                originalPrice: 300,
+                price: 245
             }].map((product, index) => (
                 <motion.div
                     key={product.id}
