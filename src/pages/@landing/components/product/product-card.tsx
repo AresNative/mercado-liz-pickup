@@ -2,6 +2,8 @@ import React from "react";
 import { IonRouterLink, IonButton, IonImg } from "@ionic/react";
 import { motion } from "framer-motion";
 import { ShoppingCart, Star } from "lucide-react";
+import { useAppDispatch } from "@/hooks/selector";
+import { addToCart } from "@/hooks/slices/cart-slice";
 
 interface Product {
     id: string;
@@ -18,10 +20,10 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-    /* const dispatch = useDispatch<AppDispatch>(); */
+    const dispatch = useAppDispatch();
 
     const handleAddToCart = () => {
-        /* dispatch(addToCart({ ...product, quantity: 1 })); */
+        dispatch(addToCart({ ...product, quantity: 1 }));
     };
 
     return (

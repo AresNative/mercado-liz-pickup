@@ -1,8 +1,9 @@
-import { Redirect, Route } from 'react-router-dom';
+import { Redirect, Route, Switch } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
 import Layout from './pages/Layout';
+import NotFound from './pages/NotFound'; // Asegúrate de crear este componente
 
 /* Theme variables */
 import './theme/variables.css';
@@ -26,6 +27,7 @@ import '@ionic/react/css/display.css';
 /* import '@ionic/react/css/palettes/dark.always.css'; */
 import '@ionic/react/css/palettes/dark.class.css';
 import React from 'react';
+import Providers from './hooks/provider';
 /* import '@ionic/react/css/palettes/dark.system.css'; */
 
 
@@ -36,16 +38,24 @@ setupIonicReact({
 
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/home">
-          <Layout />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/home" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
+    <Providers>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Switch>
+            <Route exact path="/home">
+              <Layout />
+            </Route>
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
+            {/* Ruta para páginas no encontradas */}
+            <Route>
+              <NotFound />
+            </Route>
+          </Switch>
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </Providers>
   </IonApp>
 );
 

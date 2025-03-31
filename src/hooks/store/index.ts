@@ -8,11 +8,14 @@ import { EnvConfig } from "@/utils/constants/env.config";
 import dropDownReducer from "@/hooks/reducers/drop-down";
 import filterData from "@/hooks/reducers/filter";
 
+import cartReducer from "@/hooks/slices/cart-slice";
+
 const config = EnvConfig();
 export const store = configureStore({
   reducer: {
     dropDownReducer,
     filterData,
+    cart: cartReducer,
     [api.reducerPath]: api.reducer,
     [auth.reducerPath]: auth.reducer,
   },

@@ -1,16 +1,17 @@
 import { BentoGrid, BentoItem } from '@/components/bento-grid';
-import { IonBadge, IonContent, IonItem, IonLabel, IonList, IonPage } from '@ionic/react';
+import { IonContent, IonItem, IonLabel, IonList, IonPage } from '@ionic/react';
 import { BarChart3, Users, Calendar, MessageSquare, CreditCard, Settings } from 'lucide-react';
 import CategorySlider from './@landing/components/categories';
 import PromoBanner from './@landing/components/banner-offers';
 import ProductGrid from './@landing/components/product/product-grid';
+import HeaderCart from './@landing/components/header';
 
 const Layout: React.FC = () => {
   return (
-    <IonPage>
+    <IonPage className='bg-[#f2f2f7]'>
+      <HeaderCart />
       <IonContent fullscreen>
         <CategorySlider />
-
         <PromoBanner />
 
         <ProductGrid />
