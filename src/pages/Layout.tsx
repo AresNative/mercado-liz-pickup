@@ -12,6 +12,7 @@ const Layout: React.FC = () => {
       <HeaderCart />
       <IonContent fullscreen>
         <CategorySlider />
+
         <PromoBanner />
 
         <ProductGrid />
