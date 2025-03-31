@@ -1,6 +1,6 @@
 import { SwitchToggle } from "@/components/switch-mode"
-import { IonHeader, IonRouterLink } from "@ionic/react"
-import { Search } from "lucide-react"
+import { IonButton, IonContent, IonHeader, IonItem, IonList, IonPopover, IonRouterLink } from "@ionic/react"
+import { AlignLeft, Search } from "lucide-react"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
@@ -18,7 +18,7 @@ const HeaderCart: React.FC = () => {
                 {/* Logo a la izquierda */}
                 <div className="flex-shrink-0">
                     <IonRouterLink href="/" className="flex items-center">
-                        <div className="h-8 w-8 rounded-br-lg rounded-tl-lg bg-indigo-600 text-white flex items-center justify-center text-lg font-bold">
+                        <div className="h-8 w-8 rounded-br-lg rounded-tl-lg bg-[#7C3AED] text-white flex items-center justify-center text-lg font-bold">
                             <span className='pl-2 pt-4'>ML</span>
                         </div>
                     </IonRouterLink>
@@ -38,7 +38,26 @@ const HeaderCart: React.FC = () => {
 
                 {/* Switch a la derecha */}
                 <div className="flex-shrink-0">
-                    <SwitchToggle />
+                    <button id="trigger-button" className="bg-[#7C3AED] rounded-md p-1"><AlignLeft /></button>
+                    <IonPopover trigger="trigger-button">
+                        <IonContent>
+                            <IonList>
+                                <IonItem href="/products" className="flex items-center gap-2">
+                                    <span className="text-sm">Mi carrito</span>
+                                </IonItem>
+                                <IonItem>
+                                </IonItem>
+                                <IonItem>
+                                </IonItem>
+                                <IonItem>
+                                </IonItem>
+                                <IonItem className="container mx-auto flex items-center justify-between">
+                                    <span className="flex-shrink-0">Tema:</span>
+                                    <section className="flex-grow max-w-xl mx-4 relative"><SwitchToggle /></section>
+                                </IonItem>
+                            </IonList>
+                        </IonContent>
+                    </IonPopover>
                 </div>
             </nav>
         </IonHeader>
