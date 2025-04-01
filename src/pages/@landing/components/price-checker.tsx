@@ -2,9 +2,9 @@
 
 import type React from "react"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Plus, Tag, DollarSign } from "lucide-react"
+import { Search, Plus } from "lucide-react"
 import useDebounce from "@/hooks/use-debounce"
 import { fetchDynamicData } from "@/api/get-data"
 
@@ -22,112 +22,63 @@ interface ListingItem extends Product {
 }
 
 interface formatFilter {
-    key: string;
-    value: string;
-    operator: "like" | "=" | ">=" | "<=" | ">" | "<" | "<>" | ""; // Incluí "" como opción para el operador.
+    key: string
+    value: string
+    operator: "like" | "=" | ">=" | "<=" | ">" | "<" | "<>" | "" // Incluí "" como opción para el operador.
 }
 
 interface formatSuma {
-    key: string;
+    key: string
 }
 interface formatLoadDate {
     filters: {
-        filtros: formatFilter[];
-        sumas: formatSuma[];
-    };
-    page: number;
-    sum: boolean;
+        filtros: formatFilter[]
+        sumas: formatSuma[]
+    }
+    page: number
+    sum: boolean
 }
 
 // Componentes maquetados con Tailwind
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
         <input
-            className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-900 dark:text-gray-100 ${className}`}
+            className={`w-full px-3 py-2 border text-gray-500 dark:text-gray-100 border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-900  ${className}`}
             {...props}
         />
     )
 }
 
-const allProducts: Product[] = [
-    {
-        id: "1",
-        name: "Laptop HP Pavilion",
-        price: 899.99,
-        category: "Electrónicos",
-        icon: <DollarSign className="h-4 w-4 text-blue-500" />,
-        description: "Intel Core i7, 16GB RAM, 512GB SSD",
-    },
-    {
-        id: "2",
-        name: "Smartphone Samsung Galaxy",
-        price: 699.99,
-        category: "Electrónicos",
-        icon: <DollarSign className="h-4 w-4 text-green-500" />,
-        description: "6.7 pulgadas, 128GB, 8GB RAM",
-    },
-    {
-        id: "3",
-        name: "Auriculares Sony WH-1000XM4",
-        price: 349.99,
-        category: "Audio",
-        icon: <DollarSign className="h-4 w-4 text-purple-500" />,
-        description: "Cancelación de ruido, Bluetooth",
-    },
-    {
-        id: "4",
-        name: "Monitor LG UltraGear",
-        price: 299.99,
-        category: "Periféricos",
-        icon: <DollarSign className="h-4 w-4 text-orange-500" />,
-        description: "27 pulgadas, 144Hz, 1ms",
-    },
-    {
-        id: "5",
-        name: "Teclado Mecánico Logitech",
-        price: 129.99,
-        category: "Periféricos",
-        icon: <DollarSign className="h-4 w-4 text-red-500" />,
-        description: "RGB, Switches Blue",
-    },
-]
+const allProducts: Product[] = []
 
 function PriceChecker() {
     const [query, setQuery] = useState("")
     const [searchResults, setSearchResults] = useState<Product[]>(allProducts)
     const [isFocused, setIsFocused] = useState(false)
     const [listing, setListing] = useState<ListingItem[]>([])
-    const [isCreatingListing, setIsCreatingListing] = useState(false)
-    const [listingTitle, setListingTitle] = useState("")
     const debouncedQuery = useDebounce(query, 200)
 
-    const [data, setData] = useState<Record<string, any>[]>([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1)
 
     const loadData = async (filter: formatLoadDate, endpoint: string) => {
         try {
-            const { data: resultData, totalPages: pages } = await fetchDynamicData<any>(filter, endpoint);
-            setData(resultData);
-            setTotalPages(pages);
+            const { data: resultData, totalPages: pages } = await fetchDynamicData<any>(filter, endpoint)
+            console.log(resultData)
         } catch (error) {
-            console.error('Error loading data:', error);
+            console.error("Error loading data:", error)
         }
-    };
-
-    const columns = useMemo(() => data[0] ? Object.keys(data[0]) : [], [data]);
+    }
 
     useEffect(() => {
-        loadData({
-            filters: {
-                filtros: [{ key: "", value: "", operator: "" }],
-                sumas: [{ key: "Categoria" }],
-            },
-            page: currentPage,
-            sum: false
-        }, 'v2/select/combos');
-    }, [currentPage]);
-
+        /* loadData({
+                filters: {
+                    filtros: [{ key: "", value: "", operator: "" }],
+                    sumas: [{ key: "Categoria" }],
+                },
+                page: 1,
+                sum: false
+            }, 'v2/select/combos'); */
+    }, [currentPage])
 
     useEffect(() => {
         if (!isFocused) {
@@ -148,6 +99,24 @@ function PriceChecker() {
         setSearchResults(filteredProducts)
     }, [debouncedQuery, isFocused])
 
+    useEffect(() => {
+        const handleEscKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsFocused(false)
+            }
+        }
+
+        // Add event listener when the component is focused
+        if (isFocused) {
+            document.addEventListener("keydown", handleEscKey)
+        }
+
+        // Clean up the event listener when component unmounts or loses focus
+        return () => {
+            document.removeEventListener("keydown", handleEscKey)
+        }
+    }, [isFocused])
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
     }
@@ -162,24 +131,6 @@ function PriceChecker() {
                 return [...prevListing, { ...product, quantity: 1 }]
             }
         })
-    }
-
-    const calculateTotal = () => {
-        return listing.reduce((total, item) => total + item.price * item.quantity, 0)
-    }
-
-    const saveListing = () => {
-        // Aquí se implementaría la lógica para guardar el listado
-        console.log("Listado guardado:", {
-            title: listingTitle || "Listado sin título",
-            items: listing,
-            total: calculateTotal(),
-        })
-
-        // Reiniciar el formulario
-        setListing([])
-        setListingTitle("")
-        setIsCreatingListing(false)
     }
 
     const container = {
@@ -227,7 +178,7 @@ function PriceChecker() {
     }
 
     return (
-        <div className="w-11/12 mx-auto inset-0 z-20">
+        <div className=" mx-auto inset-0 z-20">
             <div className="relative flex flex-col justify-start items-center">
                 <div className="bg-background w-full sticky">
                     <div className="relative">
@@ -237,7 +188,7 @@ function PriceChecker() {
                             value={query}
                             onChange={handleInputChange}
                             onFocus={() => setIsFocused(true)}
-                            onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                            onBlur={() => setIsFocused(false)}
                             className="pl-3 pr-9 text-sm rounded-lg bg-white"
                         />
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4">
@@ -246,7 +197,7 @@ function PriceChecker() {
                     </div>
                 </div>
 
-                <div className="w-full max-w-sm absolute top-10 left-0 z-10 mt-2">
+                <div className="w-full max-w-sm absolute top-10 inset-0 mx-auto z-10 mt-2">
                     <AnimatePresence>
                         {isFocused && (
                             <motion.div
@@ -264,13 +215,14 @@ function PriceChecker() {
                                             variants={item}
                                             layout
                                         >
-                                            <div className="flex items-center gap-2 justify-between flex-1" onClick={() => addToListing(product)}>
+                                            <div
+                                                className="flex items-center gap-2 justify-between flex-1"
+                                                onClick={() => addToListing(product)}
+                                            >
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-gray-500">{product.icon}</span>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                            {product.name}
-                                                        </span>
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.name}</span>
                                                         <span className="text-xs text-gray-400">{product.description}</span>
                                                     </div>
                                                 </div>
@@ -305,3 +257,4 @@ function PriceChecker() {
 }
 
 export default PriceChecker
+

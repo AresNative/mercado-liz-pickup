@@ -1,35 +1,37 @@
-import React from "react";
-import { IonRouterLink, IonButton, IonImg } from "@ionic/react";
-import { motion } from "framer-motion";
-import { ShoppingCart, Star } from "lucide-react";
-import { useAppDispatch } from "@/hooks/selector";
-import { addToCart } from "@/hooks/slices/cart-slice";
+"use client"
+
+import type React from "react"
+import { IonRouterLink, IonButton, IonImg } from "@ionic/react"
+import { motion } from "framer-motion"
+import { ShoppingCart, Star } from "lucide-react"
+import { useAppDispatch } from "@/hooks/selector"
+import { addToCart } from "@/hooks/slices/cart-slice"
 
 interface Product {
-    id: string;
-    image?: string;
-    title: string;
-    discount?: number;
-    category: string;
-    price: number;
-    originalPrice?: number;
+    id: string
+    image?: string
+    title: string
+    discount?: number
+    category: string
+    price: number
+    originalPrice?: number
 }
 
 interface ProductCardProps {
-    product: Product;
+    product: Product
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-    const dispatch = useAppDispatch();
+    const dispatch = useAppDispatch()
 
     const handleAddToCart = () => {
-        dispatch(addToCart({ ...product, quantity: 1 }));
-    };
+        dispatch(addToCart({ ...product, quantity: 1 }))
+    }
 
     return (
-        <div className="bg-background border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <IonRouterLink routerLink={`/products/${product.id}`}>
-                <div className="relative aspect-square overflow-hidden">
+        <div className="bg-background border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-row md:flex-col">
+            <IonRouterLink routerLink={`/products/${product.id}`} className="w-1/3 sm:w-1/3 md:w-full">
+                <div className="relative h-full md:aspect-square overflow-hidden">
                     <IonImg
                         src={product.image || "/placeholder.svg?height=300&width=300"}
                         alt={product.title}
@@ -43,7 +45,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </div>
             </IonRouterLink>
 
-            <div className="p-3 border-t-2">
+            <div className="p-3 flex-1 md:w-full md:border-t-2">
                 <IonRouterLink routerLink={`/products/${product.id}`}>
                     <h3 className="font-medium text-base truncate">{product.title}</h3>
                 </IonRouterLink>
@@ -60,9 +62,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <div>
                         <span className="font-bold text-base">${product.price.toFixed(2)}</span>
                         {product.originalPrice && (
-                            <span className="text-xs text-gray-500 line-through ml-2">
-                                ${product.originalPrice.toFixed(2)}
-                            </span>
+                            <span className="text-xs text-gray-500 line-through ml-2">${product.originalPrice.toFixed(2)}</span>
                         )}
                     </div>
 
@@ -80,7 +80,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default ProductCard;
+export default ProductCard
+
