@@ -227,9 +227,9 @@ function PriceChecker() {
     }
 
     return (
-        <div className="w-full max-w-xs mx-auto inset-0 z-20">
+        <div className="w-11/12 mx-auto inset-0 z-20">
             <div className="relative flex flex-col justify-start items-center">
-                <div className="bg-background w-full max-w-sm sticky">
+                <div className="bg-background w-full sticky">
                     <div className="relative">
                         <Input
                             type="text"
