@@ -1,6 +1,7 @@
 import { SwitchToggle } from "@/components/switch-mode"
-import { IonButton, IonContent, IonHeader, IonItem, IonList, IonPopover, IonRouterLink } from "@ionic/react"
-import { AlignLeft, Search } from "lucide-react"
+import { IonContent, IonHeader, IonItem, IonList, IonPopover, IonRouterLink } from "@ionic/react"
+import { AlignLeft } from "lucide-react"
+import PriceChecker from "./price-checker"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
@@ -13,7 +14,7 @@ const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInput
 
 const HeaderCart: React.FC = () => {
     return (
-        <IonHeader className="bg-white dark:bg-zinc-950 flex items-center p-2">
+        <IonHeader className="bg-white dark:bg-zinc-950 flex items-center p-2 border-b border-gray-200 dark:border-gray-700">
             <nav className="container mx-auto flex items-center justify-between">
                 {/* Logo a la izquierda */}
                 <div className="flex-shrink-0">
@@ -25,15 +26,8 @@ const HeaderCart: React.FC = () => {
                 </div>
 
                 {/* Input centrado */}
-                <div className="flex-grow max-w-xl mx-4 relative">
-                    <Input
-                        type="text"
-                        placeholder="Buscar productos..."
-                        className="pl-3 pr-9 py-1.5 h-9 text-sm rounded-lg"
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4">
-                        <Search className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                    </div>
+                <div className="flex-grow relative">
+                    <PriceChecker />
                 </div>
 
                 {/* Switch a la derecha */}
