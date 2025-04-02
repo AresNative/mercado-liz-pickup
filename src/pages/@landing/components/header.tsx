@@ -6,7 +6,7 @@ import PriceChecker from "./price-checker"
 
 const HeaderCart: React.FC = () => {
     return (
-        <IonHeader className="bg-white dark:bg-zinc-950 border-b border-gray-200 dark:border-gray-700 ion-padding-horizontal safe-area-top">
+        <IonHeader className="bg-white/90 backdrop-blur-sm border dark:bg-zinc-950 ion-padding-horizontal safe-area-top">
             <div className="h-[60px] md:h-[70px] w-full flex items-center">
                 <ul className="relative container mx-auto flex items-center w-full px-2">
 
@@ -26,10 +26,10 @@ const HeaderCart: React.FC = () => {
                         <IonPopover trigger="trigger-button">
                             <IonContent>
                                 <IonList>
-                                    <IonItem href="/products" className="flex items-center gap-2 py-3">
+                                    <IonItem href="/products" className="flex items-center gap-2">
                                         <span className="text-sm">Mi carrito</span>
                                     </IonItem>
-                                    <IonItem className="container mx-auto flex items-center justify-between py-3">
+                                    <IonItem className="container mx-auto flex items-center justify-between">
                                         <span className="flex-shrink-0">Tema:</span>
                                         <section className="flex-grow max-w-xl mx-4 relative">
                                             <SwitchToggle />

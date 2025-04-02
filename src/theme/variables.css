@@ -53,6 +53,34 @@
     /* switsh */
     --menu-border-bg: #000;
 }
+
+/* Estilos para WebKit */
+::-webkit-scrollbar {
+    background: var(--background-card);
+    width: 10px;
+    z-index: 9999;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--border-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Estilos para Firefox */
+html {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
 ion-toolbar {
     --background: var(--background);
     --color: var(--text-primary);

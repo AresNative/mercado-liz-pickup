@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/react"
 import ProductCard from "./product-card"
+import Badge from "@/components/badge"
 
 interface Product {
     id: string
@@ -28,31 +29,73 @@ const ProductGrid: React.FC = () => {
     const sampleProducts: Product[] = [
         {
             id: "1",
-            image: "",
-            title: "Product 1",
-            discount: 20,
-            category: "Category A",
-            price: 245,
-            originalPrice: 300,
+            image: "https://www.lacomer.com.mx/superc/img_art/7501055900039_3.jpg",
+            title: "Leche Entera Alpura 1L",
+            discount: 15,
+            category: "ABARROTES",
+            price: 25.90,
+            originalPrice: 30.50,
         },
         {
             id: "2",
-            image: "",
-            title: "Product 2",
-            discount: 15,
-            category: "Category B",
-            price: 180,
-            originalPrice: 210,
+            image: "https://www.lacomer.com.mx/superc/img_art/7500810022061_3.jpg",
+            title: "Pan Integral Bimbo 680g",
+            category: "DESAYUNOS",
+            price: 34.99,
         },
         {
             id: "3",
-            image: "",
-            title: "Product 3",
-            category: "Category C",
-            price: 120,
+            image: "https://www.lacomer.com.mx/superc/img_art/7501013109733_3.jpg",
+            title: "Jugo Jumex Naranja 1L",
+            discount: 20,
+            category: "JUGOS Y NECTARES",
+            price: 29.90,
+            originalPrice: 37.40,
         },
-    ]
-
+        {
+            id: "4",
+            image: "https://www.lacomer.com.mx/superc/img_art/1052_3.jpg",
+            title: "Manzanas Washington kg",
+            category: "FRUTAS Y VERDURAS",
+            price: 24.99,
+        },
+        {
+            id: "5",
+            image: "https://www.lacomer.com.mx/superc/img_art/7501059224827_3.jpg",
+            title: "Café Nescafé Clásico 500g",
+            discount: 30,
+            category: "CAFE FRASCO",
+            price: 119.90,
+            originalPrice: 170.00,
+        },
+        {
+            id: "6",
+            image: "https://www.lacomer.com.mx/superc/img_art/7501064107153_3.jpg",
+            title: "Sixpack Corona 330ml",
+            discount: 10,
+            category: "CERVEZAS",
+            price: 149.90,
+            originalPrice: 165.00,
+        },
+        {
+            id: "7",
+            image: "https://www.lacomer.com.mx/superc/img_art/7501008063569_3.jpg",
+            title: "Cereal Zucaritas Kellogg's 500g",
+            discount: 25,
+            category: "DESAYUNOS",
+            price: 59.90,
+            originalPrice: 79.90,
+        },
+        {
+            id: "8",
+            image: "https://www.lacomer.com.mx/superc/img_art/7500478034277_3.jpg",
+            title: "Sabritas Original 230g",
+            discount: 10,
+            category: "BEBIDAS Y SNACKS",
+            price: 24.50,
+            originalPrice: 27.00,
+        },
+    ];
     // Function to fetch initial products
     useEffect(() => {
         // Show loading on initial fetch
@@ -121,9 +164,30 @@ const ProductGrid: React.FC = () => {
     return (
         <div className="relative pb-16">
             {/* Button to manually trigger refresh with loading */}
-            <div className="flex justify-end p-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/90 backdrop-blur-sm dark:bg-zinc-950/90 border-b border-gray-200 dark:border-gray-700">
+                <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide pr-4">
+                    <div className="flex items-center gap-2 h-10">
+                        <Badge
+                            color="purple"
+                            text="Favoritos"
+                        />
+                        <Badge
+                            color="purple"
+                            text="Promociones"
+                        />
+                        <Badge
+                            color="purple"
+                            text="Recomendados"
+                        />
+                        <Badge
+                            color="purple"
+                            text="Nuevos"
+                        />
+                    </div>
+                </section>
+
                 <button
-                    className="bg-[#7C3AED] text-white px-4 py-2 rounded-md text-sm"
+                    className="shrink-0 inline-flex items-center justify-center font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={refreshProducts}
                     disabled={showFooterLoading}
                 >
