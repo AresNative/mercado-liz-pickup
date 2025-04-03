@@ -107,7 +107,7 @@ const ProductGrid: React.FC = () => {
                 </section>
 
                 <button
-                    className="shrink-0 inline-flex items-center justify-center font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={refreshProducts}
                     disabled={showFooterLoading}
                 >
@@ -147,7 +147,7 @@ const ProductGrid: React.FC = () => {
             <AnimatePresence>
                 {showFooterLoading && (
                     <motion.div
-                        className="fixed bottom-0 left-0 right-0 bg-[#7C3AED] text-white py-3 px-4 flex items-center justify-center z-50 shadow-lg"
+                        className="fixed bottom-0 left-0 right-0 bg-purple-800 text-white py-3 px-4 flex items-center justify-center z-50 shadow-lg"
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}

@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
     --background: #fff;
     --background-card: #f6f6f7;
@@ -25,6 +26,12 @@
     /* switsh */
     --menu-border-bg: #e6e6e6;
 
+    --ion-color-tertiary: #6822a6;
+    --ion-color-tertiary-rgb: 104, 34, 166;
+    --ion-color-tertiary-contrast: #ffffff;
+    --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+    --ion-color-tertiary-shade: #5c1e92;
+    --ion-color-tertiary-tint: #7738af;
     /* Animation timing variables */
     --switch-animation-duration: 0.3s;
     --switch-animation-easing: cubic-bezier(0.45, 0.05, 0.55, 0.95);
@@ -50,10 +57,28 @@
     --switch-border-color: #525259ad;
     --switch-icon-color: #f2f2f2;
     --switch-bg-color: #313136;
+
+    --ion-color-tertiary: #6822a6;
+    --ion-color-tertiary-rgb: 104, 34, 166;
+    --ion-color-tertiary-contrast: #ffffff;
+    --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+    --ion-color-tertiary-shade: #5c1e92;
+    --ion-color-tertiary-tint: #7738af;
     /* switsh */
     --menu-border-bg: #000;
 }
+ .custom-tertiary {
+     --background: #6822a6;
+     --color: #ffffff;
+     --border-color: #5c1e92;
 
+    --ion-color-base: var(--ion-color-tertiary);
+    --ion-color-base-rgb: var(--ion-color-tertiary-rgb);
+    --ion-color-contrast: var(--ion-color-tertiary-contrast);
+    --ion-color-contrast-rgb: var(--ion-color-tertiary-contrast-rgb);
+    --ion-color-shade: var(--ion-color-tertiary-shade);
+    --ion-color-tint: var(--ion-color-tertiary-tint);
+ }
 /* Estilos para WebKit */
 ::-webkit-scrollbar {
     background: var(--background-card);

@@ -86,7 +86,7 @@ export function Modal({ modalName, title, children, maxWidth = "2xl" }: ModalPro
                     {/* Close button */}
                     <form method="dialog" className="absolute right-4 top-4 z-10">
                         <button
-                            className="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            className="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                             onClick={handleBackdropClick}
                         >
                             <span className="sr-only">Close</span>

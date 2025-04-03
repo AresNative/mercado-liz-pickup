@@ -14,9 +14,10 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
     return (
         <IonHeader className="bg-white/90 backdrop-blur-sm border dark:border-zinc-700 dark:bg-zinc-950/90 ion-padding-horizontal safe-area-top">
             <div className="h-[60px] md:h-[70px] w-full flex items-center">
-                {back && (<IonButtons slot="start">
-                    <IonBackButton defaultHref="/products" color={"tertiary"} />
-                </IonButtons>)}
+                {back && (
+                    <IonButtons slot="start">
+                        <IonBackButton defaultHref="/products" className="text-purple-800" />
+                    </IonButtons>)}
                 <ul className="relative container mx-auto flex items-center w-full px-2">
 
                     {/* Input centrado */}
@@ -28,7 +29,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                     <li className="flex-shrink-0">
                         <button
                             id="trigger-button"
-                            className="bg-[#7C3AED] text-white rounded-md min-h-[40px] min-w-[40px] flex items-center justify-center"
+                            className="bg-purple-800 text-white rounded-md min-h-[40px] min-w-[40px] flex items-center justify-center"
                         >
                             <AlignLeft className="h-5 w-5" />
                         </button>

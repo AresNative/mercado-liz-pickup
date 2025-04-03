@@ -38,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         className="object-cover w-full h-full"
                     />
                     {product.discount && (
-                        <div className="absolute top-2 left-2 bg-[#7C3AED] text-white text-xs font-bold px-2 py-1 rounded-full">
+                        <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
                             {product.discount}% OFF
                         </div>
                     )}
@@ -70,9 +70,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <IonButton
                             size="small"
                             fill="solid"
-                            color="tertiary"
                             onClick={handleAddToCart}
-                            className="rounded-full px-3 h-8"
+                            className="custom-tertiary rounded-full px-3 h-8"
                         >
                             <ShoppingCart className="h-4 w-4" />
                         </IonButton>
