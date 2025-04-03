@@ -67,18 +67,50 @@
     /* switsh */
     --menu-border-bg: #000;
 }
- .custom-tertiary {
-     --background: #6822a6;
-     --color: #ffffff;
-     --border-color: #5c1e92;
+.custom-tertiary {
+    /* Estado normal */
+    --background: linear-gradient(100deg, #5f05a8 0%, #9338e7 100%);
+    --color: #ffffff;
+    --border-color: #5c1e92;
+    --transition: all 0.2s ease-in-out;
 
-    --ion-color-base: var(--ion-color-tertiary);
-    --ion-color-base-rgb: var(--ion-color-tertiary-rgb);
-    --ion-color-contrast: var(--ion-color-tertiary-contrast);
-    --ion-color-contrast-rgb: var(--ion-color-tertiary-contrast-rgb);
-    --ion-color-shade: var(--ion-color-tertiary-shade);
-    --ion-color-tint: var(--ion-color-tertiary-tint);
- }
+    /* Variables de estado hover */
+    --background-hover: linear-gradient(100deg, #4d0488 0%, #7a2fc4 100%);
+    --color-hover: #ffffff;
+    --border-color-hover: #4a1675;
+
+    /* Variables de estado active/pressed */
+    --background-activated: linear-gradient(100deg, #3d036d 0%, #64269f 100%);
+    --color-activated: #e0e0e0;
+    --border-color-activated: #3a125e;
+
+    /* Efecto de profundidad */
+    --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    /* Escala para efecto de presión */
+    transform: scale(1);
+    transition: var(--transition);
+}
+
+/* Efecto al pasar el mouse (hover) */
+.custom-tertiary:hover {
+    transform: scale(1.05);
+}
+
+/* Efecto al hacer click (active) */
+.custom-tertiary:active {
+    transform: scale(0.98);
+}
+
+/* Opcional: Efecto en icono interno */
+.custom-tertiary ion-icon {
+    transition: transform 0.2s ease-in-out;
+}
+
+.custom-tertiary:hover ion-icon {
+    transform: scale(1.1);
+}
 /* Estilos para WebKit */
 ::-webkit-scrollbar {
     background: var(--background-card);

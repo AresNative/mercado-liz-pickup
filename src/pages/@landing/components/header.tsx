@@ -1,7 +1,7 @@
 import type React from "react"
 import { SwitchToggle } from "@/components/switch-mode"
 import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonList, IonPopover } from "@ionic/react"
-import { AlignLeft } from "lucide-react"
+import { AlignLeft, ShoppingCart } from "lucide-react"
 import PriceChecker from "./price-checker"
 
 interface HeaderCartProps {
@@ -37,7 +37,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                             <IonContent>
                                 <IonList>
                                     <IonItem href="/products" className="flex items-center gap-2">
-                                        <span className="text-sm">Mi carrito</span>
+                                        <ShoppingCart className="h-5 w-5 mr-2" /> <span className="text-sm">Mi carrito</span>
                                     </IonItem>
                                     <IonItem className="container mx-auto flex items-center justify-between">
                                         <span className="flex-shrink-0">Tema:</span>
