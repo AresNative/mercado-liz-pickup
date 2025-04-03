@@ -4,6 +4,7 @@ import { IonReactRouter } from '@ionic/react-router';
 
 import Layout from './pages/Layout';
 import NotFound from './pages/NotFound'; // Asegúrate de crear este componente
+import ProductID from './pages/@landing/[id]/product-id';
 
 /* Theme variables */
 import './theme/variables.css';
@@ -48,6 +49,7 @@ const App: React.FC = () => (
             <Route exact path="/">
               <Redirect to="/home" />
             </Route>
+            <Route exact path="/home/:id" component={ProductID} />
             {/* Ruta para páginas no encontradas */}
             <Route>
               <NotFound />

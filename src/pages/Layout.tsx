@@ -6,7 +6,7 @@ import HeaderCart from './@landing/components/header';
 
 const Layout: React.FC = () => {
   return (
-    <IonPage className='bg-[#f2f2f7]'>
+    <IonPage>
       <HeaderCart />
       <IonContent fullscreen>
         <CategorySlider />

@@ -6,7 +6,7 @@ import PriceChecker from "./price-checker"
 
 const HeaderCart: React.FC = () => {
     return (
-        <IonHeader className="bg-white/90 backdrop-blur-sm border dark:bg-zinc-950 ion-padding-horizontal safe-area-top">
+        <IonHeader className="bg-white/90 backdrop-blur-sm border dark:border-zinc-700 dark:bg-zinc-950/90 ion-padding-horizontal safe-area-top">
             <div className="h-[60px] md:h-[70px] w-full flex items-center">
                 <ul className="relative container mx-auto flex items-center w-full px-2">
 
