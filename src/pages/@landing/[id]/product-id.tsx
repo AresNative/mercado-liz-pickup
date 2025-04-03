@@ -92,21 +92,15 @@ const ProductID: React.FC = () => {
                                 <li>
                                     <IonRadioGroup value="black">
                                         <div className="flex flex-row items-center gap-2">
-                                            <span>Color:</span>
+                                            <span>Comprar por:</span>
                                             <IonItem lines="none" style={{ width: "auto" }}>
                                                 <IonRadio slot="end" value="black">
-                                                    <IonLabel>Negro</IonLabel>
+                                                    <IonLabel>Caja</IonLabel>
                                                 </IonRadio>
                                             </IonItem>
                                             <IonItem lines="none" style={{ width: "auto" }}>
                                                 <IonRadio slot="end" value="white">
-                                                    <IonLabel>Blanco</IonLabel>
-                                                </IonRadio>
-                                            </IonItem>
-                                            <IonItem lines="none" style={{ width: "auto" }}>
-
-                                                <IonRadio slot="end" value="blue" >
-                                                    <IonLabel>Azul</IonLabel>
+                                                    <IonLabel>Pieza/Kg</IonLabel>
                                                 </IonRadio>
                                             </IonItem>
                                         </div>
