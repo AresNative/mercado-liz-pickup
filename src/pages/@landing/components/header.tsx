@@ -1,13 +1,22 @@
 import type React from "react"
 import { SwitchToggle } from "@/components/switch-mode"
-import { IonContent, IonHeader, IonItem, IonList, IonPopover } from "@ionic/react"
+import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonList, IonPopover } from "@ionic/react"
 import { AlignLeft } from "lucide-react"
 import PriceChecker from "./price-checker"
 
-const HeaderCart: React.FC = () => {
+interface HeaderCartProps {
+    back?: boolean
+}
+
+const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
+    const { back } = prosp
+
     return (
         <IonHeader className="bg-white/90 backdrop-blur-sm border dark:border-zinc-700 dark:bg-zinc-950/90 ion-padding-horizontal safe-area-top">
             <div className="h-[60px] md:h-[70px] w-full flex items-center">
+                {back && (<IonButtons slot="start">
+                    <IonBackButton defaultHref="/products" color={"tertiary"} />
+                </IonButtons>)}
                 <ul className="relative container mx-auto flex items-center w-full px-2">
 
                     {/* Input centrado */}

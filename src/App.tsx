@@ -43,13 +43,13 @@ const App: React.FC = () => (
       <IonReactRouter>
         <IonRouterOutlet>
           <Switch>
-            <Route exact path="/home">
+            <Route exact path="/products">
               <Layout />
             </Route>
             <Route exact path="/">
-              <Redirect to="/home" />
+              <Redirect to="/products" />
             </Route>
-            <Route exact path="/home/:id" component={ProductID} />
+            <Route exact path="/products/:id" component={ProductID} />
             {/* Ruta para páginas no encontradas */}
             <Route>
               <NotFound />

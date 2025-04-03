@@ -7,16 +7,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/react"
 import ProductCard from "./product-card"
 import Badge from "@/components/badge"
-
-interface Product {
-    id: string
-    image?: string
-    title: string
-    discount?: number
-    category: string
-    price: number
-    originalPrice?: number
-}
+import { Product, sampleProducts } from "@/utils/data/example-data"
 
 const ProductGrid: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([])
@@ -25,77 +16,6 @@ const ProductGrid: React.FC = () => {
     const [hasMore, setHasMore] = useState(true)
     const [showFooterLoading, setShowFooterLoading] = useState(false)
 
-    // Sample products for demonstration
-    const sampleProducts: Product[] = [
-        {
-            id: "1",
-            image: "https://www.lacomer.com.mx/superc/img_art/7501055900039_3.jpg",
-            title: "Leche Entera Alpura 1L",
-            discount: 15,
-            category: "ABARROTES",
-            price: 25.90,
-            originalPrice: 30.50,
-        },
-        {
-            id: "2",
-            image: "https://www.lacomer.com.mx/superc/img_art/7500810022061_3.jpg",
-            title: "Pan Integral Bimbo 680g",
-            category: "DESAYUNOS",
-            price: 34.99,
-        },
-        {
-            id: "3",
-            image: "https://www.lacomer.com.mx/superc/img_art/7501013109733_3.jpg",
-            title: "Jugo Jumex Naranja 1L",
-            discount: 20,
-            category: "JUGOS Y NECTARES",
-            price: 29.90,
-            originalPrice: 37.40,
-        },
-        {
-            id: "4",
-            image: "https://www.lacomer.com.mx/superc/img_art/1052_3.jpg",
-            title: "Manzanas Washington kg",
-            category: "FRUTAS Y VERDURAS",
-            price: 24.99,
-        },
-        {
-            id: "5",
-            image: "https://www.lacomer.com.mx/superc/img_art/7501059224827_3.jpg",
-            title: "Café Nescafé Clásico 500g",
-            discount: 30,
-            category: "CAFE FRASCO",
-            price: 119.90,
-            originalPrice: 170.00,
-        },
-        {
-            id: "6",
-            image: "https://www.lacomer.com.mx/superc/img_art/7501064107153_3.jpg",
-            title: "Sixpack Corona 330ml",
-            discount: 10,
-            category: "CERVEZAS",
-            price: 149.90,
-            originalPrice: 165.00,
-        },
-        {
-            id: "7",
-            image: "https://www.lacomer.com.mx/superc/img_art/7501008063569_3.jpg",
-            title: "Cereal Zucaritas Kellogg's 500g",
-            discount: 25,
-            category: "DESAYUNOS",
-            price: 59.90,
-            originalPrice: 79.90,
-        },
-        {
-            id: "8",
-            image: "https://www.lacomer.com.mx/superc/img_art/7500478034277_3.jpg",
-            title: "Sabritas Original 230g",
-            discount: 10,
-            category: "BEBIDAS Y SNACKS",
-            price: 24.50,
-            originalPrice: 27.00,
-        },
-    ];
     // Function to fetch initial products
     useEffect(() => {
         // Show loading on initial fetch

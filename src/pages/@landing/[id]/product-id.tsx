@@ -1,142 +1,169 @@
-import { IonPage, IonHeader, IonTitle, IonContent, IonButton, IonBackButton, IonButtons, IonCol, IonGrid, IonIcon, IonItem, IonLabel, IonList, IonRadio, IonRadioGroup, IonRow, IonSegment, IonSegmentButton, IonText, IonToolbar } from "@ionic/react";
-import { Star } from "lucide-react";
+import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton } from "@ionic/react";
+import { CloudDownload, ShieldCheck, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
+import HeaderCart from "../components/header";
+import { Product, sampleProducts } from "@/utils/data/example-data";
+import { useEffect, useState } from "react";
 
 const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    if (!id) {
+    const [product, setProduct] = useState<Product>();
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            const data: Product | undefined = sampleProducts.find((p) => p.id === id) //await getProductById(id); // Tu función de fetching
+            setProduct(sampleProducts.find((p) => p.id === id) || data); // Simulación de búsqueda por ID
+        };
+
+        if (id) fetchProduct();
+    }, [id]);
+
+    if (!product) {
         return (
             <IonPage>
                 <IonContent className="ion-text-center ion-padding">
-                    <h1>Product Not Found</h1>
-                    <IonButton routerLink="/products">Back to Products</IonButton>
+                    <h1>Producto no encontrado</h1>
+                    <IonButton routerLink="/products">Volver a Productos</IonButton>
                 </IonContent>
             </IonPage>
         );
     }
+
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonButtons slot="start">
-                        <IonBackButton defaultHref="/products" />
-                    </IonButtons>
-                    <IonTitle>Wireless Bluetooth Headphones</IonTitle>
-                </IonToolbar>
-            </IonHeader>
+            <HeaderCart back />
 
-            <IonContent className="ion-padding">
+            <IonContent className="ion-padding" fullscreen>
                 <IonGrid>
                     <IonRow>
                         <IonCol size="12" sizeMd="6">
                             <img
-                                src="/placeholder.svg"
-                                alt="Headphones"
-                                style={{
-                                    width: '100%',
-                                    height: '400px',
-                                    objectFit: 'cover',
-                                    borderRadius: '8px'
-                                }}
+                                src={product.image || "/placeholder.svg"} // Usar imagen del producto
+                                alt={product.title} // Alt dinámico
+                                className="w-full h-full bg-slate-100 rounded-lg"
                             />
+                            {/* Mostrar descuento si existe */}
+                            {product.discount && (
+                                <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded">
+                                    -{product.discount}%
+                                </div>
+                            )}
                         </IonCol>
 
                         <IonCol size="12" sizeMd="6">
                             <div style={{ margin: '16px 0' }}>
-                                <IonText color="primary">
-                                    <h1 style={{ margin: 0 }}>Wireless Bluetooth Headphones</h1>
-                                </IonText>
+                                <h1 style={{ margin: 0 }}>{product.title}</h1>
 
-                                <div style={{ margin: '8px 0' }}>
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star
-                                            key={i}
-                                            color="warning"
-                                            style={{ marginRight: '2px' }}
-                                        />
+                                <div className="flex items-center gap-2" style={{ margin: '8px 0' }}>
+                                    {/* Sección de reviews (mantenemos estática ya que no está en la interfaz) */}
+                                    {[...Array(3)].map((_, i) => (
+                                        <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-500" />
                                     ))}
-                                    <IonText color="medium"> (2 reviews)</IonText>
+                                    {[...Array(2)].map((_, i) => (
+                                        <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
+                                    ))}
+                                    (2 reseñas)
                                 </div>
 
-                                <IonText color="dark">
-                                    <h2 style={{ margin: '8px 0' }}>$99.99</h2>
-                                </IonText>
-
-                                <IonText>
-                                    <p style={{ color: '#666' }}>
-                                        High-quality sound with noise cancellation technology
-                                    </p>
-                                </IonText>
-                            </div>
-
-                            <div style={{ margin: '16px 0' }}>
-                                <IonText><h3>Color</h3></IonText>
-                                <IonRadioGroup value="black">
-                                    <IonItem>
-                                        <IonLabel>Black</IonLabel>
-                                        <IonRadio value="black" />
-                                    </IonItem>
-                                    <IonItem>
-                                        <IonLabel>White</IonLabel>
-                                        <IonRadio value="white" />
-                                    </IonItem>
-                                    <IonItem>
-                                        <IonLabel>Blue</IonLabel>
-                                        <IonRadio value="blue" />
-                                    </IonItem>
-                                </IonRadioGroup>
-                            </div>
-
-                            <div style={{ margin: '16px 0' }}>
-                                <IonText><h3>Quantity</h3></IonText>
-                                <div style={{ display: 'flex', alignItems: 'center' }}>
-                                    <IonButton>-</IonButton>
-                                    <span style={{ margin: '0 8px' }}>1</span>
-                                    <IonButton>+</IonButton>
+                                {/* Precio con descuento si aplica */}
+                                <div style={{ margin: '8px 0' }}>
+                                    {product.originalPrice ? (
+                                        <>
+                                            <h2 className="text-red-500">
+                                                ${product.price.toFixed(2)}
+                                                <span className="text-gray-400 line-through ml-2">
+                                                    ${product.originalPrice.toFixed(2)}
+                                                </span>
+                                            </h2>
+                                        </>
+                                    ) : (
+                                        <h2>${product.price.toFixed(2)}</h2>
+                                    )}
                                 </div>
+
+                                <p style={{ color: '#666' }}>
+                                    {/* Descripción (agregar campo si es necesario) */}
+                                    {product.category}
+                                </p>
                             </div>
 
-                            <IonButton expand="block" style={{ margin: '16px 0' }}>
-                                Add to Cart
+                            {/* Resto del maquetado se mantiene igual */}
+                            <ul className="items-center gap-2 w-full" style={{ margin: '16px 0' }}>
+                                <li>
+                                    <IonRadioGroup value="black">
+                                        <div className="flex flex-row items-center gap-2">
+                                            <span>Color:</span>
+                                            <IonItem lines="none" style={{ width: "auto" }}>
+                                                <IonRadio slot="end" value="black">
+                                                    <IonLabel>Negro</IonLabel>
+                                                </IonRadio>
+                                            </IonItem>
+                                            <IonItem lines="none" style={{ width: "auto" }}>
+                                                <IonRadio slot="end" value="white">
+                                                    <IonLabel>Blanco</IonLabel>
+                                                </IonRadio>
+                                            </IonItem>
+                                            <IonItem lines="none" style={{ width: "auto" }}>
+
+                                                <IonRadio slot="end" value="blue" >
+                                                    <IonLabel>Azul</IonLabel>
+                                                </IonRadio>
+                                            </IonItem>
+                                        </div>
+                                    </IonRadioGroup>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span>Cantidad:</span>
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                        <IonButton size="small" color={"tertiary"}>-</IonButton>
+                                        <span style={{ margin: '0 8px' }}>1</span>
+                                        <IonButton size="small" color={"tertiary"}>+</IonButton>
+                                    </div>
+                                </li>
+                            </ul>
+
+                            <IonButton expand="block" color={"tertiary"} style={{ margin: '16px 0' }}>
+                                Añadir al Carrito
                             </IonButton>
 
                             <IonGrid style={{ margin: '16px 0' }}>
                                 <IonRow>
-                                    <IonCol>
-                                        Free Shipping
+                                    <IonCol className="flex items-center gap-2">
+                                        <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" /> Envío Gratis
                                     </IonCol>
-                                    <IonCol>
-                                        1 Year Warranty
+                                    <IonCol className="flex items-center gap-2">
+                                        <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" /> Garantía de 1 Año
                                     </IonCol>
-                                    <IonCol>
-                                        Easy Returns
+                                    <IonCol className="flex items-center gap-2">
+                                        <CloudDownload className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" /> Devoluciones Fáciles
                                     </IonCol>
                                 </IonRow>
                             </IonGrid>
 
                             <IonSegment value="details">
                                 <IonSegmentButton value="details">
-                                    <IonLabel>Details</IonLabel>
+                                    <IonLabel>Detalles</IonLabel>
                                 </IonSegmentButton>
                                 <IonSegmentButton value="specifications">
-                                    <IonLabel>Specs</IonLabel>
+                                    <IonLabel>Especificaciones</IonLabel>
                                 </IonSegmentButton>
                                 <IonSegmentButton value="reviews">
-                                    <IonLabel>Reviews</IonLabel>
+                                    <IonLabel>Reseñas</IonLabel>
                                 </IonSegmentButton>
                             </IonSegment>
 
-                            <IonList style={{ marginTop: '16px' }}>
-                                <IonItem>
-                                    <IonText>Active Noise Cancellation</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonText>30-hour battery life</IonText>
-                                </IonItem>
-                                <IonItem>
-                                    <IonText>Comfortable over-ear design</IonText>
-                                </IonItem>
-                            </IonList>
+                            <ul className="list-disc list-inside mt-5">
+                                <li>
+                                    Cancelación Activa de Ruido
+                                </li>
+                                <li>
+                                    Batería de 30 horas de duración
+                                </li>
+                                <li>
+                                    Diseño sobre la oreja cómodo
+                                </li>
+                            </ul>
+
                         </IonCol>
                     </IonRow>
                 </IonGrid>
