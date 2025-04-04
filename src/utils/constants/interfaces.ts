@@ -3,6 +3,7 @@ import { alertClasses } from "./colors";
 export type FieldType =
   | "Flex"
   | "INPUT"
+  | "NUMBER"
   | "PASSWORD"
   | "PHONE"
   | "TEXT_AREA"
@@ -38,6 +39,7 @@ export interface Field {
   maxLength?: number; // For TEXT_AREA and INPUT
   minLength?: number; // For TEXT_AREA and INPUT
   valueDefined?: any;
+  horas?: boolean; // For DATE_RANGE
   href?: string;
 }
 

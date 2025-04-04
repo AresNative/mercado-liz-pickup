@@ -1,10 +1,15 @@
-import { IonPage, IonContent } from "@ionic/react";
+import { IonPage, IonContent, IonButton } from "@ionic/react";
 import HeaderCart from "../@landing/components/header";
-import { useAppSelector } from "@/hooks/selector";
+import { useAppSelector, useAppDispatch } from "@/hooks/selector";
+import { removeFromCart, updateQuantity, clearCart } from "@/hooks/slices/cart-slice";
+import { Calendar, Trash } from "lucide-react";
+import { useState, useRef } from "react";
+import ModalCita from "./components/modal-cita";
 
 const CarritoPage = () => {
+    const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
-    //! agregar modal de https://ionicframework.com/docs/api/modal#setting-a-callback-function
+
     // Cálculos de totales
     const subtotal = cartItems.reduce((acc, item: any) =>
         acc + (item.originalPrice || item.price) * item.quantity, 0);
@@ -13,6 +18,20 @@ const CarritoPage = () => {
         item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
 
     const total = subtotal - discountTotal;
+
+    const handleQuantityChange = (id: string | number, currentQuantity: number, operation: 'increase' | 'decrease') => {
+        const newQuantity = operation === 'increase' ? currentQuantity + 1 : currentQuantity - 1;
+
+        if (newQuantity < 1) {
+            dispatch(removeFromCart(id));
+        } else {
+            dispatch(updateQuantity({ id, quantity: newQuantity }));
+        }
+    };
+
+    const [showModal, setShowModal] = useState(false);
+
+    const modal = useRef<HTMLIonModalElement>(null);
 
     return (
         <IonPage>
@@ -26,6 +45,7 @@ const CarritoPage = () => {
                 ) : (
                     <div className="flex flex-col h-full">
                         {/* Contenido scrollable */}
+                        <ModalCita modal={modal} setShowModal={setShowModal} showModal={showModal} />
                         <div className="container mx-auto flex-1 overflow-auto pb-40">
                             <div className="px-4 pt-4">
                                 <h1 className="text-2xl font-bold mb-2">Carrito de Compras</h1>
@@ -33,9 +53,9 @@ const CarritoPage = () => {
                             </div>
 
                             {/* Listado de productos */}
-                            <div className="space-y-3 px-4">
+                            <div className="px-4 mb-32">
                                 {cartItems.map((item: any) => (
-                                    <div key={item.id} className="flex flex-col sm:flex-row items-start gap-4 p-4 border rounded-lg bg-white">
+                                    <div key={item.id} className="flex flex-col sm:flex-row items-start gap-4 p-4 border-b border-b-neutral-300 bg-[#fdfdfd]">
                                         <img
                                             src={item.image}
                                             alt={item.title}
@@ -56,9 +76,27 @@ const CarritoPage = () => {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="bg-gray-100 px-3 py-1 rounded-full text-sm">
-                                                    x {item.quantity}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleQuantityChange(item.id, item.quantity, 'decrease')}
+                                                        className="bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="px-2">{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => handleQuantityChange(item.id, item.quantity, 'increase')}
+                                                        className="bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300"
+                                                    >
+                                                        +
+                                                    </button>
+                                                    <button
+                                                        onClick={() => dispatch(removeFromCart(item.id))}
+                                                        className="ml-2 text-red-500 hover:text-red-600"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -83,6 +121,22 @@ const CarritoPage = () => {
                                             <span>Total:</span>
                                             <span>${total.toFixed(2)}</span>
                                         </div>
+
+                                        <section className="mt-4 flex flex-row gap-2">
+                                            <IonButton
+                                                onClick={() => dispatch(clearCart())}
+                                                color={"danger"}
+                                                className="flex items-center gap-2 content-center w-full font-medium py-2 rounded-lg"
+                                            >
+                                                Vaciar Carrito <Trash />
+                                            </IonButton>
+
+                                            <IonButton
+                                                onClick={() => setShowModal(true)}
+                                                className="flex items-center content-center w-full custom-tertiary font-medium py-2 rounded-lg">
+                                                Agendar Recoleccion <Calendar />
+                                            </IonButton>
+                                        </section>
                                     </div>
                                 </div>
                             </div>

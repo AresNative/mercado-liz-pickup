@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { MainFormProps } from "@/utils/constants/interfaces";
 
 import { InputComponent as Input } from "./input";
+import { NumberComponent as Number } from "./number";
 import { MailComponent as Mail } from "./mail";
 import { PhoneComponent as Phone } from "./phone";
 import { TextAreaComponent as TextArea } from "./text-area";
@@ -19,15 +20,11 @@ import { CalendarComponent as Calendar } from "./calendar";
 import { DateRangeComponent as DateRange } from "./date-range";
 
 import { FileComponent as File } from "./file";
-import { ImgComponent as Image } from "./img";
 
-import { LinkForm as Link } from "@/components/link"
 import { TagInputComponent as TagInput } from "./tag-input"
 
-import { Button } from "../button";
-
-import { usePostProjectsMutation, usePostSprintsMutation, usePostTasksMutation } from "@/hooks/reducers/api";
 import { usePostUserLoginMutation } from "@/hooks/reducers/auth";
+import { IonButton } from "@ionic/react";
 
 export const MainForm = ({ message_button, dataForm, actionType, aditionalData, action, valueAssign, onSuccess }: MainFormProps) => {
 
@@ -46,18 +43,9 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
   } = useForm();
 
   const [postUserLogin] = usePostUserLoginMutation();
-  const [postProjects] = usePostProjectsMutation();
-  const [postSprint] = usePostSprintsMutation();
-  const [postTask] = usePostTasksMutation();
 
   function getMutationFunction(actionType: string) {
     switch (actionType) {
-      case "add-project":
-        return postProjects;
-      case "add-sprints":
-        return postSprint;
-      case "add-task":
-        return postTask;
       case "post-login":
         return postUserLogin
       default:
@@ -103,7 +91,7 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-2 my-2 m-auto">
+    <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-2 my-2 m-auto">
       {dataForm.map((field, key) => (
         <SwitchTypeInputRender
           key={key}
@@ -118,11 +106,11 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
           setValue={setValue}
         />
       ))}
-      <Button
-        color="info"
+      <IonButton
+        className="custom-tertiary float-right"
+        slot="end"
         type="submit"
-        label={loading ? "Loading..." : message_button}
-      />
+      >{loading ? "Loading..." : message_button}</IonButton>
     </form>
   );
 };
@@ -132,6 +120,8 @@ export function SwitchTypeInputRender(props: any) {
   switch (type) {
     case "INPUT":
       return <Input {...props} />;
+    case "NUMBER":
+      return <Number {...props} />;
     case "PASSWORD":
       return <Password {...props} />
     case "PHONE":
@@ -152,12 +142,8 @@ export function SwitchTypeInputRender(props: any) {
       return <CheckboxGroup {...props} />;
     case "FILE":
       return <File {...props} />;
-    case "IMG":
-      return <Image {...props} />;
     case "SEARCH":
       return <Search {...props} />;
-    case "LINK":
-      return <Link {...props} />;
     case "TAG_INPUT":
       return <TagInput {...props} />;
     case "Flex":

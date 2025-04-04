@@ -6,48 +6,70 @@ export function CalendarComponent({ cuestion, setValue, register, errors }: Inpu
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [birthDate, setBirthDate] = useState("");
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isTimeEnabled, setIsTimeEnabled] = useState(false);
 
-    // Determinar la fecha inicial cuando se abre el selector
     const currentDate = birthDate ? new Date(birthDate) : new Date();
     const [year, setYear] = useState(currentDate.getFullYear());
     const [month, setMonth] = useState(currentDate.getMonth());
     const [day, setDay] = useState(currentDate.getDate());
+    const [hour, setHour] = useState(currentDate.getHours());
+    const [minute, setMinute] = useState(currentDate.getMinutes());
 
     const years = Array.from({ length: 101 }, (_, i) => new Date().getFullYear() - i);
     const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const days = Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1);
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const minutes = Array.from({ length: 60 }, (_, i) => i);
+
+    const formatDisplayDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        const [datePart, timePart] = dateStr.split('T');
+        const [year, month, day] = datePart.split('-');
+        if (!year || !month || !day) return '';
+        let formattedDate = `${day}/${month}/${year}`;
+        if (timePart) {
+            const [hours, minutes] = timePart.split(':');
+            formattedDate += ` ${hours}:${minutes}`;
+        }
+        return formattedDate;
+    };
 
     useEffect(() => {
         setValue(cuestion.name, birthDate);
     }, [birthDate]);
 
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setShowDatePicker(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    // Ajuste para formatear correctamente el valor definido
-    useEffect(() => {
         if (cuestion.valueDefined) {
             const parsedDate = new Date(cuestion.valueDefined);
             if (!isNaN(parsedDate.getTime())) {
-                const formattedDate = parsedDate.toISOString().split("T")[0];
-                setBirthDate(formattedDate);
-                setYear(parsedDate.getFullYear());
-                setMonth(parsedDate.getMonth());
-                setDay(parsedDate.getDate());
+                const hasTime = cuestion.valueDefined.includes('T');
+                setIsTimeEnabled(hasTime);
+                const year = parsedDate.getFullYear();
+                const month = parsedDate.getMonth();
+                const day = parsedDate.getDate();
+                setYear(year);
+                setMonth(month);
+                setDay(day);
+                if (hasTime) {
+                    setHour(parsedDate.getHours());
+                    setMinute(parsedDate.getMinutes());
+                    const timeStr = `${String(parsedDate.getHours()).padStart(2, '0')}:${String(parsedDate.getMinutes()).padStart(2, '0')}`;
+                    setBirthDate(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${timeStr}`);
+                } else {
+                    setBirthDate(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+                }
             }
         }
     }, [cuestion.valueDefined]);
 
     const handleAccept = () => {
-        const selectedDate = new Date(year, month, day);
-        setBirthDate(selectedDate.toISOString().split("T")[0]);
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        if (isTimeEnabled) {
+            const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            setBirthDate(`${dateStr}T${timeStr}`);
+        } else {
+            setBirthDate(dateStr);
+        }
         setShowDatePicker(false);
     };
 
@@ -66,14 +88,17 @@ export function CalendarComponent({ cuestion, setValue, register, errors }: Inpu
             <div className="relative">
                 <input
                     type="text"
-                    value={birthDate}
+                    value={formatDisplayDate(birthDate)}
                     onClick={() => {
                         setShowDatePicker(true);
-                        // Asegurar que la fecha mostrada en los selects coincida con la fecha actual
-                        const today = new Date();
-                        setYear(today.getFullYear());
-                        setMonth(today.getMonth());
-                        setDay(today.getDate());
+                        const currentDate = birthDate ? new Date(birthDate) : new Date();
+                        if (!isNaN(currentDate.getTime())) {
+                            setYear(currentDate.getFullYear());
+                            setMonth(currentDate.getMonth());
+                            setDay(currentDate.getDate());
+                            setHour(currentDate.getHours());
+                            setMinute(currentDate.getMinutes());
+                        }
                     }}
                     readOnly
                     className="bg-white dark:bg-zinc-800 px-4 py-2 border focus:ring-purple-500 focus:border-purple-900 w-full sm:text-sm border-gray-300  dark:border-zinc-700 rounded-md focus:outline-none text-gray-600 dark:text-white cursor-pointer pr-8"
@@ -130,6 +155,46 @@ export function CalendarComponent({ cuestion, setValue, register, errors }: Inpu
                                 ))}
                             </select>
                         </div>
+                        <div className="mt-2 flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={isTimeEnabled}
+                                onChange={(e) => setIsTimeEnabled(e.target.checked)}
+                                className="h-4 w-4 text-blue-500 rounded border-gray-300 dark:bg-zinc-800 dark:border-zinc-700"
+                                id="timeCheckbox"
+                            />
+                            <label htmlFor="timeCheckbox" className="text-sm">
+                                Añadir hora
+                            </label>
+                        </div>
+                        {isTimeEnabled && (
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                <select
+                                    aria-label="Seleccionar hora"
+                                    className="bg-white dark:bg-zinc-800 border-gray-300 px-2 py-1 border dark:border-zinc-700 rounded-md"
+                                    value={hour}
+                                    onChange={(e) => setHour(parseInt(e.target.value))}
+                                >
+                                    {hours.map((h) => (
+                                        <option key={h} value={h}>
+                                            {String(h).padStart(2, '0')}
+                                        </option>
+                                    ))}
+                                </select>
+                                <select
+                                    aria-label="Seleccionar minuto"
+                                    className="bg-white dark:bg-zinc-800 border-gray-300 px-2 py-1 border dark:border-zinc-700 rounded-md"
+                                    value={minute}
+                                    onChange={(e) => setMinute(parseInt(e.target.value))}
+                                >
+                                    {minutes.map((m) => (
+                                        <option key={m} value={m}>
+                                            {String(m).padStart(2, '0')}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <button
                             type="button"
                             className="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
