@@ -4,7 +4,7 @@ import { useAppSelector } from "@/hooks/selector";
 
 const CarritoPage = () => {
     const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
-    //! agregar modal de https://ionicframework.com/docs/api/modal#setting-a-boolean-value
+    //! agregar modal de https://ionicframework.com/docs/api/modal#setting-a-callback-function
     // Cálculos de totales
     const subtotal = cartItems.reduce((acc, item: any) =>
         acc + (item.originalPrice || item.price) * item.quantity, 0);
