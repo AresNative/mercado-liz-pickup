@@ -36,8 +36,13 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                         <IonPopover trigger="trigger-button">
                             <IonContent>
                                 <IonList>
-                                    <IonItem href="/products" className="flex items-center gap-2">
-                                        <ShoppingCart className="h-5 w-5 mr-2" /> <span className="text-sm">Mi carrito</span>
+                                    <IonItem
+                                        routerLink="/carrito"
+                                        routerDirection="none"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <ShoppingCart className="h-5 w-5 mr-2" />
+                                        <span className="text-sm">Mi carrito</span>
                                     </IonItem>
                                     <IonItem className="container mx-auto flex items-center justify-between">
                                         <span className="flex-shrink-0">Tema:</span>

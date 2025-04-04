@@ -4,7 +4,7 @@ import type React from "react"
 import { IonRouterLink, IonButton, IonImg } from "@ionic/react"
 import { motion } from "framer-motion"
 import { ShoppingCart, Star } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/hooks/selector" // 1. Importa useAppSelector
+import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { addToCart } from "@/hooks/slices/cart-slice"
 
 interface Product {
@@ -23,11 +23,9 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const dispatch = useAppDispatch()
-    // 2. Obtén los items del carrito del estado
     const cartItems = useAppSelector((state) => state.cart.items)
     const cartItem = cartItems.find((item) => item.id === product.id)
     const quantity = cartItem?.quantity || 0
-
 
     const handleAddToCart = () => {
         dispatch(addToCart({ ...product, quantity: 1 }))

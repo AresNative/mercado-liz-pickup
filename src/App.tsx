@@ -29,6 +29,7 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.class.css';
 import React from 'react';
 import Providers from './hooks/provider';
+import CarritoPage from './pages/@carrito/page';
 /* import '@ionic/react/css/palettes/dark.system.css'; */
 
 
@@ -45,6 +46,9 @@ const App: React.FC = () => (
           <Switch>
             <Route exact path="/products">
               <Layout />
+            </Route>
+            <Route exact path="/carrito">
+              <CarritoPage />
             </Route>
             <Route exact path="/">
               <Redirect to="/products" />
