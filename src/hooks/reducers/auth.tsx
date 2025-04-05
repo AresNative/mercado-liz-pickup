@@ -1,4 +1,4 @@
-"use client";
+;
 import { EnvConfig } from "@/utils/constants/env.config";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";

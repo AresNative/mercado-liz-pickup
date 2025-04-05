@@ -1,4 +1,4 @@
-"use client"
+
 import { SearchableSelectProps } from "@/utils/constants/interfaces";
 import { Search, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
