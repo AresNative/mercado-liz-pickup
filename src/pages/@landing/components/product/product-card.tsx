@@ -51,7 +51,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
 
     return (
-        <div className="bg-background border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-row md:flex-col">
+        <div className="bg-background lg:w-9/12 md:m-auto border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-row md:flex-col">
             <IonRouterLink routerLink={`/products/${product.id}`} className="w-1/3 sm:w-1/3 md:w-full">
                 <div className="relative h-full md:aspect-square overflow-hidden">
                     <IonImg

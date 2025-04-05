@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { IonContent, IonPage, IonFooter, IonToolbar } from "@ionic/react"
-import { Store, Warehouse, MapPin, Building, Info, Phone, Mail, Clock } from "lucide-react"
+import { Store, Warehouse, Info, Phone, Mail, Clock, MapPin } from "lucide-react"
 import PromoBanner from "./@landing/components/banner-offers"
 import CategorySlider from "./@landing/components/categories"
 import HeaderCart from "./@landing/components/header"
@@ -12,10 +12,10 @@ import ProductGrid from "./@landing/components/product/product-grid"
 const Layout: React.FC = () => {
   // Array of branches with names and icons
   const branches = [
-    { id: 1, name: "Mayoreo", icon: Warehouse, address: "Av. Principal #123" },
-    { id: 2, name: "Liz", icon: Store, address: "Calle Comercial #456" },
-    { id: 3, name: "Palmas", icon: Building, address: "Blvd. Las Palmas #789" },
-    { id: 4, name: "Testerazo", icon: MapPin, address: "Plaza Central #101" },
+    { id: 1, name: "Mayoreo", icon: Warehouse, address: "11 6, Francisco Zarco, 22750 Francisco Zarco, B.C." },
+    { id: 2, name: "Liz", icon: Store, address: "Calle Principal 216, Francisco Zarco, 22750 Francisco Zarco, B.C." },
+    { id: 3, name: "Palmas", icon: Store, address: "México 3, Ampliación Valle de las Palmas, 21500 Espuela, B.C." },
+    { id: 4, name: "Testerazo", icon: Store, address: "Carretera Tecate Ensenada Km 49, Tecate, Baja California, 21570." },
   ]
 
   // State to store the selected branch
@@ -34,7 +34,6 @@ const Layout: React.FC = () => {
   return (
     <IonPage>
       {selectedBranch ? (
-        // Show main app content when branch is selected
         <>
           <HeaderCart />
           <IonContent fullscreen>
@@ -49,30 +48,37 @@ const Layout: React.FC = () => {
             </div>
 
             <CategorySlider />
-            <PromoBanner />
+
+            <PromoBanner />{/* Componente ocultable */}
+
             <ProductGrid />
           </IonContent>
         </>
       ) : (
         <>
           <IonContent fullscreen className="bg-gray-50 dark:bg-gray-900">
-            <h1 className="text-xl font-bold mt-6 mb-4 text-center text-purple-700 dark:text-purple-400">
+
+            <img src="/logo.jpg" className="m-auto w-1/2 lg:w-1/5" />
+
+            <h1 className="text-xl font-bold mt-6 mb-4 text-center">
               Selecciona tu sucursal
             </h1>
-            <ul className="list-inside flex flex-col gap-3 mx-4 mb-4">
+            <ul className="list-inside flex flex-col sm:flex-row md:flex-nowrap flex-wrap gap-2 md:gap-4 lg:gap-6 mx-2 sm:mx-4 md:mx-6 lg:mx-8 mb-3 sm:mb-4 md:mb-6 items-stretch justify-center">
               {branches.map((branch) => (
                 <li
                   key={branch.id}
                   onClick={() => handleSelectBranch(branch)}
                   className="bg-white dark:bg-gray-800 cursor-pointer rounded-xl shadow-lg overflow-hidden border-l-4 border-[#A855F7] active:bg-gray-50 dark:active:bg-gray-700"
                 >
-                  <div className="flex items-center p-4">
+                  <div className="flex items-center p-2">
                     <div className="bg-purple-50 dark:bg-purple-900 p-3 rounded-full mr-4">
                       <branch.icon className="h-6 w-6 text-[#A855F7] dark:text-purple-400" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800 dark:text-white">{branch.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{branch.address}</p>
+                      <p className="flex gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <MapPin />
+                        {branch.address}</p>
                     </div>
                     <div className="text-[#A855F7] dark:text-purple-400">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

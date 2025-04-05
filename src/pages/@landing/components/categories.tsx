@@ -52,7 +52,7 @@ const CategorySlider: React.FC = () => {
     };
 
     return (
-        <section className="flex items-center relative py-4">
+        <section className="flex items-center relative py-2">
             {showLeftArrow && (
                 <button
                     onClick={() => scroll("left")}
