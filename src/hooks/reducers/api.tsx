@@ -29,7 +29,7 @@ export const api = createApi({
         }),
         getAll: builder.mutation({
             query: ({ sum, page, pageSize, filters, signal, distinct }) => ({
-                url: `reporteria/all`,
+                url: `v1/reporteria/all`,
                 method: "POST",
                 params: { sum, page, pageSize, distinct }, // Mejor práctica para parámetros
                 body: filters,
@@ -41,14 +41,47 @@ export const api = createApi({
             }),
             extraOptions: { maxRetries: 2 }
         }),
+        getArticulos: builder.query({
+            query: ({ page, pageSize, filtro, signal }) => ({
+                url: `Articulos`,
+                method: "GET",
+                params: {
+                    page,
+                    pageSize,
+                    ...filtro // Los filtros se envían como query parameters
+                },
+                signal
+            }),
+            transformErrorResponse: (response: any) => ({
+                status: response.status,
+                message: response.data?.message || 'Error fetching data',
+            }),
+            extraOptions: { maxRetries: 2 }
+        }),
 
-        /*
-        ? Formato de consulta - glosarios y tablas dinamicas
-        */
+        lazy: builder.query({
+            query: ({ url, page, pageSize, filtro, signal }) => ({
+                url: url,
+                method: "GET",
+                params: {
+                    page,
+                    pageSize,
+                    ...filtro // Los filtros se envían como query parameters
+                },
+                signal
+            }),
+            transformErrorResponse: (response: any) => ({
+                status: response.status,
+                message: response.data?.message || 'Error fetching data',
+            }),
+            extraOptions: { maxRetries: 2 }
+        }),
     }),
 });
 
 export const {
     useGetGlosariosComprasQuery,
-    useGetAllMutation
+    useGetAllMutation,
+    useGetArticulosQuery,
+    useLazyQuery,
 } = api;

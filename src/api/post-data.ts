@@ -1,4 +1,4 @@
-import { EnvConfig } from "@/utils/env.config";
+import { EnvConfig } from "@/utils/constants/env.config";
 
 const { api } = EnvConfig();
 export async function sendFormData<T = any>(
