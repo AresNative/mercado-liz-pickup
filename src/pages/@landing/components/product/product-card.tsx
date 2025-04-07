@@ -13,6 +13,7 @@ interface Product {
     title: string
     discount?: number
     category: string
+    unidad: string
     price: number
     originalPrice?: number
 }

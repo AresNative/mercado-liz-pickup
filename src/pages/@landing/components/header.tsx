@@ -17,7 +17,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
         <IonHeader className="bg-white/90 backdrop-blur-sm border dark:border-zinc-700 dark:bg-zinc-950/90 ion-padding-horizontal safe-area-top">
             <div className="h-[60px] md:h-[70px] w-full flex items-center">
                 {location.pathname === '/products' && (
-                    <img src="/favicon.png" className="size-12 m-auto p-0 hidden md:block" />
+                    <img src="/favicon.png" className="size-10 m-auto p-0 hidden md:block" />
                 )}
                 {back && (
                     <IonButtons slot="start">

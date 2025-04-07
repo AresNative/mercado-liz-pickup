@@ -42,13 +42,15 @@ export const api = createApi({
             extraOptions: { maxRetries: 2 }
         }),
         getArticulos: builder.query({
-            query: ({ page, pageSize, filtro, signal }) => ({
-                url: `Articulos`,
+            query: ({ page, pageSize, id, filtro, listaPrecio, signal }) => ({
+                url: `v1/pick-up/lista-precios`,
                 method: "GET",
                 params: {
                     page,
                     pageSize,
-                    ...filtro // Los filtros se envían como query parameters
+                    listaPrecio,
+                    id,
+                    filtro
                 },
                 signal
             }),

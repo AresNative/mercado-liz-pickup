@@ -1,120 +1,82 @@
-
-
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/react"
 import ProductCard from "./product-card"
 import Badge from "@/components/badge"
-import { Product, sampleProducts } from "@/utils/data/example-data"
+import { Product } from "@/utils/data/example-data"
+import { useGetArticulosQuery } from "@/hooks/reducers/api"
+import { mapApiProductToAppProduct } from "../../utils/fromat-data"
+
+const PAGE_SIZE = 10
 
 const ProductGrid: React.FC = () => {
-    const [products, setProducts] = useState<Product[]>([])
     const [page, setPage] = useState(1)
-    const [isLoading, setIsLoading] = useState(false)
+    const [combinedData, setCombinedData] = useState<Product[]>([])
     const [hasMore, setHasMore] = useState(true)
-    const [showFooterLoading, setShowFooterLoading] = useState(false)
 
-    // Function to fetch initial products
+    const { data, isFetching, error, refetch } = useGetArticulosQuery({
+        page,
+        pageSize: PAGE_SIZE,
+        filtro: "",
+        listaPrecio: "(Precio Lista)"
+    })
+
     useEffect(() => {
-        // Show loading on initial fetch
-        setShowFooterLoading(true)
+        if (data) {
+            const mappedProducts = data.data.map(mapApiProductToAppProduct)
+            setCombinedData(prev => [...prev, ...mappedProducts])
+            setHasMore(mappedProducts.length === PAGE_SIZE)
+        }
+    }, [data])
 
-        // Simulate initial API call
-        setTimeout(() => {
-            setProducts(sampleProducts)
-            setShowFooterLoading(false)
-        }, 1500)
-    }, [])
+    const loadMore = useCallback(async (event: CustomEvent<void>) => {
+        if (!isFetching && hasMore) {
+            setPage(prev => prev + 1)
+        }
+        ; (event.target as HTMLIonInfiniteScrollElement).complete()
+    }, [isFetching, hasMore])
 
-    // Function to load more products
-    const loadMoreProducts = async () => {
-        if (isLoading || !hasMore) return
-
-        setIsLoading(true)
-
-        // Simulate API call with timeout
-        setTimeout(() => {
-            // Generate new products based on the current page
-            const newProducts = sampleProducts.map((product, index) => ({
-                ...product,
-                id: `${page}-${index}`,
-                title: `${product.title} (Page ${page})`,
-            }))
-
-            setProducts((prevProducts) => [...prevProducts, ...newProducts])
-            setPage((prevPage) => prevPage + 1)
-
-            // After 3 pages, set hasMore to false to stop infinite loading
-            if (page >= 3) {
-                setHasMore(false)
-            }
-
-            setIsLoading(false)
-        }, 1000)
-    }
-
-    // Handle infinite scroll event
-    const handleInfiniteScroll = (event: any) => {
-        loadMoreProducts().then(() => {
-            // Complete the infinite scroll event
-            event.target.complete()
-
-            // Disable the infinite scroll if there are no more items
-            if (!hasMore) {
-                event.target.disabled = true
-            }
-        })
-    }
-
-    // Function to manually trigger a refresh with loading indicator
-    const refreshProducts = () => {
-        setShowFooterLoading(true)
+    const refreshProducts = useCallback(async () => {
         setPage(1)
+        setCombinedData([])
         setHasMore(true)
 
-        // Simulate API call
-        setTimeout(() => {
-            setProducts(sampleProducts)
-            setShowFooterLoading(false)
-        }, 1500)
-    }
+        try {
+            await refetch().unwrap()
+        } catch (error) {
+            console.error("Error refreshing products:", error)
+        }
+    }, [refetch])
+
+    useEffect(() => {
+        if (error) {
+            console.error("Error fetching products:", error)
+            setHasMore(false)
+        }
+    }, [error])
 
     return (
         <div className="relative pb-16">
-            {/* Button to manually trigger refresh with loading */}
+            {/* Encabezado */}
             <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/90 backdrop-blur-sm dark:bg-zinc-950/90 border-b border-gray-200 dark:border-gray-700">
                 <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide pr-4">
                     <div className="flex items-center gap-2 h-10">
-                        <Badge
-                            color="purple"
-                            text="Favoritos"
-                        />
-                        <Badge
-                            color="purple"
-                            text="Promociones"
-                        />
-                        <Badge
-                            color="purple"
-                            text="Recomendados"
-                        />
-                        <Badge
-                            color="purple"
-                            text="Nuevos"
-                        />
+                        {['Favoritos', 'Promociones', 'Recomendados', 'Nuevos'].map((text) => (
+                            <Badge key={text} color="purple" text={text} />
+                        ))}
                     </div>
                 </section>
 
                 <button
                     className="shrink-0 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={refreshProducts}
-                    disabled={showFooterLoading}
+                    disabled={isFetching}
                 >
                     Actualizar productos
                 </button>
             </div>
 
+            {/* Lista de productos */}
             <IonList>
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4"
@@ -122,30 +84,37 @@ const ProductGrid: React.FC = () => {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
                 >
-                    {products.map((product, index) => (
-                        <motion.div
-                            key={product.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                        >
-                            <ProductCard product={product} />
-                        </motion.div>
-                    ))}
+                    <AnimatePresence>
+                        {combinedData.map((product) => (
+                            <motion.div
+                                key={product.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ProductCard product={product} />
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
                 </motion.div>
             </IonList>
 
+            {/* Infinite Scroll */}
             <IonInfiniteScroll
-                onIonInfinite={handleInfiniteScroll}
+                onIonInfinite={loadMore}
                 threshold="100px"
-                disabled={!hasMore || showFooterLoading}
+                disabled={!hasMore || isFetching}
             >
-                <IonInfiniteScrollContent loadingText="Please wait..." loadingSpinner="bubbles" />
+                <IonInfiniteScrollContent
+                    loadingText="Cargando más productos..."
+                    loadingSpinner="bubbles"
+                />
             </IonInfiniteScroll>
 
-            {/* Custom Footer Loading Indicator with CSS spinner instead of IonSpinner */}
+            {/* Indicador de carga inicial */}
             <AnimatePresence>
-                {showFooterLoading && (
+                {isFetching && page === 1 && (
                     <motion.div
                         className="fixed bottom-0 left-0 right-0 bg-purple-800 text-white py-3 px-4 flex items-center justify-center z-50 shadow-lg"
                         initial={{ y: 100, opacity: 0 }}
@@ -165,4 +134,3 @@ const ProductGrid: React.FC = () => {
 }
 
 export default ProductGrid
-

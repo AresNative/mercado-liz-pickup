@@ -2,21 +2,28 @@ import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLa
 import { CloudDownload, ShieldCheck, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
-import { Product, sampleProducts } from "@/utils/data/example-data";
+import { Product } from "@/utils/data/example-data";
 import { useEffect, useState } from "react";
+import { useGetArticulosQuery } from "@/hooks/reducers/api";
+import { mapApiProductToAppProduct } from "../utils/fromat-data";
 
 const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [product, setProduct] = useState<Product>();
-
+    const [quantity, setQuantity] = useState<number>(1);
+    const { data, isFetching, error, refetch } = useGetArticulosQuery({
+        page: 1,
+        id: id,
+        listaPrecio: "(Precio Lista)"
+    })
     useEffect(() => {
-        const fetchProduct = async () => {
-            const data: Product | undefined = sampleProducts.find((p) => p.id === id) //await getProductById(id); // Tu función de fetching
-            setProduct(sampleProducts.find((p) => p.id === id) || data); // Simulación de búsqueda por ID
-        };
-
-        if (id) fetchProduct();
-    }, [id]);
+        if (data) {
+            const mappedProducts = data.data.map(mapApiProductToAppProduct)
+            setProduct(mappedProducts.find((item: any) => item.id === id))
+        }
+    }, [data])
+    const increaseQuantity = () => setQuantity(prev => prev + 1);
+    const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
 
     if (!product) {
         return (
@@ -90,35 +97,60 @@ const ProductID: React.FC = () => {
 
                             {/* Resto del maquetado se mantiene igual */}
                             <ul className="items-center gap-2 w-full">
-                                <li>
-                                    <IonRadioGroup value="black">
-                                        <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                                            <div className="flex flex-1 justify-around w-full md:w-auto">
-                                                <IonItem lines="none" className="w-full md:w-auto">
-                                                    <div className="flex items-center gap-1">
-                                                        <IonRadio slot="end" value="black">
-                                                            <IonLabel>Caja</IonLabel>
-                                                        </IonRadio>
-                                                    </div>
-                                                </IonItem>
+                                {product.unidad !== "Caja" ? (
+                                    <li>
+                                        <IonRadioGroup value="black">
+                                            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+                                                <div className="flex flex-1 justify-around w-full md:w-auto">
+                                                    <IonItem lines="none" className="w-full md:w-auto">
+                                                        <div className="flex items-center gap-1">
+                                                            <IonRadio slot="end" value="black">
+                                                                <IonLabel>Caja</IonLabel>
+                                                            </IonRadio>
+                                                        </div>
+                                                    </IonItem>
 
-                                                <IonItem lines="none" className="w-full md:w-auto">
-                                                    <div className="flex items-center gap-1">
-                                                        <IonRadio slot="end" value="white">
-                                                            <IonLabel>Pieza/Kg</IonLabel>
-                                                        </IonRadio>
-                                                    </div>
-                                                </IonItem>
+                                                    <IonItem lines="none" className="w-full md:w-auto">
+                                                        <div className="flex items-center gap-1">
+                                                            <IonRadio slot="end" value="white">
+                                                                <IonLabel>{product.unidad}</IonLabel>
+                                                            </IonRadio>
+                                                        </div>
+                                                    </IonItem>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </IonRadioGroup>
-                                </li>
-                                <li className="flex items-center gap-2 m-auto">
+                                        </IonRadioGroup>
+                                    </li>
+                                ) : (
+                                    <li>
+                                        <IonRadioGroup value="black">
+                                            <IonItem lines="none" className="w-full md:w-auto">
+                                                <div className="flex items-center gap-1">
+                                                    <IonRadio slot="end" value="black">
+                                                        <IonLabel>Caja</IonLabel>
+                                                    </IonRadio>
+                                                </div>
+                                            </IonItem>
+                                        </IonRadioGroup>
+                                    </li>
+                                )}
+                                <li className="flex items-center gap-4">
                                     <span>Cantidad:</span>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <IonButton size="small" className="custom-tertiary">-</IonButton>
-                                        <span style={{ margin: '0 8px' }}>1</span>
-                                        <IonButton size="small" className="custom-tertiary">+</IonButton>
+                                    <div className="flex items-center gap-2">
+                                        <IonButton
+                                            size="small"
+                                            onClick={decreaseQuantity}
+                                            className="custom-tertiary"
+                                            disabled={quantity <= 1}>
+                                            -
+                                        </IonButton>
+                                        <span className="w-8 text-center">{quantity}</span>
+                                        <IonButton
+                                            size="small"
+                                            className="custom-tertiary"
+                                            onClick={increaseQuantity}>
+                                            +
+                                        </IonButton>
                                     </div>
                                 </li>
                             </ul>
