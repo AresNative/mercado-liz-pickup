@@ -40,9 +40,9 @@ const ProductGrid: React.FC = () => {
         setPage(1)
         setCombinedData([])
         setHasMore(true)
-
         try {
-            await refetch().unwrap()
+            await refetch().unwrap();
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
         } catch (error) {
             console.error("Error refreshing products:", error)
         }

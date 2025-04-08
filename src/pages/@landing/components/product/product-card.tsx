@@ -80,6 +80,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <span className="text-xs ml-1">4.8</span>
                     </div>
                     <span className="text-xs text-gray-500 ml-2">• {product.category}</span>
+                    <span className="text-xs text-gray-500 ml-2">• {product.unidad}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
