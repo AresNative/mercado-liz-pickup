@@ -58,7 +58,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <IonImg
                         src={product.image || "/placeholder.svg?height=300&width=300"}
                         alt={product.title}
-                        className="object-cover w-full h-full"
+                        className="object-cover w-full h-full min-w-1/3 md:min-w-full md:max-h-1/3 rounded-t-xl md:rounded-t-none md:rounded-l-xl"
+                        style={{ aspectRatio: "1/1" }}
                     />
                     {product.discount && (
                         <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -68,7 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </div>
             </IonRouterLink>
 
-            <div className="p-3 flex-1 md:w-full md:border-t-2">
+            <div className="p-3 flex-1 md:w-full md:border-t-2   w-2/3 md:pt-3 md:mt-2">
                 <IonRouterLink routerLink={`/products/${product.id}`}>
                     <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.title}</h3>
                 </IonRouterLink>
