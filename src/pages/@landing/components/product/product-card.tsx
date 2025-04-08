@@ -69,7 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </div>
             </IonRouterLink>
 
-            <div className="p-3 flex-1 md:w-full md:border-t-2   w-2/3 md:pt-3 md:mt-2">
+            <div className="p-3 flex-1 md:w-full md:border-t-2 w-2/3 md:pt-3 md:mt-2">
                 <IonRouterLink routerLink={`/products/${product.id}`}>
                     <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.title}</h3>
                 </IonRouterLink>
