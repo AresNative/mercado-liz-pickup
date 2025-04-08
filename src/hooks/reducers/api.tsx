@@ -43,7 +43,7 @@ export const api = createApi({
         }),
         getArticulos: builder.query({
             query: ({ page, pageSize, id, filtro, listaPrecio, signal }) => ({
-                url: `v1/pick-up/lista-precios`,
+                url: `pick-up/lista-precios`,
                 method: "GET",
                 params: {
                     page,
