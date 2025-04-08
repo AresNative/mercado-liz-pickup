@@ -6,6 +6,9 @@ import Layout from './pages/Layout';
 import NotFound from './pages/NotFound'; // Asegúrate de crear este componente
 import ProductID from './pages/@landing/[id]/product-id';
 
+import CarritoPage from './pages/@carrito/page';
+import Page from './pages/@landing/page';
+
 /* Theme variables */
 import './theme/variables.css';
 
@@ -29,7 +32,6 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.class.css';
 import React from 'react';
 import Providers from './hooks/provider';
-import CarritoPage from './pages/@carrito/page';
 /* import '@ionic/react/css/palettes/dark.system.css'; */
 
 
@@ -44,8 +46,11 @@ const App: React.FC = () => (
       <IonReactRouter>
         <IonRouterOutlet>
           <Switch>
-            <Route exact path="/products">
+            <Route exact path="/layout">
               <Layout />
+            </Route>
+            <Route exact path="/products">
+              <Page />
             </Route>
             <Route exact path="/carrito">
               <CarritoPage />

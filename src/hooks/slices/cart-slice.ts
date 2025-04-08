@@ -3,8 +3,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface CartItem {
   id: string | number; // Puedes ajustar el tipo según tus necesidades
   quantity: number;
-  // Agrega aquí cualquier otra propiedad que tenga tu item del carrito
-  // por ejemplo: price: number; name: string; etc.
 }
 
 interface CartState {
