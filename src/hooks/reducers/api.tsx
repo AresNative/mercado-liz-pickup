@@ -23,13 +23,9 @@ export const api = createApi({
         },
     }),
     endpoints: (builder) => ({
-
-        getGlosariosCompras: builder.query({
-            query: () => "glosarios/glosario-compras"
-        }),
         getAll: builder.mutation({
-            query: ({ sum, page, pageSize, filters, signal, distinct }) => ({
-                url: `v1/reporteria/all`,
+            query: ({ url, filters, signal, page, pageSize, sum, distinct }) => ({
+                url: `v2/${url}`,
                 method: "POST",
                 params: { sum, page, pageSize, distinct }, // Mejor práctica para parámetros
                 body: filters,
@@ -41,9 +37,22 @@ export const api = createApi({
             }),
             extraOptions: { maxRetries: 2 }
         }),
+        post: builder.mutation({
+            query: ({ url, data, signal }) => ({
+                url: `v2/insert/${url}`,
+                method: "POST",
+                body: JSON.stringify(data),
+                signal
+            }),
+            transformErrorResponse: (response: any) => ({
+                status: response.status,
+                message: response.data?.message || 'Error fetching data',
+            }),
+            extraOptions: { maxRetries: 2 }
+        }),
         getArticulos: builder.query({
             query: ({ page, pageSize, id, filtro, listaPrecio, signal }) => ({
-                url: `pick-up/lista-precios`,
+                url: `pick-up`,
                 method: "GET",
                 params: {
                     page,
@@ -60,30 +69,11 @@ export const api = createApi({
             }),
             extraOptions: { maxRetries: 2 }
         }),
-
-        lazy: builder.query({
-            query: ({ url, page, pageSize, filtro, signal }) => ({
-                url: url,
-                method: "GET",
-                params: {
-                    page,
-                    pageSize,
-                    ...filtro // Los filtros se envían como query parameters
-                },
-                signal
-            }),
-            transformErrorResponse: (response: any) => ({
-                status: response.status,
-                message: response.data?.message || 'Error fetching data',
-            }),
-            extraOptions: { maxRetries: 2 }
-        }),
     }),
 });
 
 export const {
-    useGetGlosariosComprasQuery,
     useGetAllMutation,
+    usePostMutation,
     useGetArticulosQuery,
-    useLazyQuery,
 } = api;

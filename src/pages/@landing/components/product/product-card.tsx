@@ -5,7 +5,7 @@ import { IonRouterLink, IonButton, IonImg } from "@ionic/react"
 import { motion } from "framer-motion"
 import { ShoppingCart, Star } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
-import { addToCart } from "@/hooks/slices/cart-slice"
+import { addToCart } from "@/hooks/slices/cart"
 
 interface Product {
     id: string

@@ -1,7 +1,7 @@
 import { IonPage, IonContent, IonButton } from "@ionic/react";
 import HeaderCart from "../@landing/components/header";
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
-import { removeFromCart, updateQuantity, clearCart } from "@/hooks/slices/cart-slice";
+import { removeFromCart, updateQuantity, clearCart } from "@/hooks/slices/cart";
 import { Calendar, Trash } from "lucide-react";
 import { useState, useRef } from "react";
 import ModalCita from "./components/modal-cita";
