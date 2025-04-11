@@ -2,6 +2,7 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
+import Process from './pages/@proces/layout'; // Cambia esto a la ruta correcta de tu componente Layout
 import Layout from './pages/Layout';
 import NotFound from './pages/NotFound'; // Asegúrate de crear este componente
 import ProductID from './pages/@landing/[id]/product-id';
@@ -51,6 +52,9 @@ const App: React.FC = () => (
             </Route>
             <Route exact path="/products">
               <Page />
+            </Route>
+            <Route exact path="/process">
+              <Process />
             </Route>
             <Route exact path="/carrito">
               <CarritoPage />
