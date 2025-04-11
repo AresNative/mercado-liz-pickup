@@ -1,29 +1,38 @@
-
-
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useDispatch } from "react-redux"
+import { useHistory } from "react-router-dom"
 import { IonContent, IonPage } from "@ionic/react"
-import { Store, Warehouse } from "lucide-react"
 import PromoBanner from "./components/banner-offers"
 import CategorySlider from "./components/categories"
 import HeaderCart from "./components/header"
 import ProductGrid from "./components/product/product-grid"
 import { branches } from "./utils/branches"
+import { useAppSelector } from "@/hooks/selector"
+import { clearAll, setSucursal } from "@/hooks/slices/app"
 
 const Page: React.FC = () => {
-    // Array of branches with names and icons
+    const dispatch = useDispatch()
+    const history = useHistory()
+    const sucursal = useAppSelector((state: any) => state.app.sucursal)
 
-    // State to store the selected branch
-    const [selectedBranch, setSelectedBranch] = useState<(typeof branches)[0] | null>(null)
+    // Estado local sincronizado con Redux
+    const [selectedBranch, setSelectedBranch] = useState<(typeof branches)[0] | null>(
+        () => branches.find(b => b.id === sucursal?.id) || null
+    )
 
-    // Function to handle branch selection
-    const handleSelectBranch = (branch: (typeof branches)[0]) => {
-        setSelectedBranch(branch)
-    }
+    // Sincronizar cuando cambie la sucursal en Redux
+    useEffect(() => {
+        if (sucursal) {
+            const branch = branches.find(b => b.id === sucursal.id)
+            setSelectedBranch(branch || null)
+        }
+    }, [sucursal])
 
-    // Function to change branch
+    // Cambiar sucursal
     const changeBranch = () => {
-        setSelectedBranch(null)
+        dispatch(clearAll()) // Limpiar Redux
+        history.push('/layout') // Redirigir a selección
     }
 
     return (
@@ -34,22 +43,22 @@ const Page: React.FC = () => {
                     {selectedBranch && (
                         <div className="flex items-center">
                             <selectedBranch.icon className="h-5 w-5 text-purple-700 mr-2" />
-                            <span className="text-sm font-medium text-purple-800">Sucursal: {selectedBranch.name}</span>
-                        </div>)}
+                            <span className="text-sm font-medium text-purple-800">
+                                Sucursal: {selectedBranch.name}
+                            </span>
+                        </div>
+                    )}
                     <button onClick={changeBranch} className="text-xs text-purple-700 underline">
                         Cambiar
                     </button>
                 </div>
 
                 <CategorySlider />
-
-                <PromoBanner />{/* Componente ocultable */}
-
+                <PromoBanner />
                 <ProductGrid />
             </IonContent>
-        </IonPage >
+        </IonPage>
     )
 }
 
-export default Page;
-
+export default Page

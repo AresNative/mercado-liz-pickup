@@ -21,7 +21,7 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     [auth.reducerPath]: auth.reducer,
   },
-  devTools: config.mode !== "production",
+  devTools: /* config.mode !== "production" */ true,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({}).concat([api.middleware, auth.middleware]),
 });

@@ -1,33 +1,35 @@
-
-
-import type React from "react"
-import { useState } from "react"
-import { IonContent, IonPage, IonFooter, IonToolbar } from "@ionic/react"
-import { Info, Phone, Mail, Clock, MapPin } from "lucide-react"
-import { branches } from "./@landing/utils/branches"
+import type React from "react";
+import { useDispatch } from "react-redux";
+import { useHistory } from "react-router-dom";
+import { IonContent, IonPage, IonFooter, IonToolbar } from "@ionic/react";
+import { Info, Phone, Mail, Clock, MapPin } from "lucide-react";
+import { branches } from "./@landing/utils/branches";
+import { clearAll, setSucursal } from "@/hooks/slices/app";
 
 const Layout: React.FC = () => {
-  // State to store the selected branch
-  const [selectedBranch, setSelectedBranch] = useState<(typeof branches)[0] | null>(null)
+  const dispatch = useDispatch();
+  const history = useHistory();
 
-  // Function to handle branch selection
+  // Función para seleccionar sucursal y navegar
   const handleSelectBranch = (branch: (typeof branches)[0]) => {
-    setSelectedBranch(branch)
-  }
+    dispatch(setSucursal(branch));
+    history.push("/products");
+  };
 
-  // Function to change branch
+  // Función para cambiar sucursal (resetear)
   const changeBranch = () => {
-    setSelectedBranch(null)
-  }
+    dispatch(clearAll());
+    history.push("/layout");
+  };
 
   return (
     <IonPage>
       <IonContent className="bg-gray-50 dark:bg-gray-900">
         <img src="/logo.jpg" className="m-auto w-1/2 lg:w-1/5" />
         <ul className="list-inside flex flex-col sm:flex-row md:flex-nowrap flex-wrap gap-2 md:gap-4 lg:gap-6 mx-2 sm:mx-4 md:mx-6 lg:mx-8 mb-3 sm:mb-4 md:mb-6 items-stretch justify-center">
-          {branches.map((branch) => (
+          {branches.map((branch, key) => (
             <li
-              key={branch.id}
+              key={key}
               onClick={() => handleSelectBranch(branch)}
               className="bg-white dark:bg-gray-800 cursor-pointer rounded-xl shadow-lg overflow-hidden border-l-4 border-[#A855F7] active:bg-gray-50 dark:active:bg-gray-700"
             >
@@ -60,6 +62,7 @@ const Layout: React.FC = () => {
             Selecciona la sucursal más cercana para ver productos disponibles
           </p>
         </div>
+
         {/* App Information Footer */}
         <IonFooter>
           <IonToolbar className="bg-white dark:bg-gray-800 px-4 py-3">
@@ -91,8 +94,7 @@ const Layout: React.FC = () => {
         </IonFooter>
       </IonContent>
     </IonPage>
-  )
-}
+  );
+};
 
-export default Layout
-
+export default Layout;
