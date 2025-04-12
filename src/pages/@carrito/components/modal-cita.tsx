@@ -1,30 +1,9 @@
-import MainForm from "@/components/form/main-form";
 import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonDatetime, IonTextarea, IonBackButton } from "@ionic/react";
-import { useState } from "react";
-import { CitasField } from "../constants/citas-field";
 import { AppointmentCalendar } from "./appointment-calendar";
 
 export default function ModalCita(
     { modal, showModal, setShowModal }:
         { modal: any, showModal: boolean, setShowModal: (show: boolean) => void }) {
-
-    const [selectedDateTime, setSelectedDateTime] = useState<string>();
-    const [notes, setNotes] = useState<string>('');
-    const handleSchedule = () => {
-        if (!selectedDateTime) {
-            alert('Por favor selecciona una fecha y hora');
-            return;
-        }
-
-        // Aquí iría la lógica para enviar los datos
-        console.log('Fecha y hora seleccionada:', selectedDateTime);
-        console.log('Aclaraciones:', notes);
-
-        // Cerrar modal y resetear campos
-        setShowModal(false);
-        setSelectedDateTime("");
-        setNotes('');
-    };
 
     return (
         <IonModal
@@ -47,14 +26,6 @@ export default function ModalCita(
 
             <IonContent className="ion-padding">
                 <AppointmentCalendar />
-                <MainForm
-                    message_button={'Agendar'}
-                    actionType={"post-login"}
-                    dataForm={CitasField()}
-                    onSuccess={(result: any) => {
-                        console.log(result);
-                    }}
-                />
             </IonContent>
         </IonModal>
     );

@@ -44,7 +44,7 @@ export interface Field {
 }
 
 export interface MainFormProps {
-  message_button: string;
+  message_button: React.ReactNode | string;
   actionType: string;
   dataForm: Field[];
   aditionalData?: any;

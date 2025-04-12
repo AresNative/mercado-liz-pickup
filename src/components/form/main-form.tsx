@@ -106,11 +106,11 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
           setValue={setValue}
         />
       ))}
-      <IonButton
-        className="custom-tertiary float-right"
+      <button
+        className="float-right flex items-center rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
         slot="end"
         type="submit"
-      >{loading ? "Loading..." : message_button}</IonButton>
+      >{loading ? "Loading..." : message_button}</button>
     </form>
   );
 };

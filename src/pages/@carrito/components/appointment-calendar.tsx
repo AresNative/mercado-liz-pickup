@@ -39,6 +39,8 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/utils/functions/cn"
+import MainForm from "@/components/form/main-form"
+import { CitasField } from "../constants/citas-field"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -227,28 +229,6 @@ export function AppointmentCalendar() {
       default:
         return undefined
     }
-  }
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setAppointmentDetails((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-    const error = validateField(name, value)
-    setErrors((prev) => ({
-      ...prev,
-      [name]: error,
-    }))
-  }
-
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    const error = validateField(name, value)
-    setErrors((prev) => ({
-      ...prev,
-      [name]: error,
-    }))
   }
 
   const handleBookAppointment = () => {
@@ -867,94 +847,22 @@ export function AppointmentCalendar() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700">
-                  Nombre completo <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={appointmentDetails.name}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  className={cn(
-                    "w-full rounded-md border border-gray-300 p-2 text-sm",
-                    "focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none",
-                    errors.name && "border-red-500 focus:ring-red-200"
-                  )}
-                />
-                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-                  Correo electrónico <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={appointmentDetails.email}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  className={cn(
-                    "w-full rounded-md border border-gray-300 p-2 text-sm",
-                    "focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none",
-                    errors.email && "border-red-500 focus:ring-red-200"
-                  )}
-                />
-                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="mb-1 block text-sm font-medium text-gray-700">
-                  Teléfono <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={appointmentDetails.phone}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  className={cn(
-                    "w-full rounded-md border border-gray-300 p-2 text-sm",
-                    "focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none",
-                    errors.phone && "border-red-500 focus:ring-red-200"
-                  )}
-                  placeholder="+123456789"
-                />
-                {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
-              </div>
-
-              <div>
-                <label htmlFor="notes" className="mb-1 block text-sm font-medium text-gray-700">
-                  Notas adicionales (opcional)
-                </label>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  value={appointmentDetails.notes}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
-                  placeholder="Información adicional que debamos saber..."
-                />
-              </div>
+              <MainForm
+                message_button={<>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Confirmar cita
+                </>}
+                actionType={"post-login"}
+                dataForm={CitasField()}
+                onSuccess={(result: any) => {
+                  console.log(result);
+                }}
+              />
             </div>
-
-            <div className="mt-4 rounded-md bg-purple-50 p-3 text-sm text-purple-800">
-              <p className="flex items-center">
-                <Info className="mr-2 h-4 w-4 text-purple-600" />
-                Los campos marcados con <span className="text-red-500 mx-1">*</span> son obligatorios
-              </p>
-            </div>
-
-            <div className="mt-6 flex justify-between">
+            <div className={cn(isBooking ? "mt-6" : "", "flex justify-between")}>
               <button
                 onClick={() => setSelectedService(null)}
-                className="flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+                className={cn("flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200")}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Anterior
@@ -980,7 +888,9 @@ export function AppointmentCalendar() {
                     !!errors.name ||
                     !!errors.email ||
                     !!errors.phone) &&
-                  "cursor-not-allowed opacity-50"
+                  "cursor-not-allowed opacity-50",
+
+                  isBooking ? "flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200" : "hidden"
                 )}
               >
                 {isBooking ? (
