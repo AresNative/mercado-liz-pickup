@@ -4,7 +4,7 @@ import { useHistory } from "react-router-dom";
 import { IonContent, IonPage, IonFooter, IonToolbar } from "@ionic/react";
 import { Info, Phone, Mail, Clock, MapPin } from "lucide-react";
 import { branches } from "./@landing/utils/branches";
-import { clearAll, setSucursal } from "@/hooks/slices/app";
+import { setSucursal } from "@/hooks/slices/app";
 
 const Layout: React.FC = () => {
   const dispatch = useDispatch();
@@ -14,12 +14,6 @@ const Layout: React.FC = () => {
   const handleSelectBranch = (branch: (typeof branches)[0]) => {
     dispatch(setSucursal(branch));
     history.push("/products");
-  };
-
-  // Función para cambiar sucursal (resetear)
-  const changeBranch = () => {
-    dispatch(clearAll());
-    history.push("/layout");
   };
 
   return (
