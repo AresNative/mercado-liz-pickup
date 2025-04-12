@@ -5,12 +5,16 @@ import { AlignLeft, ShoppingCart } from "lucide-react"
 import { useLocation } from 'react-router-dom'
 
 import PriceChecker from "./price-checker"
+import { useAppSelector } from "@/hooks/selector"
+import { RootState } from "@/hooks/store"
 
 interface HeaderCartProps {
     back?: boolean
 }
 
 const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
+    const cart = useAppSelector((state: RootState) => state.cart);
+    const { items } = cart || []; // Si cart es undefined/null, usamos array vacío
     const { back } = prosp
     const location = useLocation()
     return (
@@ -39,12 +43,13 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                             <IonLabel>
                                 <ShoppingCart className="h-5 w-5" />
                             </IonLabel>
-                            {/* <IonBadge
-                                color="danger"
-                                className="absolute -top-0 right-2 text-xs"
-                            >
-                                3
-                            </IonBadge> */}
+                            {items.length > 0 && (
+                                <IonBadge
+                                    color="success"
+                                    className="absolute text-white -top-0 right-2 text-xs"
+                                >
+                                    {items.length}
+                                </IonBadge>)}
                         </IonItem>
                     </li>
                     {/* Switch a la derecha */}

@@ -126,6 +126,9 @@ const CarritoPage = () => {
                                             <IonButton
                                                 onClick={() => dispatch(clearCart())}
                                                 color={"danger"}
+                                                fill="outline"
+                                                expand="block"
+                                                size="small"
                                                 className="flex items-center gap-2 content-center w-full font-medium py-2 rounded-lg"
                                             >
                                                 Vaciar Carrito <Trash />
@@ -133,6 +136,9 @@ const CarritoPage = () => {
 
                                             <IonButton
                                                 onClick={() => setShowModal(true)}
+                                                fill="outline"
+                                                expand="block"
+                                                size="small"
                                                 className="flex gap-2 items-center content-center w-full custom-tertiary font-medium py-2 rounded-lg">
                                                 Agendar Recoleccion <Calendar />
                                             </IonButton>

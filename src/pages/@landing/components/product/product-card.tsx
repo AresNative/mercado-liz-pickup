@@ -5,7 +5,7 @@ import { IonRouterLink, IonButton, IonImg } from "@ionic/react"
 import { motion } from "framer-motion"
 import { ShoppingCart, Star } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
-import { addToCart } from "@/hooks/slices/cart"
+import { addToCart, removeFromCart } from "@/hooks/slices/cart"
 
 interface Product {
     id: string
@@ -37,17 +37,26 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
 
     const handleDecrement = () => {
-        dispatch(addToCart({ ...product, quantity: -1 }))
+        if (quantity === 1) {
+            // Si la cantidad actual es 1, eliminamos el artículo
+            dispatch(removeFromCart(product.id));
+        } else {
+            // Si la cantidad es mayor a 1, restamos 1 normalmente
+            dispatch(addToCart({ ...product, quantity: -1 }));
+        }
     }
-
     const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newQuantity = parseInt(e.target.value)
+        const newQuantity = parseInt(e.target.value);
         if (!isNaN(newQuantity)) {
-            const delta = newQuantity - quantity
-            dispatch(addToCart({
-                ...product,
-                quantity: delta > 0 ? delta : Math.max(delta, -quantity)
-            }))
+            if (newQuantity <= 0) {
+                dispatch(removeFromCart(product.id)); // Eliminar si la cantidad es 0
+            } else {
+                const delta = newQuantity - quantity;
+                dispatch(addToCart({
+                    ...product,
+                    quantity: delta > 0 ? delta : Math.max(delta, -quantity)
+                }));
+            }
         }
     }
 
