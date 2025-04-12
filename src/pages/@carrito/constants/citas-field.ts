@@ -3,14 +3,6 @@ import { Field } from "@/utils/constants/interfaces";
 export function CitasField(): Field[] {
   return [
     {
-      id: 0,
-      type: "DATE",
-      name: "Fecha",
-      label: "Fecha",
-      placeholder: "Selecciona una fecha para la recolección",
-      require: true,
-    },
-    {
       id: 1,
       type: "TEXT_AREA",
       name: "Aclaraciones",

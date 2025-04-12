@@ -1,6 +1,6 @@
 import type React from "react"
 import { SwitchToggle } from "@/components/switch-mode"
-import { IonBackButton, IonButtons, IonContent, IonHeader, IonItem, IonList, IonPopover } from "@ionic/react"
+import { IonBackButton, IonBadge, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPopover } from "@ionic/react"
 import { AlignLeft, ShoppingCart } from "lucide-react"
 import { useLocation } from 'react-router-dom'
 
@@ -33,11 +33,18 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                         <IonItem
                             lines="none"
                             routerLink="/carrito"
-                            routerDirection="none"
                             detail={false}  // <- Esta prop elimina el ícono de flecha
-                            className="flex items-center text-purple-800 hover:text-purple-700"
+                            className="flex items-center text-purple-800 hover:text-purple-700 relative"
                         >
-                            <ShoppingCart className="h-5 w-5" />
+                            <IonLabel>
+                                <ShoppingCart className="h-5 w-5" />
+                            </IonLabel>
+                            {/* <IonBadge
+                                color="danger"
+                                className="absolute -top-0 right-2 text-xs"
+                            >
+                                3
+                            </IonBadge> */}
                         </IonItem>
                     </li>
                     {/* Switch a la derecha */}

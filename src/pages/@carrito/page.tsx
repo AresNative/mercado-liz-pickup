@@ -54,8 +54,8 @@ const CarritoPage = () => {
 
                             {/* Listado de productos */}
                             <div className="px-4 mb-32">
-                                {cartItems.map((item: any) => (
-                                    <div key={item.id} className="flex flex-col sm:flex-row items-start gap-4 p-4 border-b border-b-neutral-300 bg-[#fdfdfd]">
+                                {cartItems.map((item: any, key) => (
+                                    <div key={key} className="flex flex-col sm:flex-row items-start gap-4 p-4 border-b border-b-neutral-300 bg-[#fdfdfd]">
                                         <img
                                             src={item.image}
                                             alt={item.title}
@@ -133,7 +133,7 @@ const CarritoPage = () => {
 
                                             <IonButton
                                                 onClick={() => setShowModal(true)}
-                                                className="flex items-center content-center w-full custom-tertiary font-medium py-2 rounded-lg">
+                                                className="flex gap-2 items-center content-center w-full custom-tertiary font-medium py-2 rounded-lg">
                                                 Agendar Recoleccion <Calendar />
                                             </IonButton>
                                         </section>

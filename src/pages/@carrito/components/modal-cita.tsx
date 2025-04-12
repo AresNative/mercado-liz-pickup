@@ -2,6 +2,7 @@ import MainForm from "@/components/form/main-form";
 import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonDatetime, IonTextarea, IonBackButton } from "@ionic/react";
 import { useState } from "react";
 import { CitasField } from "../constants/citas-field";
+import { AppointmentCalendar } from "./appointment-calendar";
 
 export default function ModalCita(
     { modal, showModal, setShowModal }:
@@ -45,8 +46,9 @@ export default function ModalCita(
             </IonHeader>
 
             <IonContent className="ion-padding">
+                <AppointmentCalendar />
                 <MainForm
-                    message_button={'Enviar'}
+                    message_button={'Agendar'}
                     actionType={"post-login"}
                     dataForm={CitasField()}
                     onSuccess={(result: any) => {

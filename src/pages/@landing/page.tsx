@@ -9,7 +9,8 @@ import HeaderCart from "./components/header"
 import ProductGrid from "./components/product/product-grid"
 import { branches } from "./utils/branches"
 import { useAppSelector } from "@/hooks/selector"
-import { clearAll, setSucursal } from "@/hooks/slices/app"
+import { clearAll } from "@/hooks/slices/app"
+import { clearCart } from "@/hooks/slices/cart"
 
 const Page: React.FC = () => {
     const dispatch = useDispatch()
@@ -32,9 +33,9 @@ const Page: React.FC = () => {
     // Cambiar sucursal
     const changeBranch = () => {
         dispatch(clearAll()) // Limpiar Redux
+        dispatch(clearCart()) // Limpiar Redux
         history.push('/layout') // Redirigir a selección
     }
-
     return (
         <IonPage>
             <HeaderCart />

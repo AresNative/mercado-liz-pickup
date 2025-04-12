@@ -12,7 +12,13 @@ const Layout: React.FC = () => {
 
   // Función para seleccionar sucursal y navegar
   const handleSelectBranch = (branch: (typeof branches)[0]) => {
-    dispatch(setSucursal(branch));
+    let branchData = {
+      id: branch.id,
+      name: branch.name,
+      address: branch.address,
+    };
+
+    dispatch(setSucursal(branchData));
     history.push("/products");
   };
 
