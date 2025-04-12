@@ -92,7 +92,31 @@
     transform: scale(1);
     transition: var(--transition);
 }
+.custom-default {
+    /* Estado normal */
+    --background:#5f05a8;
+    --color: #ffffff;
+    --border-color: #5c1e92;
+    --transition: all 0.2s ease-in-out;
 
+    /* Variables de estado hover */
+    --background-hover: linear-gradient(100deg, #4d0488 0%, #7a2fc4 100%);
+    --color-hover: #ffffff;
+    --border-color-hover: #4a1675;
+
+    /* Variables de estado active/pressed */
+    --background-activated: linear-gradient(100deg, #3d036d 0%, #64269f 100%);
+    --color-activated: #e0e0e0;
+    --border-color-activated: #3a125e;
+
+    /* Efecto de profundidad */
+    --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    /* Escala para efecto de presión */
+    transform: scale(1);
+    transition: var(--transition);
+}
 /* Efecto al pasar el mouse (hover) */
 .custom-tertiary:hover {
     transform: scale(1.05);

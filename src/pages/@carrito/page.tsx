@@ -169,18 +169,17 @@ const CarritoPage = () => {
                                                 size="small"
                                                 className="flex items-center gap-2 w-full font-medium py-2 rounded-lg"
                                             >
-                                                Vaciar Carrito <Trash />
+                                                Vaciar Carrito <Trash className="ml-2 h-4 w-4" />
                                             </IonButton>
 
                                             <IonButton
                                                 onClick={() => setShowModal(true)}
                                                 expand="block"
                                                 size="small"
-                                                color={"tertiary"}
-                                                className="flex items-center gap-4 w-full font-medium py-2 rounded-lg"
+                                                className="custom-default flex gap-4 w-full font-medium py-2 rounded-lg"
                                             >
 
-                                                <p>Agendar</p><Calendar />
+                                                <p>Agendar</p><Calendar className="ml-2 h-4 w-4" />
                                             </IonButton>
                                         </section>
                                     </div>
