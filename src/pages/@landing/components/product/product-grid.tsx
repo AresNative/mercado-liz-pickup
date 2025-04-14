@@ -12,66 +12,72 @@ import { clearFilters } from "@/hooks/reducers/filter"
 const PAGE_SIZE = 10
 
 const ProductGrid: React.FC = () => {
-    const [page, setPage] = useState(1)
-    const [combinedData, setCombinedData] = useState<Product[]>([])
-    const [hasMore, setHasMore] = useState(true)
+    const [page, setPage] = useState(1);
+    const [combinedData, setCombinedData] = useState<Product[]>([]);
+    const [hasMore, setHasMore] = useState(true);
+    const [refreshTrigger, setRefreshTrigger] = useState(Date.now()); // Fuerza recarga
     const dispatch = useAppDispatch();
-    const categoria = useAppSelector(
-        (state) => state.filterData.key?.value
-    );
 
-    const { data, isFetching, error, refetch } = useGetArticulosQuery({
+    const categoria = useAppSelector((state) => state.filterData.key?.value);
+
+    const { data, isFetching, error } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
         filtro: "",
         categoria: categoria,
-        listaPrecio: "(Precio Lista)"
-    })
+        listaPrecio: "(Precio Lista)",
+        refreshTrigger, // Nuevo parámetro para forzar recargas
+    });
 
-    async function clear() {
+    const clear = useCallback(() => {
         if (!categoria) dispatch(clearFilters());
-        setHasMore(true)
-        setPage(1)
-        setCombinedData([])
-    }
-
+        setHasMore(true);
+        setPage(1);
+        setCombinedData([]);
+    }, [categoria, dispatch]); // Memoizar y simplificar
 
     const refreshProducts = useCallback(async () => {
         try {
             clear();
-            await refetch();
-            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+            setRefreshTrigger(Date.now()); // Actualizar trigger para nueva recarga
+            window.scrollTo({ top: 0, behavior: 'auto' });
         } catch (error) {
-            console.error("Error refreshing products:", error)
+            console.error("Error refreshing products:", error);
         }
-    }, [refetch])
+    }, [clear]);
 
+    // Manejar actualización de datos
     useEffect(() => {
         if (data) {
-            const mappedProducts = data.data.map(mapApiProductToAppProduct)
-            setCombinedData(prev => [...prev, ...mappedProducts])
-            setHasMore(mappedProducts.length === PAGE_SIZE)
+            const mappedProducts = data.data.map(mapApiProductToAppProduct);
+            setCombinedData(prev =>
+                page === 1 ? mappedProducts : [...prev, ...mappedProducts]
+            );
+            setHasMore(mappedProducts.length === PAGE_SIZE);
         }
-    }, [data])
+    }, [data, page]); // Considerar página actual
 
-    const loadMore = useCallback(async (event: CustomEvent<void>) => {
-        if (!isFetching && hasMore) {
-            setPage(prev => prev + 1)
-        }
-        ; (event.target as HTMLIonInfiniteScrollElement).complete()
-    }, [isFetching, hasMore])
-
-
+    // Recargar cuando cambia la categoría
     useEffect(() => {
-        clear()
-    }, [categoria, refetch])
+        clear();
+    }, [categoria]); // Solo depende de categoria
 
+    // Manejo de errores optimizado
     useEffect(() => {
         if (error) {
-            console.error("Error fetching products:", error)
-            setHasMore(false)
+            console.error("Error fetching products:", error);
+            setHasMore(false);
+            // Opcional: Mostrar notificación al usuario
         }
-    }, [error])
+    }, [error]);
+
+    // Cargar más datos
+    const loadMore = useCallback(async (event: CustomEvent<void>) => {
+        if (!isFetching && hasMore) {
+            setPage(prev => prev + 1);
+        }
+        (event.target as HTMLIonInfiniteScrollElement).complete();
+    }, [isFetching, hasMore]);
 
     return (
         <div className="relative pb-16">
@@ -86,11 +92,11 @@ const ProductGrid: React.FC = () => {
                 </section>
 
                 <button
-                    className="shrink-0 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="shrink-0 mr-2 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={refreshProducts}
                     disabled={isFetching}
                 >
-                    Actualizar productos
+                    Actualizar
                 </button>
             </div>
 
@@ -103,9 +109,9 @@ const ProductGrid: React.FC = () => {
                     transition={{ duration: 0.3 }}
                 >
                     <AnimatePresence>
-                        {combinedData.map((product) => (
+                        {combinedData.map((product, key) => (
                             <motion.div
-                                key={product.id}
+                                key={key}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}

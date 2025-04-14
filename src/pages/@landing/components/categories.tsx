@@ -4,7 +4,7 @@ import {
     ChevronRight,
 } from "lucide-react";
 import categorias from "@/utils/constants/categorias";
-import { dataFilter } from "@/hooks/reducers/filter";
+import { clearFilters, dataFilter } from "@/hooks/reducers/filter";
 import { useAppDispatch } from "@/hooks/selector";
 
 const CategorySlider: React.FC = () => {
@@ -56,14 +56,15 @@ const CategorySlider: React.FC = () => {
                     <button
                         key={key}
                         onClick={() => {
-                            dispatch(dataFilter({ key: "key", value: category.name, type: "multi" }));
+                            if (category.name) dispatch(dataFilter({ key: "key", value: category.name, type: "multi" }));
+                            if (!category.name) dispatch(clearFilters());
                         }}
                         className="flex flex-col items-center w-full h-full" // Altura 100% del grid
                     >
                         <div className="w-[100px] h-[80px] p-2 flex flex-col items-center justify-center gap-2 rounded-lg bg-[#F5F3FF] hover:bg-[#EDE9FE] transition-colors">
                             <category.icon className="h-6 w-6 text-[#8B5CF6] flex-shrink-0" />
                             <span className="text-xs font-medium text-gray-700 text-center break-words line-clamp-2">
-                                {category.name.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}
+                                {category.name && category.name.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}
                             </span>
                         </div>
                     </button>
