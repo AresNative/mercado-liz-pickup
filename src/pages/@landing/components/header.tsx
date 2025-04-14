@@ -1,7 +1,7 @@
 import type React from "react"
 import { SwitchToggle } from "@/components/switch-mode"
 import { IonBackButton, IonBadge, IonButtons, IonContent, IonHeader, IonItem, IonLabel, IonList, IonPopover } from "@ionic/react"
-import { AlignLeft, ShoppingCart } from "lucide-react"
+import { AlignLeft, FileClock, Cog, ShoppingCart, CreditCard } from "lucide-react"
 import { useLocation } from 'react-router-dom'
 
 import PriceChecker from "./price-checker"
@@ -68,15 +68,32 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                                         routerDirection="none"
                                         className="flex items-center gap-2"
                                     >
-                                        <ShoppingCart className="h-5 w-5 mr-2" />
-                                        <span className="text-sm">Mi carrito</span>
+                                        <FileClock className="h-5 w-5 mx-2" />
+                                        <span className="text-sm">Pedidos</span>
                                     </IonItem>
-                                    <IonItem className="container mx-auto flex items-center justify-between">
+                                    <IonItem
+                                        routerLink="/carrito"
+                                        routerDirection="none"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Cog className="h-5 w-5 mx-2" />
+                                        <span className="text-sm">Configuracion</span>
+                                    </IonItem>
+                                    <IonItem
+                                        lines="none"
+                                        routerLink="/carrito"
+                                        routerDirection="none"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <CreditCard className="h-5 w-5 mx-2" />
+                                        <span className="text-sm">Cartera</span>
+                                    </IonItem>
+                                    {/*  <IonItem className="container mx-auto flex items-center justify-between">
                                         <span className="flex-shrink-0">Tema:</span>
                                         <section className="flex-grow max-w-xl mx-4 relative">
                                             <SwitchToggle />
                                         </section>
-                                    </IonItem>
+                                    </IonItem> */}
                                 </IonList>
                             </IonContent>
                         </IonPopover>

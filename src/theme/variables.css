@@ -189,7 +189,6 @@ ion-radio.ios::part(container) {
 ion-item {
     --background: transparent;
     --color: var(--text-primary);
-    --border-color: var(--border-color);
     --box-shadow: 0px 0px 0px 1px var(--border-color) inset;
     --padding-start: 0;
     --padding-end: 0;
