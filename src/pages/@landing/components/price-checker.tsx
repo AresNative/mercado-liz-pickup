@@ -1,12 +1,10 @@
-
-
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Plus } from "lucide-react"
+import { IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react"
 import useDebounce from "@/hooks/use-debounce"
-import { fetchDynamicData } from "@/api/get-data"
+import { useGetArticulosQuery } from "@/hooks/reducers/api"
+import { Plus, Search } from "lucide-react"
 
 interface Product {
     id: string
@@ -17,120 +15,76 @@ interface Product {
     description?: string
 }
 
-interface ListingItem extends Product {
-    quantity: number
-}
-
-interface formatFilter {
-    key: string
-    value: string
-    operator: "like" | "=" | ">=" | "<=" | ">" | "<" | "<>" | "" // Incluí "" como opción para el operador.
-}
-
-interface formatSuma {
-    key: string
-}
-interface formatLoadDate {
-    filters: {
-        filtros: formatFilter[]
-        sumas: formatSuma[]
-    }
-    page: number
-    sum: boolean
-}
-
-// Componentes maquetados con Tailwind
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
         <input
-            className={`w-full px-3 py-2 border text-gray-500 dark:text-gray-100 border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-900  ${className}`}
+            className={`w-full px-3 py-2 border text-gray-500 dark:text-gray-100 border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-900 ${className}`}
             {...props}
         />
     )
 }
 
-const allProducts: Product[] = []
+const PAGE_SIZE = 5
 
 function PriceChecker() {
+    const [page, setPage] = useState(1)
+    const [combinedData, setCombinedData] = useState<Product[]>([])
+    const [hasMore, setHasMore] = useState(true)
     const [query, setQuery] = useState("")
-    const [searchResults, setSearchResults] = useState<Product[]>(allProducts)
-    const [isFocused, setIsFocused] = useState(false)
-    const [listing, setListing] = useState<ListingItem[]>([])
     const debouncedQuery = useDebounce(query, 200)
 
-    const [currentPage, setCurrentPage] = useState(1)
+    const { data, isFetching, error } = useGetArticulosQuery({
+        page,
+        pageSize: PAGE_SIZE,
+        filtro: query ?? null,
+        listaPrecio: "(Precio Lista)",
+        debouncedQuery
+    })
 
-    const loadData = async (filter: formatLoadDate, endpoint: string) => {
-        try {
-            const { data: resultData, totalPages: pages } = await fetchDynamicData<any>(filter, endpoint)
-            console.log(resultData)
-        } catch (error) {
-            console.error("Error loading data:", error)
-        }
-    }
+    const [isFocused, setIsFocused] = useState(false)
 
+    // Manejar actualización de datos
     useEffect(() => {
-        /* loadData({
-                filters: {
-                    filtros: [{ key: "", value: "", operator: "" }],
-                    sumas: [{ key: "Categoria" }],
-                },
-                page: 1,
-                sum: false
-            }, 'v2/select/combos'); */
-    }, [currentPage])
+        if (data) {
+            const mappedProducts = data.data.map((item: any) => ({
+                id: item.id,
+                name: item.Nombre,
+                price: item.PrecioRegular,
+                category: item.Grupo,
+                icon: <></>, // Asumiendo que tienes una imagen para cada producto
+                description: item.Unidad,
+            }))
 
+            setCombinedData(prev =>
+                page === 1 ? mappedProducts : [...prev, ...mappedProducts]
+            )
+            setHasMore(mappedProducts.length === PAGE_SIZE)
+        }
+    }, [data, page])
+
+    // Resetear datos cuando cambia el query
     useEffect(() => {
-        if (!isFocused) {
-            return
-        }
+        setPage(1)
+        setCombinedData([])
+    }, [debouncedQuery])
 
-        if (!debouncedQuery) {
-            setSearchResults(allProducts)
-            return
-        }
-
-        const normalizedQuery = debouncedQuery.toLowerCase().trim()
-        const filteredProducts = allProducts.filter((product) => {
-            const searchableText = `${product.name} ${product.category} ${product.description}`.toLowerCase()
-            return searchableText.includes(normalizedQuery)
-        })
-
-        setSearchResults(filteredProducts)
-    }, [debouncedQuery, isFocused])
-
+    // Manejo de errores
     useEffect(() => {
-        const handleEscKey = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setIsFocused(false)
-            }
+        if (error) {
+            console.error("Error fetching products:", error)
+            setHasMore(false)
         }
+    }, [error])
 
-        // Add event listener when the component is focused
-        if (isFocused) {
-            document.addEventListener("keydown", handleEscKey)
+    const loadMore = useCallback(async (event: CustomEvent<void>) => {
+        if (!isFetching && hasMore) {
+            setPage(prev => prev + 1)
         }
-
-        // Clean up the event listener when component unmounts or loses focus
-        return () => {
-            document.removeEventListener("keydown", handleEscKey)
-        }
-    }, [isFocused])
+        (event.target as HTMLIonInfiniteScrollElement).complete()
+    }, [isFetching, hasMore])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
-    }
-
-    const addToListing = (product: Product) => {
-        setListing((prevListing) => {
-            const existingItem = prevListing.find((item) => item.id === product.id)
-
-            if (existingItem) {
-                return prevListing.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
-            } else {
-                return [...prevListing, { ...product, quantity: 1 }]
-            }
-        })
     }
 
     const container = {
@@ -139,9 +93,7 @@ function PriceChecker() {
             opacity: 1,
             height: "auto",
             transition: {
-                height: {
-                    duration: 0.4,
-                },
+                height: { duration: 0.4 },
                 staggerChildren: 0.1,
             },
         },
@@ -149,37 +101,21 @@ function PriceChecker() {
             opacity: 0,
             height: 0,
             transition: {
-                height: {
-                    duration: 0.3,
-                },
-                opacity: {
-                    duration: 0.2,
-                },
+                height: { duration: 0.3 },
+                opacity: { duration: 0.2 },
             },
         },
     }
 
     const item = {
         hidden: { opacity: 0, y: 20 },
-        show: {
-            opacity: 1,
-            y: 0,
-            transition: {
-                duration: 0.3,
-            },
-        },
-        exit: {
-            opacity: 0,
-            y: -10,
-            transition: {
-                duration: 0.2,
-            },
-        },
+        show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+        exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
     }
 
     return (
-        <div className=" mx-auto inset-0 z-20">
-            <div className="relative flex flex-col justify-start items-center">
+        <div className="mx-auto inset-0 z-20">
+            <div className="relative flex max-h-3/4  flex-col justify-start items-center">
                 <div className="bg-background w-full sticky">
                     <div className="relative">
                         <Input
@@ -201,14 +137,14 @@ function PriceChecker() {
                     <AnimatePresence>
                         {isFocused && (
                             <motion.div
-                                className="w-full border rounded-md shadow-sm overflow-hidden dark:border-gray-800 bg-white dark:bg-gray-900 "
+                                className="w-full max-h-[500px] overflow-y-auto border rounded-md shadow-sm overflow-hidden dark:border-gray-800 bg-white dark:bg-gray-900"
                                 variants={container}
                                 initial="hidden"
                                 animate="show"
                                 exit="exit"
                             >
                                 <motion.ul>
-                                    {searchResults.map((product) => (
+                                    {combinedData.map((product) => (
                                         <motion.li
                                             key={product.id}
                                             className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer rounded-md"
@@ -217,13 +153,16 @@ function PriceChecker() {
                                         >
                                             <div
                                                 className="flex items-center gap-2 justify-between flex-1"
-                                                onClick={() => addToListing(product)}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-gray-500">{product.icon}</span>
                                                     <div className="flex flex-col">
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{product.name}</span>
-                                                        <span className="text-xs text-gray-400">{product.description}</span>
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                            {product.name}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">
+                                                            {product.description}
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
@@ -232,7 +171,6 @@ function PriceChecker() {
                                                     </span>
                                                     <button
                                                         className="h-7 w-7 p-0 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                                        onClick={() => addToListing(product)}
                                                     >
                                                         <Plus className="h-4 w-4 text-gray-300 dark:text-gray-50" />
                                                     </button>
@@ -241,9 +179,21 @@ function PriceChecker() {
                                         </motion.li>
                                     ))}
                                 </motion.ul>
-                                <div className="mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">
+
+                                <IonInfiniteScroll
+                                    onIonInfinite={loadMore}
+                                    threshold="100px"
+                                    disabled={!hasMore || isFetching}
+                                >
+                                    <IonInfiniteScrollContent
+                                        loadingText="Cargando más productos..."
+                                        loadingSpinner="bubbles"
+                                    />
+                                </IonInfiniteScroll>
+
+                                <div className="bottom-0 mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">
                                     <div className="flex items-center justify-between text-xs text-gray-500">
-                                        <span>Resultados: {searchResults.length}</span>
+                                        <span>Resultados: {combinedData.length}</span>
                                         <span>ESC para cancelar</span>
                                     </div>
                                 </div>
@@ -257,4 +207,3 @@ function PriceChecker() {
 }
 
 export default PriceChecker
-
