@@ -94,7 +94,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <span className="font-bold text-base">${product.price.toFixed(2)}</span>
+                        <span className="font-bold text-base">{product.price ? "$" + product.price.toFixed(2) : "No disponible"}</span>
                         {product.originalPrice && (
                             <span className="text-xs text-gray-500 line-through ml-2">${product.originalPrice.toFixed(2)}</span>
                         )}
