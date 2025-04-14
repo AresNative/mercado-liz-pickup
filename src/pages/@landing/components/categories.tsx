@@ -1,40 +1,18 @@
 import React, { useState, useRef } from "react";
-import { IonRouterLink } from "@ionic/react";
 import {
     ChevronLeft,
     ChevronRight,
-    Utensils,
-    Shirt,
-    Smartphone,
-    Gift,
-    Home,
-    Tv,
-    Baby,
-    Scissors,
 } from "lucide-react";
-
-interface Category {
-    name: string;
-    icon: React.ComponentType<{ className?: string }>;
-    href: string;
-}
+import categorias from "@/utils/constants/categorias";
+import { dataFilter } from "@/hooks/reducers/filter";
+import { useAppDispatch } from "@/hooks/selector";
 
 const CategorySlider: React.FC = () => {
     const sliderRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState<boolean>(false);
     const [showRightArrow, setShowRightArrow] = useState<boolean>(true);
 
-    const categories: Category[] = [
-        { name: "Food", icon: Utensils, href: "/categories/food" },
-        { name: "Fashion", icon: Shirt, href: "/categories/fashion" },
-        { name: "Electronics", icon: Smartphone, href: "/categories/electronics" },
-        { name: "Gifts", icon: Gift, href: "/categories/gifts" },
-        { name: "Home", icon: Home, href: "/categories/home" },
-        { name: "Appliances", icon: Tv, href: "/categories/appliances" },
-        { name: "Baby", icon: Baby, href: "/categories/baby" },
-        { name: "Services", icon: Scissors, href: "/categories/services" },
-    ];
-
+    const dispatch = useAppDispatch();
     const scroll = (direction: "left" | "right") => {
         const container = sliderRef.current;
         if (container) {
@@ -74,17 +52,21 @@ const CategorySlider: React.FC = () => {
                     );
                 }}
             >
-                {categories.map((category) => (
-                    <IonRouterLink
-                        key={category.name}
-                        routerLink={category.href}
-                        className="flex flex-col items-center min-w-[80px]"
+                {categorias.map((category, key) => (
+                    <button
+                        key={key}
+                        onClick={() => {
+                            dispatch(dataFilter({ key: "key", value: category.name, type: "multi" }));
+                        }}
+                        className="flex flex-col items-center w-full h-full" // Altura 100% del grid
                     >
-                        <div className="p-2 min-w-16 flex flex-col rounded-lg bg-[#F5F3FF] items-center justify-center mb-2">
-                            <category.icon className="h-6 w-6 text-[#8B5CF6]" />
-                            <span className="text-xs">{category.name}</span>
+                        <div className="w-[100px] h-[80px] p-2 flex flex-col items-center justify-center gap-2 rounded-lg bg-[#F5F3FF] hover:bg-[#EDE9FE] transition-colors">
+                            <category.icon className="h-6 w-6 text-[#8B5CF6] flex-shrink-0" />
+                            <span className="text-xs font-medium text-gray-700 text-center break-words line-clamp-2">
+                                {category.name.toLowerCase().replace(/\b\w/g, char => char.toUpperCase())}
+                            </span>
                         </div>
-                    </IonRouterLink>
+                    </button>
                 ))}
             </div>
 

@@ -27,9 +27,12 @@ export const filterData = createSlice({
       state[searchKey] = { type: "form", value: action.payload };
       return state;
     },
+    clearFilters: () => {
+      return initialState;
+    },
   },
 });
 
-export const { dataFilter, searchData } = filterData.actions;
+export const { dataFilter, searchData, clearFilters } = filterData.actions;
 
 export default filterData.reducer;

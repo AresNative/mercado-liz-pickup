@@ -6,6 +6,8 @@ import Badge from "@/components/badge"
 import { Product } from "@/utils/data/example-data"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { mapApiProductToAppProduct } from "../../utils/fromat-data"
+import { useAppDispatch, useAppSelector } from "@/hooks/selector"
+import { clearFilters } from "@/hooks/reducers/filter"
 
 const PAGE_SIZE = 10
 
@@ -13,13 +15,36 @@ const ProductGrid: React.FC = () => {
     const [page, setPage] = useState(1)
     const [combinedData, setCombinedData] = useState<Product[]>([])
     const [hasMore, setHasMore] = useState(true)
+    const dispatch = useAppDispatch();
+    const categoria = useAppSelector(
+        (state) => state.filterData.key?.value
+    );
 
     const { data, isFetching, error, refetch } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
         filtro: "",
+        categoria: categoria,
         listaPrecio: "(Precio Lista)"
     })
+
+    async function clear() {
+        if (!categoria) dispatch(clearFilters());
+        setHasMore(true)
+        setPage(1)
+        setCombinedData([])
+    }
+
+
+    const refreshProducts = useCallback(async () => {
+        try {
+            clear();
+            await refetch();
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        } catch (error) {
+            console.error("Error refreshing products:", error)
+        }
+    }, [refetch])
 
     useEffect(() => {
         if (data) {
@@ -36,17 +61,10 @@ const ProductGrid: React.FC = () => {
         ; (event.target as HTMLIonInfiniteScrollElement).complete()
     }, [isFetching, hasMore])
 
-    const refreshProducts = useCallback(async () => {
-        setPage(1)
-        setCombinedData([])
-        setHasMore(true)
-        try {
-            await refetch().unwrap();
-            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-        } catch (error) {
-            console.error("Error refreshing products:", error)
-        }
-    }, [refetch])
+
+    useEffect(() => {
+        clear()
+    }, [categoria, refetch])
 
     useEffect(() => {
         if (error) {

@@ -51,15 +51,16 @@ export const api = createApi({
             extraOptions: { maxRetries: 2 }
         }),
         getArticulos: builder.query({
-            query: ({ page, pageSize, id, filtro, listaPrecio, signal }) => ({
+            query: ({ page, pageSize, id, filtro, categoria, listaPrecio, signal }) => ({
                 url: `pick-up`,
                 method: "GET",
                 params: {
                     page,
                     pageSize,
                     listaPrecio,
+                    categoria,
                     id,
-                    filtro
+                    filtro// codigo de barras o nombre
                 },
                 signal
             }),
