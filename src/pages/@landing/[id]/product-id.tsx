@@ -6,24 +6,67 @@ import { Product } from "@/utils/data/example-data";
 import { useEffect, useState } from "react";
 import { useGetArticulosQuery } from "@/hooks/reducers/api";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
+import { useAppDispatch, useAppSelector } from "@/hooks/selector";
+import { addToCart, removeFromCart } from "@/hooks/slices/cart";
 
 const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const [product, setProduct] = useState<Product>();
-    const [quantity, setQuantity] = useState<number>(1);
-    const { data, isFetching, error, refetch } = useGetArticulosQuery({
+    const dispatch = useAppDispatch();
+    const cartItems = useAppSelector((state) => state.cart.items);
+    const cartItem = cartItems.find((item) => item.id === id);
+    const quantityInCart = cartItem?.quantity || 0;
+
+    const [product, setProduct] = useState<Product>({
+        id: "",
+        image: "/placeholder.svg",
+        title: "",
+        discount: 0,
+        category: "",
+        unidad: "",
+        price: 0,
+        originalPrice: 0
+    });
+
+    const { data } = useGetArticulosQuery({
         page: 1,
         id: id,
         listaPrecio: "(Precio Lista)"
     })
+
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct)
             setProduct(mappedProducts.find((item: any) => item.id === id))
         }
     }, [data])
-    const increaseQuantity = () => setQuantity(prev => prev + 1);
-    const decreaseQuantity = () => setQuantity(prev => Math.max(1, prev - 1));
+
+    const handleAddToCart = () => {
+        dispatch(addToCart({ ...product, quantity: 1 }));
+    };
+
+    const increaseQuantity = () => {
+        dispatch(addToCart({ ...product, quantity: 1 }));
+    };
+
+    const decreaseQuantity = () => {
+        if (quantityInCart === 1) {
+            dispatch(removeFromCart(product.id));
+        } else {
+            dispatch(addToCart({ ...product, quantity: -1 }));
+        }
+    };
+
+    const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newQuantity = parseInt(e.target.value);
+        if (!isNaN(newQuantity)) {
+            if (newQuantity <= 0) {
+                dispatch(removeFromCart(product.id));
+            } else {
+                const delta = newQuantity - quantityInCart;
+                dispatch(addToCart({ ...product, quantity: delta }));
+            }
+        }
+    };
 
     if (!product) {
         return (
@@ -137,27 +180,67 @@ const ProductID: React.FC = () => {
                                 <li className="flex items-center gap-4">
                                     <span>Cantidad:</span>
                                     <div className="flex items-center gap-2">
-                                        <IonButton
-                                            size="small"
-                                            onClick={decreaseQuantity}
-                                            className="custom-tertiary"
-                                            disabled={quantity <= 1}>
-                                            -
-                                        </IonButton>
-                                        <span className="w-8 text-center">{quantity}</span>
-                                        <IonButton
-                                            size="small"
-                                            className="custom-tertiary"
-                                            onClick={increaseQuantity}>
-                                            +
-                                        </IonButton>
+                                        {quantityInCart === 0 ? (
+                                            <>
+                                                <IonButton
+                                                    size="small"
+                                                    onClick={decreaseQuantity}
+                                                    className="custom-tertiary"
+                                                    disabled={quantityInCart <= 1}
+                                                >
+                                                    -
+                                                </IonButton>
+                                                <span className="w-8 text-center">{quantityInCart}</span>
+                                                <IonButton
+                                                    size="small"
+                                                    className="custom-tertiary"
+                                                    onClick={increaseQuantity}
+                                                >
+                                                    +
+                                                </IonButton>
+                                            </>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <IonButton
+                                                    size="small"
+                                                    onClick={decreaseQuantity}
+                                                    className="custom-tertiary"
+                                                    disabled={quantityInCart <= 1}
+                                                >
+                                                    -
+                                                </IonButton>
+                                                <input
+                                                    type="number"
+                                                    className="text-sm w-10 text-center bg-white rounded-lg border p-1"
+                                                    value={quantityInCart}
+                                                    min="0"
+                                                    onChange={handleQuantityChange}
+                                                    onBlur={(e) => {
+                                                        if (e.target.value === "0") dispatch(removeFromCart(product.id));
+                                                    }}
+                                                />
+                                                <IonButton
+                                                    size="small"
+                                                    className="custom-tertiary"
+                                                    onClick={increaseQuantity}
+                                                >
+                                                    +
+                                                </IonButton>
+                                            </div>
+                                        )}
                                     </div>
                                 </li>
+                                <li>
+                                    <IonButton
+                                        expand="block"
+                                        className="custom-tertiary"
+                                        onClick={quantityInCart === 0 ? handleAddToCart : undefined}
+                                        disabled={quantityInCart > 0}
+                                    >
+                                        {quantityInCart === 0 ? "Añadir al Carrito" : "En el Carrito"}
+                                    </IonButton>
+                                </li>
                             </ul>
-
-                            <IonButton expand="block" className="custom-tertiary">
-                                Añadir al Carrito
-                            </IonButton>
 
                             <IonGrid>
                                 <IonRow className="gap-y-4 md:gap-y-0 p-2 md:p-0">
