@@ -1,5 +1,5 @@
-import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton } from "@ionic/react";
-import { CloudDownload, ShieldCheck, Star, Truck } from "lucide-react";
+import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
+import { CloudDownload, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
@@ -8,6 +8,22 @@ import { useGetArticulosQuery } from "@/hooks/reducers/api";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
+
+const LoadingScreen = () => (
+    <IonPage>
+        <IonContent className="ion-padding" fullscreen>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <IonSpinner
+                        name="crescent"
+                        className="h-12 w-12 text-purple-600"
+                    />
+                    <p className="mt-4 text-gray-600">Cargando producto...</p>
+                </div>
+            </div>
+        </IonContent>
+    </IonPage>
+);
 
 const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -18,7 +34,7 @@ const ProductID: React.FC = () => {
 
     const [product, setProduct] = useState<Product | null>(null);
 
-    const { data } = useGetArticulosQuery({
+    const { data, isFetching, error } = useGetArticulosQuery({
         page: 1,
         id: id,
         listaPrecio: "(Precio Lista)"
@@ -27,13 +43,35 @@ const ProductID: React.FC = () => {
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
-            const foundProduct = mappedProducts.find((item: Product) => item.id === id);
-            setProduct(foundProduct || null); // Si no se encuentra, establecer null
+            setProduct(mappedProducts.find((item: Product) => item.id === id) || null);
         }
     }, [data, id]);
 
 
-
+    // Mostrar pantalla de carga mientras se obtienen datos
+    if (isFetching) {
+        return <LoadingScreen />;
+    }
+    if (error) {
+        return (
+            <IonPage>
+                <IonContent className="ion-padding" fullscreen>
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center text-red-500">
+                            <ShieldAlert className="h-12 w-12 mx-auto" />
+                            <p className="mt-4">Error cargando el producto</p>
+                            <IonButton
+                                onClick={() => window.location.reload()}
+                                className="mt-4"
+                            >
+                                Reintentar
+                            </IonButton>
+                        </div>
+                    </div>
+                </IonContent>
+            </IonPage>
+        );
+    }
     if (!product) {
         return (
             <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
