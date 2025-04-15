@@ -1,19 +1,12 @@
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react"
+import { IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonRouterLink } from "@ionic/react"
 import useDebounce from "@/hooks/use-debounce"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
-import { Plus, Search } from "lucide-react"
-
-interface Product {
-    id: string
-    name: string
-    price: number
-    category: string
-    icon: React.ReactNode
-    description?: string
-}
+import { Search } from "lucide-react"
+import { useAppDispatch } from "@/hooks/selector"; // Añadir import
+import { Product } from "@/utils/data/example-data"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
@@ -42,17 +35,16 @@ function PriceChecker() {
     })
 
     const [isFocused, setIsFocused] = useState(false)
-
     // Manejar actualización de datos
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map((item: any) => ({
-                id: item.id,
-                name: item.Nombre,
+                id: item.ID,
+                title: item.Nombre,  // Cambiar de name a title
                 price: item.PrecioRegular,
                 category: item.Grupo,
-                icon: <></>, // Asumiendo que tienes una imagen para cada producto
-                description: item.Unidad,
+                unidad: item.Unidad, // Cambiar description por unidad
+                image: item.Imagen || "/placeholder.svg", // Añadir imagen
             }))
 
             setCombinedData(prev =>
@@ -144,52 +136,50 @@ function PriceChecker() {
                                 exit="exit"
                             >
                                 <motion.ul>
-                                    {combinedData.map((product) => (
+                                    {combinedData.map((product, key) => (
                                         <motion.li
-                                            key={product.id}
-                                            className="px-3 py-2 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer rounded-md"
+                                            key={key}
+                                            className="px-3 py-2 flex items-center justify-between cursor-pointer rounded-md"
                                             variants={item}
                                             layout
+                                        /* onClick={() => navigate(`/products/${product.id}`)} */ // Añadir navegación
                                         >
-                                            <div
-                                                className="flex items-center gap-2 justify-between flex-1"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-gray-500">{product.icon}</span>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                            {product.name}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            {product.description}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                                        ${product.price.toFixed(2)}
-                                                    </span>
-                                                    <button
-                                                        className="h-7 w-7 p-0 flex items-center justify-center rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                                    >
-                                                        <Plus className="h-4 w-4 text-gray-300 dark:text-gray-50" />
-                                                    </button>
-                                                </div>
+                                            <div className="p-0 m-0 w-full h-full">
+                                                <IonList className="flex items-center gap-2 justify-between flex-1">
+                                                    <IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.id}`}>
+
+                                                        {product.image && ( // Mostrar imagen si existe
+                                                            <img
+                                                                src={product.image}
+                                                                alt={product.title}
+                                                                className="h-8 w-8 rounded-md object-cover md:block hidden"
+                                                            />
+                                                        )}
+                                                        <section className="flex flex-col">
+                                                            <IonLabel className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                                {product.title}
+                                                            </IonLabel>
+                                                            <span className="text-xs text-gray-400">
+                                                                {product.unidad} {/* Cambiar de description a unidad */}
+                                                            </span>
+                                                        </section>
+                                                    </IonItem>
+                                                </IonList>
                                             </div>
                                         </motion.li>
                                     ))}
-                                </motion.ul>
 
-                                <IonInfiniteScroll
-                                    onIonInfinite={loadMore}
-                                    threshold="100px"
-                                    disabled={!hasMore || isFetching}
-                                >
-                                    <IonInfiniteScrollContent
-                                        loadingText="Cargando más productos..."
-                                        loadingSpinner="bubbles"
-                                    />
-                                </IonInfiniteScroll>
+                                    <IonInfiniteScroll
+                                        onIonInfinite={loadMore}
+                                        threshold="100px"
+                                        disabled={!hasMore || isFetching}
+                                    >
+                                        <IonInfiniteScrollContent
+                                            loadingText="Cargando más productos..."
+                                            loadingSpinner="bubbles"
+                                        />
+                                    </IonInfiniteScroll>
+                                </motion.ul>
 
                                 <div className="bottom-0 mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">
                                     <div className="flex items-center justify-between text-xs text-gray-500">

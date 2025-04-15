@@ -135,6 +135,13 @@
 .custom-tertiary:hover ion-icon {
     transform: scale(1.1);
 }
+
+/* Agrega en tu archivo CSS */
+.custom-danger {
+    --background: #dc2626;
+    --background-hover: #b91c1c;
+    --color: white;
+}
 /* Estilos para WebKit */
 ::-webkit-scrollbar {
     background: var(--background-card);

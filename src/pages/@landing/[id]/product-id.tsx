@@ -16,16 +16,7 @@ const ProductID: React.FC = () => {
     const cartItem = cartItems.find((item) => item.id === id);
     const quantityInCart = cartItem?.quantity || 0;
 
-    const [product, setProduct] = useState<Product>({
-        id: "",
-        image: "/placeholder.svg",
-        title: "",
-        discount: 0,
-        category: "",
-        unidad: "",
-        price: 0,
-        originalPrice: 0
-    });
+    const [product, setProduct] = useState<Product | null>(null);
 
     const { data } = useGetArticulosQuery({
         page: 1,
@@ -35,10 +26,27 @@ const ProductID: React.FC = () => {
 
     useEffect(() => {
         if (data) {
-            const mappedProducts = data.data.map(mapApiProductToAppProduct)
-            setProduct(mappedProducts.find((item: any) => item.id === id))
+            const mappedProducts = data.data.map(mapApiProductToAppProduct);
+            const foundProduct = mappedProducts.find((item: Product) => item.id === id);
+            setProduct(foundProduct || null); // Si no se encuentra, establecer null
         }
-    }, [data])
+    }, [data, id]);
+
+
+
+    if (!product) {
+        return (
+            <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-800 dark:text-white">404</h1>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Producto no encontrado</p>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Esta pagina no existe o el producto no esta disponible.</p>
+                    <a href="/" className="mt-6 inline-block px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700">Regresar.</a>
+                </div>
+            </section>
+        );
+    }
+
 
     const handleAddToCart = () => {
         dispatch(addToCart({ ...product, quantity: 1 }));
@@ -57,7 +65,7 @@ const ProductID: React.FC = () => {
     };
 
     const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newQuantity = parseInt(e.target.value);
+        const newQuantity = Math.max(0, parseInt(e.target.value) || 0); // Forzar mínimo 0
         if (!isNaN(newQuantity)) {
             if (newQuantity <= 0) {
                 dispatch(removeFromCart(product.id));
@@ -67,20 +75,6 @@ const ProductID: React.FC = () => {
             }
         }
     };
-
-    if (!product) {
-        return (
-            <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold text-gray-800 dark:text-white">404</h1>
-                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Producto no encontrado</p>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Esta pagina no existe o el producto no esta disponible.</p>
-                    <a href="/" className="mt-6 inline-block px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700">Regresar.</a>
-                </div>
-            </section>
-        );
-    }
-
     return (
         <IonPage>
             <HeaderCart back />
@@ -216,7 +210,10 @@ const ProductID: React.FC = () => {
                                                     min="0"
                                                     onChange={handleQuantityChange}
                                                     onBlur={(e) => {
-                                                        if (e.target.value === "0") dispatch(removeFromCart(product.id));
+                                                        const value = parseInt(e.target.value);
+                                                        if (isNaN(value) || value < 1) {
+                                                            dispatch(removeFromCart(product.id));
+                                                        }
                                                     }}
                                                 />
                                                 <IonButton
@@ -233,11 +230,16 @@ const ProductID: React.FC = () => {
                                 <li>
                                     <IonButton
                                         expand="block"
-                                        className="custom-tertiary"
-                                        onClick={quantityInCart === 0 ? handleAddToCart : undefined}
-                                        disabled={quantityInCart > 0}
+                                        className={quantityInCart === 0 ? "custom-tertiary" : "custom-danger"} // Añade clase diferente para eliminar
+                                        onClick={
+                                            quantityInCart === 0
+                                                ? handleAddToCart
+                                                : () => dispatch(removeFromCart(product.id)) // Elimina completamente el artículo
+                                        }
                                     >
-                                        {quantityInCart === 0 ? "Añadir al Carrito" : "En el Carrito"}
+                                        {quantityInCart === 0
+                                            ? "Añadir al Carrito"
+                                            : "Eliminar del Carrito"}
                                     </IonButton>
                                 </li>
                             </ul>
