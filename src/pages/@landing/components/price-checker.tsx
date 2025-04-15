@@ -1,7 +1,7 @@
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList, IonRouterLink } from "@ionic/react"
+import { IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList } from "@ionic/react"
 import useDebounce from "@/hooks/use-debounce"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { Search } from "lucide-react"
@@ -142,8 +142,8 @@ function PriceChecker() {
                                             className="px-3 py-2 flex items-center justify-between cursor-pointer rounded-md"
                                             variants={item}
                                             layout
-                                        /* onClick={() => navigate(`/products/${product.id}`)} */ // Añadir navegación
-                                        >
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}>
                                             <div className="p-0 m-0 w-full h-full">
                                                 <IonList className="flex items-center gap-2 justify-between flex-1">
                                                     <IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.id}`}>
