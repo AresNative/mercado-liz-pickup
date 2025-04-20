@@ -24,7 +24,6 @@ import { FileComponent as File } from "./file";
 import { TagInputComponent as TagInput } from "./tag-input"
 
 import { usePostUserLoginMutation } from "@/hooks/reducers/auth";
-import { IonButton } from "@ionic/react";
 
 export const MainForm = ({ message_button, dataForm, actionType, aditionalData, action, valueAssign, onSuccess }: MainFormProps) => {
 

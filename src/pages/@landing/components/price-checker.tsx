@@ -1,11 +1,10 @@
 import type React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { IonInfiniteScroll, IonInfiniteScrollContent, IonItem, IonLabel, IonList } from "@ionic/react"
+import { IonItem, IonLabel, IonList } from "@ionic/react"
 import useDebounce from "@/hooks/use-debounce"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { Search } from "lucide-react"
-import { useAppDispatch } from "@/hooks/selector"; // Añadir import
 import { Product } from "@/utils/data/example-data"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
@@ -168,17 +167,6 @@ function PriceChecker() {
                                             </div>
                                         </motion.li>
                                     ))}
-
-                                    <IonInfiniteScroll
-                                        onIonInfinite={loadMore}
-                                        threshold="100px"
-                                        disabled={!hasMore || isFetching}
-                                    >
-                                        <IonInfiniteScrollContent
-                                            loadingText="Cargando más productos..."
-                                            loadingSpinner="bubbles"
-                                        />
-                                    </IonInfiniteScroll>
                                 </motion.ul>
 
                                 <div className="bottom-0 mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">

@@ -57,25 +57,25 @@ const AVAILABLE_DATES = Array.from({ length: 60 }, (_, i) => {
 
 const serviceTypes = [
   {
-    id: "consulta",
-    name: "Consulta general",
+    id: "pickup",
+    name: "Pickup",
     duration: 30,
     color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
-    description: "Consulta médica general para diagnóstico y tratamiento de problemas comunes de salud.",
+    description: "Recoja todos sus productos en tienda.",
   },
   {
-    id: "revision",
-    name: "Revisión de rutina",
-    duration: 45,
-    color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
-    description: "Chequeo completo para evaluar tu estado de salud general y prevenir enfermedades.",
+    id: "vehiculo",
+    name: "Entrega en vehículo",
+    duration: 25,
+    color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
+    description: "Los productos le son entregados y cobrados en su vehículo si necesidad de bajarse.",
   },
   {
-    id: "tratamiento",
-    name: "Tratamiento especializado",
+    id: "domicilio",
+    name: "Entrega a domicilio",
     duration: 60,
-    color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
-    description: "Sesión de tratamiento para condiciones específicas que requieren atención especializada.",
+    color: "bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200",
+    description: "Los productos son llevados a su direccion.",
   },
 ]
 
@@ -134,32 +134,16 @@ const generateTimeSlots = (date: string) => {
   return { morningSlots, afternoonSlots }
 }
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phoneRegex = /^\+?[0-9]{8,15}$/
-
 export function AppointmentCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [selectedService, setSelectedService] = useState<string | null>(null)
-  const [isBooking, setIsBooking] = useState(false)
-  const [isBooked, setIsBooked] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [timeSlots, setTimeSlots] = useState<{ morningSlots: any[]; afternoonSlots: any[] }>({
     morningSlots: [],
     afternoonSlots: [],
-  })
-  const [errors, setErrors] = useState<{
-    name?: string
-    email?: string
-    phone?: string
-  }>({})
-  const [appointmentDetails, setAppointmentDetails] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    notes: "",
   })
   const [showHelp, setShowHelp] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
@@ -217,59 +201,6 @@ export function AppointmentCalendar() {
       }
     }, 300)
   }
-
-  const validateField = (name: string, value: string): string | undefined => {
-    switch (name) {
-      case "name":
-        return value.trim().length < 3 ? "El nombre debe tener al menos 3 caracteres" : undefined
-      case "email":
-        return !emailRegex.test(value) ? "Ingresa un correo electrónico válido" : undefined
-      case "phone":
-        return !phoneRegex.test(value) ? "Ingresa un número de teléfono válido" : undefined
-      default:
-        return undefined
-    }
-  }
-
-  const handleBookAppointment = () => {
-    const newErrors = {
-      name: validateField("name", appointmentDetails.name),
-      email: validateField("email", appointmentDetails.email),
-      phone: validateField("phone", appointmentDetails.phone),
-    }
-
-    setErrors(newErrors)
-
-    if (Object.values(newErrors).some((error) => error !== undefined)) {
-      return
-    }
-
-    setIsBooking(true)
-    setTimeout(() => {
-      const isSuccess = Math.random() > 0.1
-      if (isSuccess) {
-        setIsBooking(false)
-        setIsBooked(true)
-      } else {
-        setIsBooking(false)
-      }
-    }, 1500)
-  }
-
-  const handleReset = () => {
-    setSelectedDate(null)
-    setSelectedSlot(null)
-    setSelectedService(null)
-    setIsBooked(false)
-    setErrors({})
-    setAppointmentDetails({
-      name: "",
-      email: "",
-      phone: "",
-      notes: "",
-    })
-  }
-
   const isDateAvailable = (date: Date) => {
     const dateString = startOfDay(date).toISOString()
     return AVAILABLE_DATES.includes(dateString)
@@ -300,87 +231,6 @@ export function AppointmentCalendar() {
       e.preventDefault()
       handleDateClick(day)
     }
-  }
-
-  if (isBooked) {
-    const slot = getSlotById(selectedSlot || "")
-    const service = getServiceById(selectedService || "")
-
-    return (
-      <div className="rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm">
-        <div className="flex flex-col items-center justify-center p-6 py-8">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-            <Check className="h-8 w-8 text-purple-600" />
-          </div>
-          <h3 className="mt-4 text-xl font-medium">¡Cita agendada con éxito!</h3>
-          <p className="mt-2 text-center text-gray-600">
-            Hemos enviado un correo electrónico con los detalles de tu cita a {appointmentDetails.email}
-          </p>
-
-          <div className="mt-6 w-full max-w-md rounded-lg border border-purple-200 bg-purple-50 p-4">
-            <div className="flex items-start">
-              <Calendar className="mr-3 h-5 w-5 text-purple-600" />
-              <div>
-                <p className="font-medium">
-                  {format(parseISO(selectedDate!), "EEEE d 'de' MMMM, yyyy", { locale: es })}
-                </p>
-                <p className="text-gray-600">
-                  {slot && format(parseISO(slot.time), "h:mm a", { locale: es })} -
-                  {slot &&
-                    service &&
-                    format(addMinutes(parseISO(slot.time), service.duration), "h:mm a", { locale: es })}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-start">
-              <FileText className="mr-3 h-5 w-5 text-purple-600" />
-              <div>
-                <p className="font-medium">Servicio</p>
-                <p className="text-gray-600">{service?.name}</p>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-start">
-              <Users className="mr-3 h-5 w-5 text-purple-600" />
-              <div>
-                <p className="font-medium">Información de contacto</p>
-                <p className="text-gray-600">{appointmentDetails.name}</p>
-                <p className="text-gray-600">{appointmentDetails.email}</p>
-                <p className="text-gray-600">{appointmentDetails.phone}</p>
-              </div>
-            </div>
-
-            {appointmentDetails.notes && (
-              <div className="mt-3 flex items-start">
-                <FileText className="mr-3 h-5 w-5 text-purple-600" />
-                <div>
-                  <p className="font-medium">Notas</p>
-                  <p className="text-gray-600">{appointmentDetails.notes}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-6 flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0">
-            <button
-              onClick={handleReset}
-              className="flex items-center justify-center rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Agendar otra cita
-            </button>
-
-            <button
-              className="flex items-center justify-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              Descargar comprobante
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -852,14 +702,21 @@ export function AppointmentCalendar() {
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Confirmar cita
                 </>}
-                actionType={"post-login"}
+                actionType={""}
+                valueAssign={[
+                  "Aclaraciones",
+                  "Telefono",
+                  "Nombre",
+                  "CodigoPostal",
+                  "Estado",
+                  "Ciudad",
+                  "Direccion"
+                ]}
+                action={(values: any) => { console.log(values) }}
                 dataForm={CitasField()}
-                onSuccess={(result: any) => {
-                  console.log(result);
-                }}
               />
             </div>
-            <div className={cn(isBooking ? "mt-6" : "", "flex justify-between")}>
+            <div className={cn("flex justify-between")}>
               <button
                 onClick={() => setSelectedService(null)}
                 className={cn("flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200")}
@@ -868,43 +725,6 @@ export function AppointmentCalendar() {
                 Anterior
               </button>
 
-              <button
-                onClick={handleBookAppointment}
-                disabled={
-                  isBooking ||
-                  !appointmentDetails.name ||
-                  !appointmentDetails.email ||
-                  !appointmentDetails.phone ||
-                  !!errors.name ||
-                  !!errors.email ||
-                  !!errors.phone
-                }
-                className={cn(
-                  "flex items-center rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700",
-                  (isBooking ||
-                    !appointmentDetails.name ||
-                    !appointmentDetails.email ||
-                    !appointmentDetails.phone ||
-                    !!errors.name ||
-                    !!errors.email ||
-                    !!errors.phone) &&
-                  "cursor-not-allowed opacity-50",
-
-                  isBooking ? "flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200" : "hidden"
-                )}
-              >
-                {isBooking ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Confirmar cita
-                  </>
-                )}
-              </button>
             </div>
           </div>
         )}
