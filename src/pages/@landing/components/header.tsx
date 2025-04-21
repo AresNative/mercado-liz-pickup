@@ -9,13 +9,14 @@ import { useAppSelector } from "@/hooks/selector"
 import { RootState } from "@/hooks/store"
 
 interface HeaderCartProps {
-    back?: boolean
+    back?: boolean,
+    carr?: boolean
 }
 
 const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items } = cart || []; // Si cart es undefined/null, usamos array vacío
-    const { back } = prosp
+    const { back, carr } = prosp
     const location = useLocation()
     return (
         <IonHeader className="bg-white/90 backdrop-blur-sm border dark:border-zinc-700 dark:bg-zinc-950/90 ion-padding-horizontal safe-area-top">
@@ -34,7 +35,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                         <PriceChecker />
                     </li>
                     <li className="flex-shrink-0 important:bg-transparent">
-                        <IonItem
+                        {!carr && (<IonItem
                             lines="none"
                             routerLink="/carrito"
                             detail={false}  // <- Esta prop elimina el ícono de flecha
@@ -50,7 +51,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                                 >
                                     {items.length}
                                 </IonBadge>)}
-                        </IonItem>
+                        </IonItem>)}
                     </li>
                     {/* Switch a la derecha */}
                     <li className="flex-shrink-0">
@@ -64,7 +65,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                             <IonContent>
                                 <IonList>
                                     <IonItem
-                                        routerLink="/carrito"
+                                        routerLink="/loading"
                                         routerDirection="none"
                                         className="flex items-center gap-2"
                                     >

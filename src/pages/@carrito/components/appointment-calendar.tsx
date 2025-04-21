@@ -41,7 +41,8 @@ import MainForm from "@/components/form/main-form"
 import { CitasField } from "../constants/citas-field"
 import { useAppSelector } from "@/hooks/selector"
 import { usePostMutation } from "@/hooks/reducers/api"
-import { u } from "framer-motion/dist/types.d-B50aGbjN"
+import { useIonToast } from "@ionic/react"
+import { useHistory } from "react-router"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -136,9 +137,9 @@ const generateTimeSlots = (date: string) => {
 
 export function AppointmentCalendar() {
   const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+  const history = useHistory();
 
   const [PostData, { isLoading: isLoadingPost }] = usePostMutation()
-
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
@@ -150,6 +151,7 @@ export function AppointmentCalendar() {
     afternoonSlots: [],
   })
   const [showHelp, setShowHelp] = useState(false)
+  const [present] = useIonToast();
   const formRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -738,7 +740,6 @@ export function AppointmentCalendar() {
 
                       const listaResponse = await PostData({ url: "listas", data: listaPayload });
                       const listaId = listaResponse.data.ids[0];
-                      console.log("Lista created with ID:", listaId);
 
                       // Crear cita
                       const citaPayload: any = {
@@ -752,12 +753,24 @@ export function AppointmentCalendar() {
                         }]
                       };
 
-                      const citaResponse = await PostData({ url: "citas", data: citaPayload }).unwrap();
-                      console.log("Cita created successfully:", citaResponse);
+                      await PostData({ url: "citas", data: citaPayload }).unwrap();
 
+                      present({
+                        message: `Cita creada correctamente`,
+                        duration: 1500,
+                        cssClass: "custom-tertiary",
+                        position: 'bottom',
+                        buttons: [{
+                          text: "ver",
+                          side: 'end',
+                          handler: () => {
+                            console.log("ver");
+                            history.replace('/loading');
+                          }
+                        }]
+                      });
                     } catch (error) {
                       console.error("Error in appointment creation process:", error);
-                      // Considerar agregar manejo de errores específico o reintentos aquí
                     }
                   }
                 }

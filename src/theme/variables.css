@@ -71,6 +71,7 @@
     /* Estado normal */
     --background: linear-gradient(100deg, #5f05a8 0%, #9338e7 100%);
     --color: #ffffff;
+    --button-color: #ffffff;
     --border-color: #5c1e92;
     --transition: all 0.2s ease-in-out;
 
@@ -96,6 +97,7 @@
     /* Estado normal */
     --background:#5f05a8;
     --color: #ffffff;
+    color: #ffffff;
     --border-color: #5c1e92;
     --transition: all 0.2s ease-in-out;
 

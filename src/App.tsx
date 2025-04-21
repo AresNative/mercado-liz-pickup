@@ -10,7 +10,7 @@ import NotFound from './pages/NotFound';
 import ProductID from './pages/@landing/[id]/product-id';
 import CarritoPage from './pages/@carrito/page';
 import Page from './pages/@landing/page';
-
+import LoadingPage from "@/pages/@proces/@loading/page"
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
@@ -61,6 +61,9 @@ const App: React.FC = () => {
           </Route>
           <Route exact path="/carrito">
             {sucursal ? <CarritoPage /> : <Redirect to="/layout" />}
+          </Route>
+          <Route exact path="/loading">
+            {sucursal ? <LoadingPage /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/products/:id">
             {sucursal ? <ProductID /> : <Redirect to="/layout" />}

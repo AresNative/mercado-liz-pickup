@@ -1,11 +1,14 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
+import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
 import { BarChart3, Users, Calendar, MessageSquare, CreditCard, Settings } from "lucide-react";
 
 const Page: React.FC = () => {
     return (
         <IonPage>
-            <IonContent>
+
+            <HeaderCart back carr />
+            <IonContent fullscreen>
                 <BentoGrid>
                     {/* Featured item - spans 2 columns */}
                     <BentoItem
