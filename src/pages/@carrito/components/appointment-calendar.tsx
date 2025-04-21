@@ -712,7 +712,7 @@ export function AppointmentCalendar() {
                   "Ciudad",
                   "Direccion"
                 ]}
-                action={(values: any) => { console.log(values) }}
+                action={(values: any) => { console.log(values, selectedDate, selectedSlot, getSlotById(selectedSlot)?.time, getServiceById(selectedService)?.name) }}
                 dataForm={CitasField()}
               />
             </div>
