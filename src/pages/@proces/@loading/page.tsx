@@ -1,88 +1,173 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
+import { useGetAllMutation } from "@/hooks/reducers/api";
+import { useAppDispatch, useAppSelector } from "@/hooks/selector";
+import { LoadingScreen } from "@/pages/@landing/[id]/product-id";
 import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
-import { BarChart3, Users, Calendar, MessageSquare, CreditCard, Settings } from "lucide-react";
+import { BarChart3, Calendar } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+    format
+} from "date-fns"
+import { es } from "date-fns/locale"
+import Sucursales from "./sections/Sucursales";
 
 const Page: React.FC = () => {
+    const dispatch = useAppDispatch();
+    const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+    const [citas, setCitas] = useState<any>([])
+    const [error, setError] = useState<string | null>(null);
+    const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
+
+    const subtotal = cartItems.reduce((acc, item: any) =>
+        acc + (item.originalPrice || item.price) * item.quantity, 0);
+
+    const discountTotal = cartItems.reduce((acc, item: any) =>
+        item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
+
+    const total = subtotal - discountTotal;
+
+    async function loadLastCitas() {
+        try {
+            const { data: Citas } = await GetData({
+                url: "citas",
+                filters: {
+                    "Filtros": [{ "Key": "id_cliente", "Value": "1" }],
+                    "Order": [{ "Key": "id", "Direction": "Desc" }]
+                },
+            });
+            setCitas(Citas?.data[0] || []);
+            setError(null);
+        } catch (err) {
+            setError('No pudimos cargar la información de tu cita');
+            console.error('Error fetching citas:', err);
+        }
+    }
+    useEffect(() => {
+        loadLastCitas()
+    }, [])
+
+    if (!citas.length && isLoadingGet) return <LoadingScreen />
+
     return (
         <IonPage>
-
             <HeaderCart back carr />
             <IonContent fullscreen>
                 <BentoGrid>
-                    {/* Featured item - spans 2 columns */}
+                    {/* Listado de productos */}
                     <BentoItem
+                        rowSpan={3}
                         colSpan={2}
-                        title="Monthly Analytics"
-                        description="View your performance metrics for the past month"
+                        title="Listado de productos"
+                        description={cartItems.length === 0 ? "Tu carrito está vacío" : ""}
                         icon={<BarChart3 className="h-6 w-6 text-primary" />}
                     >
-                        <div className="h-40 bg-zinc-200 bg-muted/50 rounded-lg mt-4 flex items-center justify-center">
-                            Chart visualization goes here
+                        <div className="max-h-[300px] p-4 min-h-0 flex flex-col gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/30 scrollbar-track-transparent transition-colors">
+                            {cartItems.length > 0 ? (
+                                <>
+                                    {cartItems.map((item: any, key) => (
+                                        <div
+                                            key={key}
+                                            className="group bg-white rounded-lg overflow-hidden transition-all hover:shadow-md border border-gray-100 flex-shrink-0 hover:border-primary/20"
+                                        >
+                                            <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
+                                                <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
+                                                    <img
+                                                        src={item.image || "/placeholder.svg"}
+                                                        alt={`Imagen de ${item.title}`}
+                                                        className="w-full h-full object-contain transition-opacity opacity-0"
+                                                        onLoad={(e) => (e.currentTarget.style.opacity = "1")}
+                                                        loading="lazy"
+                                                    />
+                                                </div>
+                                                <div className="flex-1 w-full">
+                                                    <h3 className="font-medium line-clamp-2 text-lg">{item.title}</h3>
+                                                    <p className="text-sm text-gray-500 mt-1">{item.category}</p>
+
+                                                    <div className="my-3 border-t border-gray-100"></div>
+
+                                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-xs text-gray-500 ml-2">• {item.unidad}</span>
+                                                            <span className="text-lg font-bold text-gray-900">
+                                                                ${item.price.toFixed(2)}
+                                                            </span>
+                                                            {item.originalPrice && (
+                                                                <span className="text-sm text-gray-500 line-through">
+                                                                    ${item.originalPrice.toFixed(2)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm">
+                                                            <span className="bg-primary/10 text-primary px-2 py-1 rounded">
+                                                                x{item.quantity}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <div className="space-y-2 mt-4">
+                                        <div className="flex justify-between text-sm text-gray-600">
+                                            <span>Subtotal:</span>
+                                            <span>${subtotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm text-green-600">
+                                            <span>Descuentos:</span>
+                                            <span>-${discountTotal.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-gray-500">
+                                    No hay productos en el carrito
+                                </div>
+                            )}
                         </div>
+
+                        {cartItems.length > 0 && (<div className="flex justify-between font-bold border-t pt-2 text-base">
+                            <span>Total:</span>
+                            <span>${total.toFixed(2)}</span>
+                        </div>)}
                     </BentoItem>
 
-                    {/* Regular items */}
+                    {/* Informe del pedido */}
                     <BentoItem
-                        title="Team Members"
-                        description="Manage your team"
-                        icon={<Users className="h-6 w-6 text-blue-500" />}
-                    />
-
-                    <BentoItem
-                        title="Calendar"
-                        description="Schedule and manage events"
+                        rowSpan={3}
+                        title="Informe del pedido"
+                        description={error || (isLoadingGet ? "Cargando..." : !citas ? "Sin citas recientes" : "")}
                         icon={<Calendar className="h-6 w-6 text-green-500" />}
                     >
-                        <div className="h-24 bg-muted/50 rounded-lg mt-4 flex items-center justify-center">Calendar preview</div>
-                    </BentoItem>
+                        {isLoadingGet ? (
+                            <div className="h-24 animate-pulse bg-muted/50 rounded-lg mt-4" />
+                        ) : citas ? (
+                            <section className="h-24 bg-muted/50 rounded-lg mt-4 p-4 flex flex-col justify-center gap-2">
+                                <div className="grid grid-cols-3 gap-2 text-sm">
+                                    <span className="text-gray-500 font-medium">Fecha:</span>
+                                    <span className="col-span-2">
+                                        {citas.fecha
+                                            ? format(
+                                                new Date(citas.fecha),  // Usar Date directamente para parseo seguro
+                                                "EEEE d 'de' MMMM, yyyy 'a las' hh:mm",
+                                                { locale: es }
+                                            )
+                                            : 'Fecha no disponible'}
+                                    </span>
 
-                    {/* Item that spans 2 rows */}
-                    <BentoItem
-                        rowSpan={2}
-                        title="Messages"
-                        description="Recent conversations"
-                        icon={<MessageSquare className="h-6 w-6 text-purple-500" />}
-                    >
-                        <div className="space-y-3 mt-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                                    <div className="w-8 h-8 rounded-full bg-muted"></div>
-                                    <div>
-                                        <p className="text-sm font-medium">User {i}</p>
-                                        <p className="text-xs text-muted-foreground">Latest message preview...</p>
-                                    </div>
+                                    <span className="text-gray-500 font-medium">Estado:</span>
+                                    <span className="col-span-2 capitalize">{citas.estado?.toLowerCase()}</span>
+
+                                    <span className="text-gray-500 font-medium">Servicio:</span>
+                                    <span className="col-span-2">{citas.plan}</span>
                                 </div>
-                            ))}
-                        </div>
-                    </BentoItem>
-
-                    <BentoItem
-                        rowSpan={2}
-                        title="Billing"
-                        description="Manage your subscription"
-                        icon={<CreditCard className="h-6 w-6 text-amber-500" />}
-                    />
-
-                    <BentoItem
-                        title="Settings"
-                        description="Configure your preferences"
-                        icon={<Settings className="h-6 w-6 text-slate-500" />}
-                    />
-
-                    {/* Full width item */}
-                    <BentoItem colSpan={3} title="Project Overview" description="Summary of all your current projects">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="p-4 rounded-lg bg-muted/50">
-                                    <h4 className="font-medium">Project {i}</h4>
-                                    <p className="text-xs text-muted-foreground mt-1">Progress: {i * 25}%</p>
-                                    <div className="w-full h-2 bg-muted mt-2 rounded-full overflow-hidden">
-                                        <div className="h-full bg-primary" style={{ width: `${i * 25}%` }}></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                            </section>
+                        ) : (
+                            <div className="h-24 flex items-center justify-center text-gray-500">
+                                No se encontraron citas
+                            </div>
+                        )}
+                        <Sucursales />
                     </BentoItem>
                 </BentoGrid>
             </IonContent>

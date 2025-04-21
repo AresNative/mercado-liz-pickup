@@ -40,7 +40,7 @@ import { cn } from "@/utils/functions/cn"
 import MainForm from "@/components/form/main-form"
 import { CitasField } from "../constants/citas-field"
 import { useAppSelector } from "@/hooks/selector"
-import { usePostMutation } from "@/hooks/reducers/api"
+import { useGetAllMutation, usePostMutation } from "@/hooks/reducers/api"
 import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
 
@@ -139,7 +139,9 @@ export function AppointmentCalendar() {
   const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
   const history = useHistory();
 
-  const [PostData, { isLoading: isLoadingPost }] = usePostMutation()
+  const [PostData, { isLoading: isLoadingPost }] = usePostMutation();
+  const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
+
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
