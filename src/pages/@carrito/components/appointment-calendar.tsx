@@ -25,9 +25,7 @@ import {
   CalendarIcon,
   Clock,
   Clock3,
-  Check,
   Calendar,
-  Users,
   FileText,
   AlertCircle,
   Info,
@@ -41,13 +39,15 @@ import {
 import { cn } from "@/utils/functions/cn"
 import MainForm from "@/components/form/main-form"
 import { CitasField } from "../constants/citas-field"
+import { useAppSelector } from "@/hooks/selector"
+import { usePostMutation } from "@/hooks/reducers/api"
+import { u } from "framer-motion/dist/types.d-B50aGbjN"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
   startOfDay(addDays(new Date(), 5)).toISOString(),
   startOfDay(addDays(new Date(), 10)).toISOString(),
 ]
-
 const AVAILABLE_DATES = Array.from({ length: 60 }, (_, i) => {
   const date = startOfDay(addDays(new Date(), i))
   if (date.getDay() === 0) return null
@@ -135,6 +135,10 @@ const generateTimeSlots = (date: string) => {
 }
 
 export function AppointmentCalendar() {
+  const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+
+  const [PostData, { isLoading: isLoadingPost }] = usePostMutation()
+
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
@@ -712,7 +716,51 @@ export function AppointmentCalendar() {
                   "Ciudad",
                   "Direccion"
                 ]}
-                action={(values: any) => { console.log(values, selectedDate, selectedSlot, getSlotById(selectedSlot)?.time, getServiceById(selectedService)?.name) }}
+                action={
+                  async (values: any) => {
+                    try {
+                      const time = getSlotById(selectedSlot)?.time;
+                      const service = getServiceById(selectedService)?.name;
+
+                      if (!time || !service) {
+                        throw new Error('Missing required time or service information');
+                      }
+
+                      // Crear lista
+                      const listaPayload: any = {
+                        Lista: [{
+                          Id_Cliente: 1,
+                          Sucursal: 1,
+                          Servicio: service,
+                          Array_Lista: JSON.stringify(cartItems)
+                        }]
+                      };
+
+                      const listaResponse = await PostData({ url: "listas", data: listaPayload });
+                      const listaId = listaResponse.data.ids[0];
+                      console.log("Lista created with ID:", listaId);
+
+                      // Crear cita
+                      const citaPayload: any = {
+                        Citas: [{
+                          Id_Cliente: 1,
+                          Id_Usuario_Responsable: 1,
+                          Fecha: time,
+                          Plan: service,
+                          Id_Lista: listaId,
+                          Estado: "nuevo"
+                        }]
+                      };
+
+                      const citaResponse = await PostData({ url: "citas", data: citaPayload }).unwrap();
+                      console.log("Cita created successfully:", citaResponse);
+
+                    } catch (error) {
+                      console.error("Error in appointment creation process:", error);
+                      // Considerar agregar manejo de errores específico o reintentos aquí
+                    }
+                  }
+                }
                 dataForm={CitasField()}
               />
             </div>
