@@ -1,6 +1,5 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
 import { useGetAllMutation } from "@/hooks/reducers/api";
-import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { LoadingScreen } from "@/pages/@landing/[id]/product-id";
 import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
@@ -13,30 +12,39 @@ import { es } from "date-fns/locale"
 import Sucursales from "./sections/Sucursales";
 
 const Page: React.FC = () => {
-    const dispatch = useAppDispatch();
-    const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+    //const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+    const [cartItems, setcartItems] = useState<any>([])
     const [citas, setCitas] = useState<any>([])
     const [error, setError] = useState<string | null>(null);
     const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
-
-    const subtotal = cartItems.reduce((acc, item: any) =>
-        acc + (item.originalPrice || item.price) * item.quantity, 0);
-
-    const discountTotal = cartItems.reduce((acc, item: any) =>
-        item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
-
-    const total = subtotal - discountTotal;
 
     async function loadLastCitas() {
         try {
             const { data: Citas } = await GetData({
                 url: "citas",
                 filters: {
-                    "Filtros": [{ "Key": "id_cliente", "Value": "1" }],
+                    "Filtros": [
+                        { "Key": "id_cliente", "Value": "1" },
+                        { "Key": "estado", "Value": "nuevo" }
+                    ],
                     "Order": [{ "Key": "id", "Direction": "Desc" }]
                 },
+                pageSize: 1
             });
             setCitas(Citas?.data[0] || []);
+            const { data: Listas } = await GetData({
+                url: "listas",
+                filters: {
+                    "Filtros": [
+                        { "Key": "id_cliente", "Value": "1" },
+                        { "Key": "id", "Value": Citas?.data[0].id_lista }
+                    ],
+                    "Order": [{ "Key": "id", "Direction": "Desc" }]
+                },
+                pageSize: 1
+            });
+
+            setcartItems(JSON.parse(Listas.data[0].array_lista) || [])
             setError(null);
         } catch (err) {
             setError('No pudimos cargar la información de tu cita');
@@ -46,6 +54,15 @@ const Page: React.FC = () => {
     useEffect(() => {
         loadLastCitas()
     }, [])
+
+
+    const subtotal = cartItems.reduce((acc: any, item: any) =>
+        acc + (item.originalPrice || item.price) * item.quantity, 0);
+
+    const discountTotal = cartItems.reduce((acc: any, item: any) =>
+        item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
+
+    const total = subtotal - discountTotal;
 
     if (!citas.length && isLoadingGet) return <LoadingScreen />
 
@@ -65,7 +82,7 @@ const Page: React.FC = () => {
                         <div className="max-h-[300px] p-4 min-h-0 flex flex-col gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 hover:scrollbar-thumb-primary/30 scrollbar-track-transparent transition-colors">
                             {cartItems.length > 0 ? (
                                 <>
-                                    {cartItems.map((item: any, key) => (
+                                    {cartItems.map((item: any, key: any) => (
                                         <div
                                             key={key}
                                             className="group bg-white rounded-lg overflow-hidden transition-all hover:shadow-md border border-gray-100 flex-shrink-0 hover:border-primary/20"

@@ -39,10 +39,11 @@ import {
 import { cn } from "@/utils/functions/cn"
 import MainForm from "@/components/form/main-form"
 import { CitasField } from "../constants/citas-field"
-import { useAppSelector } from "@/hooks/selector"
+import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { useGetAllMutation, usePostMutation } from "@/hooks/reducers/api"
 import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
+import { clearCart } from "@/hooks/slices/cart"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -137,7 +138,9 @@ const generateTimeSlots = (date: string) => {
 
 export function AppointmentCalendar() {
   const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+
   const history = useHistory();
+  const dispatch = useAppDispatch();
 
   const [PostData, { isLoading: isLoadingPost }] = usePostMutation();
   const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
@@ -723,6 +726,33 @@ export function AppointmentCalendar() {
                 action={
                   async (values: any) => {
                     try {
+
+                      const { data: Clientes } = await GetData({
+                        url: "clientes",
+                        filters: {
+                          "Filtros": [
+                            { "Key": "telefono", "Value": values.Telefono }
+                          ],
+                          "Order": [{ "Key": "id", "Direction": "Desc" }]
+                        },
+                        pageSize: 1
+                      });
+                      let clienteResponse: any;
+                      if (!Clientes.data.length) {
+                        const dataCliente: any = {
+                          Cliente: [{
+                            nombre: values.Nombre,
+                            telefono: values.Telefono,
+                            cp: values.CodigoPostal,
+                            estado: values.Estado,
+                            ciudad: values.Ciudad,
+                            direccion: values.Direccion,
+                          }]
+                        }
+                        clienteResponse = await PostData({ url: "clientes", data: dataCliente }).unwrap();
+                      }
+                      const clienteId = Clientes.data[0].id || clienteResponse.data.ids[0];
+
                       const time = getSlotById(selectedSlot)?.time;
                       const service = getServiceById(selectedService)?.name;
 
@@ -733,7 +763,7 @@ export function AppointmentCalendar() {
                       // Crear lista
                       const listaPayload: any = {
                         Lista: [{
-                          Id_Cliente: 1,
+                          Id_Cliente: clienteId,
                           Sucursal: 1,
                           Servicio: service,
                           Array_Lista: JSON.stringify(cartItems)
@@ -746,7 +776,7 @@ export function AppointmentCalendar() {
                       // Crear cita
                       const citaPayload: any = {
                         Citas: [{
-                          Id_Cliente: 1,
+                          Id_Cliente: clienteId,
                           Id_Usuario_Responsable: 1,
                           Fecha: time,
                           Plan: service,
@@ -756,7 +786,7 @@ export function AppointmentCalendar() {
                       };
 
                       await PostData({ url: "citas", data: citaPayload }).unwrap();
-
+                      dispatch(clearCart())
                       present({
                         message: `Cita creada correctamente`,
                         duration: 1500,

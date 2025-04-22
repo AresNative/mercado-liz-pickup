@@ -7,4 +7,5 @@ export interface Product {
   unidad: string;
   price: number;
   originalPrice?: number;
+  factor?: number;
 }

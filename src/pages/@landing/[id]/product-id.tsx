@@ -1,5 +1,5 @@
 import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
-import { CloudDownload, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
+import { CloudDownload, ScanBarcode, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
@@ -172,41 +172,9 @@ const ProductID: React.FC = () => {
 
                             {/* Resto del maquetado se mantiene igual */}
                             <ul className="items-center gap-2 w-full">
-                                {product.unidad !== "Caja" ? (
-                                    <li>
-                                        <IonRadioGroup value="black">
-                                            <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
-                                                <div className="flex flex-1 justify-around w-full md:w-auto">
-                                                    <IonItem lines="none" className="w-full md:w-auto">
-                                                        <div className="flex items-center gap-1">
-                                                            <IonRadio slot="end" value="black">
-                                                                <IonLabel>Caja</IonLabel>
-                                                            </IonRadio>
-                                                        </div>
-                                                    </IonItem>
-
-                                                    <IonItem lines="none" className="w-full md:w-auto">
-                                                        <div className="flex items-center gap-1">
-                                                            <IonRadio slot="end" value="white">
-                                                                <IonLabel>{product.unidad}</IonLabel>
-                                                            </IonRadio>
-                                                        </div>
-                                                    </IonItem>
-                                                </div>
-                                            </div>
-                                        </IonRadioGroup>
-                                    </li>
-                                ) : (
-                                    <li>
-                                        <IonRadioGroup value="black">
-                                            <IonItem lines="none" className="w-full md:w-auto">
-                                                <div className="flex items-center gap-1">
-                                                    <IonRadio slot="end" value="black">
-                                                        <IonLabel>Caja</IonLabel>
-                                                    </IonRadio>
-                                                </div>
-                                            </IonItem>
-                                        </IonRadioGroup>
+                                {product.unidad === "Caja" && (
+                                    <li className="items-center">
+                                        La caja contiene - {product.factor} pieza(s)
                                     </li>
                                 )}
                                 <li className="flex items-center gap-4">
@@ -325,15 +293,11 @@ const ProductID: React.FC = () => {
                                 </IonSegmentButton>
                             </IonSegment>
 
-                            <ul className="list-disc list-inside mt-5">
-                                <li>
-                                    Cancelación Activa de Ruido
-                                </li>
-                                <li>
-                                    Batería de 30 horas de duración
-                                </li>
-                                <li>
-                                    Diseño sobre la oreja cómodo
+                            <ul className="mt-5">
+                                <li className="flex items-center text-sm gap-1">
+                                    <ScanBarcode className="h-4 w-4 fill-[#8B5CF6]" />
+                                    Codigo de barras:
+                                    <span className="text-[#8B5CF6]">{product.id}</span>
                                 </li>
                             </ul>
 

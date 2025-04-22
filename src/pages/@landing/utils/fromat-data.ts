@@ -13,11 +13,12 @@ export interface ApiProduct {
 }
 
 export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
-  id: apiProduct.ID.toString(),
+  id: apiProduct.Codigo.toString(),
   category: apiProduct.Grupo,
   title: apiProduct.Nombre.trim(),
   price: apiProduct.PrecioRegular,
   originalPrice: apiProduct.TieneOferta ? apiProduct.PrecioRegular : undefined,
   unidad: apiProduct.Unidad,
   discount: apiProduct.TieneOferta ? 10 : undefined,
+  factor: apiProduct.Factor,
 });

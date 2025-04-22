@@ -3,7 +3,7 @@
 import type React from "react"
 import { IonRouterLink, IonButton, IonImg } from "@ionic/react"
 import { motion } from "framer-motion"
-import { ShoppingCart, Star } from "lucide-react"
+import { ScanBarcode, ShoppingCart, Star } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { addToCart, removeFromCart } from "@/hooks/slices/cart"
 
@@ -90,6 +90,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     </div>
                     <span className="text-xs text-gray-500 ml-2">• {product.category}</span>
                     <span className="text-xs text-gray-500 ml-2">• {product.unidad}</span>
+                </div>
+                <div className="flex items-center mt-1 mb-2">
+                    <div className="flex items-center text-[#8B5CF6]">
+                        <ScanBarcode className="h-3 w-3 fill-[#8B5CF6]" />
+                        <span className="text-xs ml-1">{product.id}</span>
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between">
