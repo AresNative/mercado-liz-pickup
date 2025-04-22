@@ -12,10 +12,10 @@ const CarritoPage = () => {
 
     // Cálculos de totales
     const subtotal = cartItems.reduce((acc, item: any) =>
-        acc + (item.originalPrice || item.price) * item.quantity, 0);
+        acc + (item.precioRegular || item.precio) * item.quantity, 0);
 
     const discountTotal = cartItems.reduce((acc, item: any) =>
-        item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
+        item.discount ? acc + ((item.precioRegular! - item.precio) * item.quantity) : acc, 0);
 
     const total = subtotal - discountTotal;
 
@@ -63,21 +63,21 @@ const CarritoPage = () => {
                                             <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
                                                 <img
                                                     src={item.image || "/placeholder.svg"}
-                                                    alt={item.title}
+                                                    alt={item.nombre}
                                                     className="w-full h-full object-contain"
                                                 />
                                             </div>
                                             <div className="flex-1 w-full">
-                                                <h3 className="font-medium line-clamp-2 text-lg">{item.title}</h3>
+                                                <h3 className="font-medium line-clamp-2 text-lg">{item.nombre}</h3>
                                                 <p className="text-sm text-gray-500 mt-1">{item.category}</p>
 
                                                 <div className="my-3 border-t border-gray-100"></div>
 
                                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-lg font-bold text-gray-900">${item.price.toFixed(2)}</span>
-                                                        {item.originalPrice && (
-                                                            <span className="text-sm text-gray-500 line-through">${item.originalPrice.toFixed(2)}</span>
+                                                        <span className="text-lg font-bold text-gray-900">${item.precio.toFixed(2)}</span>
+                                                        {item.precioRegular && (
+                                                            <span className="text-sm text-gray-500 line-through">${item.precioRegular.toFixed(2)}</span>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-2">

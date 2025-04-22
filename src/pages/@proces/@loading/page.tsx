@@ -57,10 +57,10 @@ const Page: React.FC = () => {
 
 
     const subtotal = cartItems.reduce((acc: any, item: any) =>
-        acc + (item.originalPrice || item.price) * item.quantity, 0);
+        acc + (item.precioRegular || item.precio) * item.quantity, 0);
 
     const discountTotal = cartItems.reduce((acc: any, item: any) =>
-        item.discount ? acc + ((item.originalPrice! - item.price) * item.quantity) : acc, 0);
+        item.discount ? acc + ((item.precioRegular! - item.precio) * item.quantity) : acc, 0);
 
     const total = subtotal - discountTotal;
 
@@ -91,15 +91,15 @@ const Page: React.FC = () => {
                                                 <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
                                                     <img
                                                         src={item.image || "/placeholder.svg"}
-                                                        alt={`Imagen de ${item.title}`}
+                                                        alt={`Imagen de ${item.nombre}`}
                                                         className="w-full h-full object-contain transition-opacity opacity-0"
                                                         onLoad={(e) => (e.currentTarget.style.opacity = "1")}
                                                         loading="lazy"
                                                     />
                                                 </div>
                                                 <div className="flex-1 w-full">
-                                                    <h3 className="font-medium line-clamp-2 text-lg">{item.title}</h3>
-                                                    <p className="text-sm text-gray-500 mt-1">{item.category}</p>
+                                                    <h3 className="font-medium line-clamp-2 text-lg">{item.nombre}</h3>
+                                                    <p className="text-sm text-gray-500 mt-1">{item.categoria}</p>
 
                                                     <div className="my-3 border-t border-gray-100"></div>
 
@@ -107,11 +107,11 @@ const Page: React.FC = () => {
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-xs text-gray-500 ml-2">• {item.unidad}</span>
                                                             <span className="text-lg font-bold text-gray-900">
-                                                                ${item.price.toFixed(2)}
+                                                                ${item.precio.toFixed(2)}
                                                             </span>
-                                                            {item.originalPrice && (
+                                                            {item.precioRegular && (
                                                                 <span className="text-sm text-gray-500 line-through">
-                                                                    ${item.originalPrice.toFixed(2)}
+                                                                    ${item.precioRegular.toFixed(2)}
                                                                 </span>
                                                             )}
                                                         </div>

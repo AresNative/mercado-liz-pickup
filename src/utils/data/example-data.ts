@@ -1,11 +1,11 @@
 export interface Product {
   id: string;
   image?: string;
-  title: string;
-  discount?: number;
-  category: string;
+  nombre: string;
+  descuento?: number;
+  categoria: string;
   unidad: string;
-  price: number;
-  originalPrice?: number;
+  precio: number;
+  precioRegular?: number;
   factor?: number;
 }

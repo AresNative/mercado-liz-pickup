@@ -6,17 +6,7 @@ import { motion } from "framer-motion"
 import { ScanBarcode, ShoppingCart, Star } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { addToCart, removeFromCart } from "@/hooks/slices/cart"
-
-interface Product {
-    id: string
-    image?: string
-    title: string
-    discount?: number
-    category: string
-    unidad: string
-    price: number
-    originalPrice?: number
-}
+import { Product } from "@/utils/data/example-data"
 
 interface ProductCardProps {
     product: Product
@@ -66,13 +56,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <div className="relative h-full md:aspect-square overflow-hidden">
                     <IonImg
                         src={product.image || "/placeholder.svg?height=300&width=300"}
-                        alt={product.title}
+                        alt={product.nombre}
                         className="object-cover w-full h-full min-w-1/3 md:min-w-full md:max-h-1/3 rounded-t-xl md:rounded-t-none md:rounded-l-xl"
                         style={{ aspectRatio: "1/1" }}
                     />
-                    {product.discount && (
+                    {product.descuento && (
                         <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
-                            {product.discount}% OFF
+                            {product.descuento}% OFF
                         </div>
                     )}
                 </div>
@@ -80,7 +70,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
             <div className="p-3 flex-1 md:w-full md:border-t-2 w-2/3 md:pt-3 md:mt-2">
                 <IonRouterLink routerLink={`/products/${product.id}`}>
-                    <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.title}</h3>
+                    <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.nombre}</h3>
                 </IonRouterLink>
 
                 <div className="flex items-center mt-1 mb-2">
@@ -88,7 +78,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <Star className="h-3 w-3 fill-[#8B5CF6]" />
                         <span className="text-xs ml-1">4.8</span>
                     </div>
-                    <span className="text-xs text-gray-500 ml-2">• {product.category}</span>
+                    <span className="text-xs text-gray-500 ml-2">• {product.categoria}</span>
                     <span className="text-xs text-gray-500 ml-2">• {product.unidad}</span>
                 </div>
                 <div className="flex items-center mt-1 mb-2">
@@ -100,9 +90,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <span className="font-bold text-base">{product.price ? "$" + product.price.toFixed(2) : "No disponible"}</span>
-                        {product.originalPrice && (
-                            <span className="text-xs text-gray-500 line-through ml-2">${product.originalPrice.toFixed(2)}</span>
+                        <span className="font-bold text-base">{product.precio ? "$" + product.precio.toFixed(2) : "No disponible"}</span>
+                        {product.precioRegular && (
+                            <span className="text-xs text-gray-500 line-through ml-2">${product.precioRegular.toFixed(2)}</span>
                         )}
                     </div>
 

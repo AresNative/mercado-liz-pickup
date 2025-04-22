@@ -36,7 +36,7 @@ const ProductID: React.FC = () => {
 
     const { data, isFetching, error } = useGetArticulosQuery({
         page: 1,
-        id: id,
+        filtro: id,
         listaPrecio: "(Precio Lista)"
     })
 
@@ -123,20 +123,20 @@ const ProductID: React.FC = () => {
                         <IonCol size="12" sizeMd="6">
                             <img
                                 src={product.image || "/placeholder.svg"} // Usar imagen del producto
-                                alt={product.title} // Alt dinámico
+                                alt={product.nombre} // Alt dinámico
                                 className="w-full h-full bg-slate-100 rounded-lg"
                             />
                             {/* Mostrar descuento si existe */}
-                            {product.discount && (
+                            {product.descuento && (
                                 <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                    {product.discount}% OFF
+                                    {product.descuento}% OFF
                                 </div>
                             )}
                         </IonCol>
 
                         <IonCol size="12" sizeMd="6">
                             <div>
-                                <h1 style={{ margin: 0 }}>{product.title}</h1>
+                                <h1 style={{ margin: 0 }}>{product.nombre}</h1>
                                 <div className="flex items-center gap-2">
                                     {/* Sección de reviews (mantenemos estática ya que no está en la interfaz) */}
                                     {[...Array(3)].map((_, i) => (
@@ -150,23 +150,23 @@ const ProductID: React.FC = () => {
 
                                 {/* Precio con descuento si aplica */}
                                 <div>
-                                    {product.originalPrice ? (
+                                    {product.precioRegular ? (
                                         <>
                                             <h2 className="text-red-500">
-                                                ${product.price.toFixed(2)}
+                                                ${product.precio.toFixed(2)}
                                                 <span className="text-gray-400 line-through ml-2">
-                                                    ${product.originalPrice.toFixed(2)}
+                                                    ${product.precioRegular.toFixed(2)}
                                                 </span>
                                             </h2>
                                         </>
                                     ) : (
-                                        <h2>${product.price.toFixed(2)}</h2>
+                                        <h2>${product.precio.toFixed(2)}</h2>
                                     )}
                                 </div>
 
                                 <p style={{ color: '#666' }}>
                                     {/* Descripción (agregar campo si es necesario) */}
-                                    {product.category}
+                                    {product.categoria}
                                 </p>
                             </div>
 
