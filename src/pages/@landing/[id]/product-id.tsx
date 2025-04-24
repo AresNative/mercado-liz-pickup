@@ -33,11 +33,11 @@ const ProductID: React.FC = () => {
     const quantityInCart = cartItem?.quantity || 0;
 
     const [product, setProduct] = useState<Product | null>(null);
-
+    const precio = useAppSelector((state) => state.app.sucursal.precio);
     const { data, isFetching, error } = useGetArticulosQuery({
         page: 1,
         filtro: id,
-        listaPrecio: "(Precio Lista)"
+        listaPrecio: precio
     })
 
     useEffect(() => {

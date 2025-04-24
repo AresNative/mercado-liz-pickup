@@ -16,6 +16,7 @@ const Layout: React.FC = () => {
       id: branch.id,
       name: branch.name,
       address: branch.address,
+      precio: branch.precio
     };
 
     dispatch(setSucursal(branchData));

@@ -6,6 +6,7 @@ import useDebounce from "@/hooks/use-debounce"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { Search } from "lucide-react"
 import { Product } from "@/utils/data/example-data"
+import { useAppSelector } from "@/hooks/selector"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
@@ -24,12 +25,12 @@ function PriceChecker() {
     const [hasMore, setHasMore] = useState(true)
     const [query, setQuery] = useState("")
     const debouncedQuery = useDebounce(query, 200)
-
+    const precio = useAppSelector((state) => state.app.sucursal.precio);
     const { data, isFetching, error } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
         filtro: query ?? null,
-        listaPrecio: "(Precio Lista)",
+        listaPrecio: precio,
         debouncedQuery
     })
 
@@ -38,10 +39,10 @@ function PriceChecker() {
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map((item: any) => ({
-                id: item.ID,
-                title: item.Nombre,  // Cambiar de name a title
-                price: item.PrecioRegular,
-                category: item.Grupo,
+                id: item.Codigo,
+                nombre: item.Nombre,  // Cambiar de name a title
+                precio: item.PrecioRegular,
+                categoria: item.Grupo,
                 unidad: item.Unidad, // Cambiar description por unidad
                 image: item.Imagen || "/placeholder.svg", // Añadir imagen
             }))
@@ -66,13 +67,6 @@ function PriceChecker() {
             setHasMore(false)
         }
     }, [error])
-
-    const loadMore = useCallback(async (event: CustomEvent<void>) => {
-        if (!isFetching && hasMore) {
-            setPage(prev => prev + 1)
-        }
-        (event.target as HTMLIonInfiniteScrollElement).complete()
-    }, [isFetching, hasMore])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
@@ -150,13 +144,13 @@ function PriceChecker() {
                                                         {product.image && ( // Mostrar imagen si existe
                                                             <img
                                                                 src={product.image}
-                                                                alt={product.title}
+                                                                alt={product.nombre}
                                                                 className="h-8 w-8 rounded-md object-cover md:block hidden"
                                                             />
                                                         )}
                                                         <section className="flex flex-col">
                                                             <IonLabel className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                {product.title}
+                                                                {product.nombre}
                                                             </IonLabel>
                                                             <span className="text-xs text-gray-400">
                                                                 {product.unidad} {/* Cambiar de description a unidad */}

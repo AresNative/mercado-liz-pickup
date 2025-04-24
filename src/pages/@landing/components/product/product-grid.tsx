@@ -20,12 +20,14 @@ const ProductGrid: React.FC = () => {
 
     const categoria = useAppSelector((state) => state.filterData.key?.value);
 
+    const precio = useAppSelector((state) => state.app.sucursal.precio);
+
     const { data, isFetching, error } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
         filtro: "",
         categoria: categoria,
-        listaPrecio: "(Precio Lista)",
+        listaPrecio: precio,
         refreshTrigger, // Nuevo parámetro para forzar recargas
     });
 
