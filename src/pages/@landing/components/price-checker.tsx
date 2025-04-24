@@ -1,7 +1,7 @@
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { IonItem, IonLabel, IonList } from "@ionic/react"
+import { IonItem, IonLabel, IonList, IonSpinner } from "@ionic/react"
 import useDebounce from "@/hooks/use-debounce"
 import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { Search } from "lucide-react"
@@ -22,7 +22,6 @@ const PAGE_SIZE = 5
 function PriceChecker() {
     const [page, setPage] = useState(1)
     const [combinedData, setCombinedData] = useState<Product[]>([])
-    const [hasMore, setHasMore] = useState(true)
     const [query, setQuery] = useState("")
     const debouncedQuery = useDebounce(query, 200)
     const precio = useAppSelector((state) => state.app.sucursal.precio);
@@ -50,7 +49,6 @@ function PriceChecker() {
             setCombinedData(prev =>
                 page === 1 ? mappedProducts : [...prev, ...mappedProducts]
             )
-            setHasMore(mappedProducts.length === PAGE_SIZE)
         }
     }, [data, page])
 
@@ -59,14 +57,6 @@ function PriceChecker() {
         setPage(1)
         setCombinedData([])
     }, [debouncedQuery])
-
-    // Manejo de errores
-    useEffect(() => {
-        if (error) {
-            console.error("Error fetching products:", error)
-            setHasMore(false)
-        }
-    }, [error])
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value)
@@ -97,7 +87,6 @@ function PriceChecker() {
         show: { opacity: 1, y: 0, transition: { duration: 0.3 } },
         exit: { opacity: 0, y: -10, transition: { duration: 0.2 } },
     }
-
     return (
         <div className="mx-auto inset-0 z-20">
             <div className="relative flex max-h-3/4  flex-col justify-start items-center">
@@ -139,24 +128,34 @@ function PriceChecker() {
                                             whileTap={{ scale: 0.98 }}>
                                             <div className="p-0 m-0 w-full h-full">
                                                 <IonList className="flex items-center gap-2 justify-between flex-1">
-                                                    <IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.id}`}>
+                                                    {isFetching ? (
+                                                        <IonItem className="w-full flex items-center gap-2">
 
-                                                        {product.image && ( // Mostrar imagen si existe
-                                                            <img
-                                                                src={product.image}
-                                                                alt={product.nombre}
-                                                                className="h-8 w-8 rounded-md object-cover md:block hidden"
-                                                            />
-                                                        )}
-                                                        <section className="flex flex-col">
-                                                            <IonLabel className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                                {product.nombre}
-                                                            </IonLabel>
-                                                            <span className="text-xs text-gray-400">
-                                                                {product.unidad} {/* Cambiar de description a unidad */}
-                                                            </span>
-                                                        </section>
-                                                    </IonItem>
+                                                            <div className="text-center">
+                                                                <IonSpinner
+                                                                    name="crescent"
+                                                                    className="h-12 w-12 text-purple-600"
+                                                                />
+                                                                <p className="mt-4 text-gray-600">Cargando pantalla...</p>
+                                                            </div>
+                                                        </IonItem>) : (<IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.id}`}>
+
+                                                            {product.image && ( // Mostrar imagen si existe
+                                                                <img
+                                                                    src={product.image}
+                                                                    alt={product.nombre}
+                                                                    className="h-8 w-8 rounded-md object-cover md:block hidden"
+                                                                />
+                                                            )}
+                                                            <section className="flex flex-col">
+                                                                <IonLabel className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                                    {product.nombre}
+                                                                </IonLabel>
+                                                                <span className="text-xs text-gray-400">
+                                                                    {product.unidad} {/* Cambiar de description a unidad */}
+                                                                </span>
+                                                            </section>
+                                                        </IonItem>)}
                                                 </IonList>
                                             </div>
                                         </motion.li>
