@@ -3,7 +3,7 @@ import { useGetAllMutation } from "@/hooks/reducers/api";
 import { LoadingScreen } from "@/pages/@landing/[id]/product-id";
 import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
-import { BarChart3, Calendar } from "lucide-react";
+import { BarChart3, Calendar, Grid2x2X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
     format
@@ -17,8 +17,11 @@ const Page: React.FC = () => {
     const [citas, setCitas] = useState<any>([])
     const [error, setError] = useState<string | null>(null);
     const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
-    const userId = getLocalStorageItem("user");
+
+    const userId = getLocalStorageItem("user") || null;
+
     async function loadLastCitas() {
+        if (!userId) return
         try {
             const { data: Citas } = await GetData({
                 url: "citas",
@@ -65,7 +68,17 @@ const Page: React.FC = () => {
     const total = subtotal - discountTotal;
 
     if (!citas.length && isLoadingGet) return <LoadingScreen />
-
+    if (!userId) return <IonPage>
+        <HeaderCart back carr />
+        <IonContent fullscreen>
+            <section className="text-gray-500 w-full h-full flex flex-col gap-4 items-center justify-center">
+                <Grid2x2X className="w-40 h-40 text-gray-300" />
+                <span>
+                    No hay pedidos o clientes registados
+                </span>
+            </section>
+        </IonContent>
+    </IonPage>
     return (
         <IonPage>
             <HeaderCart back carr />
