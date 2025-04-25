@@ -44,6 +44,7 @@ import { useGetAllMutation, usePostMutation } from "@/hooks/reducers/api"
 import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
 import { clearCart } from "@/hooks/slices/cart"
+import { setLocalStorageItem } from "@/utils/functions/local-storage"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -753,6 +754,7 @@ export function AppointmentCalendar() {
                       }
                       const clienteId = Clientes.data[0].id || clienteResponse.data.ids[0];
 
+                      setLocalStorageItem("user", clienteId)
                       const time = getSlotById(selectedSlot)?.time;
                       const service = getServiceById(selectedService)?.name;
 
@@ -789,7 +791,7 @@ export function AppointmentCalendar() {
                       dispatch(clearCart())
                       present({
                         message: `Cita creada correctamente`,
-                        duration: 1500,
+                        duration: 2500,
                         cssClass: "custom-tertiary",
                         position: 'bottom',
                         buttons: [{

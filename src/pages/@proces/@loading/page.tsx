@@ -10,21 +10,21 @@ import {
 } from "date-fns"
 import { es } from "date-fns/locale"
 import Sucursales from "./sections/Sucursales";
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 const Page: React.FC = () => {
-    //const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
     const [cartItems, setcartItems] = useState<any>([])
     const [citas, setCitas] = useState<any>([])
     const [error, setError] = useState<string | null>(null);
     const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
-
+    const userId = getLocalStorageItem("user");
     async function loadLastCitas() {
         try {
             const { data: Citas } = await GetData({
                 url: "citas",
                 filters: {
                     "Filtros": [
-                        { "Key": "id_cliente", "Value": "1" },
+                        { "Key": "id_cliente", "Value": userId },
                         { "Key": "estado", "Value": "nuevo" }
                     ],
                     "Order": [{ "Key": "id", "Direction": "Desc" }]
@@ -36,7 +36,7 @@ const Page: React.FC = () => {
                 url: "listas",
                 filters: {
                     "Filtros": [
-                        { "Key": "id_cliente", "Value": "1" },
+                        { "Key": "id_cliente", "Value": userId },
                         { "Key": "id", "Value": Citas?.data[0].id_lista }
                     ],
                     "Order": [{ "Key": "id", "Direction": "Desc" }]
