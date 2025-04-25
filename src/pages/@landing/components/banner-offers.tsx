@@ -186,7 +186,7 @@ export default function PromoBanner({
                 >
                     {items.map((item, index) => (
                         <div
-                            key={item.id}
+                            key={index}
                             className={cn("w-full flex-shrink-0 px-10", item.bgColor || "bg-gradient-to-r from-[#A855F7] to-[#37065f]")}
                         >
                             <div className="p-3 sm:p-4">{renderContent(item)}</div>
