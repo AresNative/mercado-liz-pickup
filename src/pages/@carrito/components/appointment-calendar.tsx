@@ -138,7 +138,7 @@ const generateTimeSlots = (date: string) => {
 }
 
 export function AppointmentCalendar() {
-  const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+  const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
 
   const history = useHistory();
   const dispatch = useAppDispatch();

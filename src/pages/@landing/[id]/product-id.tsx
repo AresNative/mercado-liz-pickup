@@ -120,21 +120,23 @@ const ProductID: React.FC = () => {
             <IonContent className="ion-padding" fullscreen>
                 <IonGrid>
                     <IonRow>
-                        <IonCol size="12" sizeMd="6">
-                            <img
-                                src={product.image || "/placeholder.svg"} // Usar imagen del producto
-                                alt={product.nombre} // Alt dinámico
-                                className="w-full h-full bg-slate-100 rounded-lg"
-                            />
-                            {/* Mostrar descuento si existe */}
-                            {product.descuento && (
-                                <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                    {product.descuento}% OFF
-                                </div>
-                            )}
-                        </IonCol>
+                        {product.image && (
+                            <IonCol size="12" sizeMd="6">
+                                <img
+                                    src={product.image || "/placeholder.svg"} // Usar imagen del producto
+                                    alt={product.nombre} // Alt dinámico
+                                    className="w-full h-full bg-slate-100 rounded-lg"
+                                />
+                                {/* Mostrar descuento si existe */}
+                                {product.descuento && (
+                                    <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                        {product.descuento}% OFF
+                                    </div>
+                                )}
+                            </IonCol>
+                        )}
 
-                        <IonCol size="12" sizeMd="6">
+                        <IonCol>
                             <div>
                                 <h1 style={{ margin: 0 }}>{product.nombre}</h1>
                                 <div className="flex items-center gap-2">

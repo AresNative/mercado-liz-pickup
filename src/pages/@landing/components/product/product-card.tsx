@@ -7,6 +7,7 @@ import { ScanBarcode, ShoppingCart, Star } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { addToCart, removeFromCart } from "@/hooks/slices/cart"
 import { Product } from "@/utils/data/example-data"
+import { cn } from "@/utils/functions/cn"
 
 interface ProductCardProps {
     product: Product
@@ -52,12 +53,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     return (
         <div className="bg-background lg:w-9/12 md:m-auto border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-row md:flex-col">
-            <IonRouterLink routerLink={`/products/${product.id}`} className="w-1/3 sm:w-1/3 md:w-full">
+            <IonRouterLink
+                routerLink={`/products/${product.id}`}
+                className={`${product.image ? 'w-1/3 sm:w-1/3' : 'hidden'} md:w-full`}
+            >
                 <div className="relative h-full md:aspect-square overflow-hidden">
                     <IonImg
                         src={product.image || "/placeholder.svg?height=300&width=300"}
                         alt={product.nombre}
-                        className="object-cover w-full h-full min-w-1/3 md:min-w-full md:max-h-1/3 rounded-t-xl md:rounded-t-none md:rounded-l-xl"
+                        className={`object-cover w-full h-full ${product.image
+                            ? "min-w-1/3 md:min-w-full"
+                            : "hidden"
+                            } md:max-h-1/3 rounded-t-xl md:rounded-t-none md:rounded-l-xl`}
                         style={{ aspectRatio: "1/1" }}
                     />
                     {product.descuento && (
@@ -68,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 </div>
             </IonRouterLink>
 
-            <div className="p-3 flex-1 md:w-full md:border-t-2 w-2/3 md:pt-3 md:mt-2">
+            <div className={cn(product.image && "md:border-t-2 md:mt-2 md:pt-3", "p-2 flex-1 md:w-full w-2/3 ")}>
                 <IonRouterLink routerLink={`/products/${product.id}`}>
                     <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.nombre}</h3>
                 </IonRouterLink>

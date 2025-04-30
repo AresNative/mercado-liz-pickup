@@ -28,7 +28,7 @@ const Page: React.FC = () => {
                 filters: {
                     "Filtros": [
                         { "Key": "id_cliente", "Value": userId },
-                        { "Key": "estado", "Value": "nuevo" }
+                        { "Key": "estado", "Value": "terminado", "Operator": "<>" }
                     ],
                     "Order": [{ "Key": "id", "Direction": "Desc" }]
                 },
