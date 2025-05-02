@@ -19,6 +19,7 @@ import {
   startOfDay,
   startOfWeek,
   endOfWeek,
+  isWithinInterval,
 } from "date-fns"
 import { es } from "date-fns/locale"
 import {
@@ -84,7 +85,7 @@ const serviceTypes = [
   },
 ]
 
-const generateTimeSlots = (date: string) => {
+const generateTimeSlots = (date: string, existingCitas: any[]) => {
   const baseDate = parseISO(date)
   const startHour = 9
   const endHour = 18
@@ -92,19 +93,30 @@ const generateTimeSlots = (date: string) => {
   const now = new Date()
   const isToday = isSameDay(baseDate, now)
 
+  // Convertir citas existentes a intervalos de tiempo
+  const bookedSlots = existingCitas.map(cita => {
+    const start = parseISO(cita.fecha)
+    const end = addMinutes(start, 5) // Asume duración de 30min si no está especificada
+    return { start, end }
+  })
+
+  const isSlotAvailable = (slotTime: Date) => {
+    // Verificar si el slot está dentro de algún intervalo reservado
+    return !bookedSlots.some(({ start, end }) =>
+      isWithinInterval(slotTime, { start, end }) ||
+      isWithinInterval(addMinutes(slotTime, slotDuration), { start, end })
+    )
+  }
+  // Generación de slots matutinos (9:00 - 13:00)
   const morningSlots = []
   for (let hour = startHour; hour < 13; hour++) {
     for (let minute = 0; minute < 60; minute += slotDuration) {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      if (isToday && isBefore(slotTime, now)) {
-        continue
-      }
+      if (isToday && isBefore(slotTime, now)) continue
 
-      const seed = date + hour + minute
-      const pseudoRandom = Math.sin(Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0)) * 10000
-      const isAvailable = pseudoRandom
+      const isAvailable = isSlotAvailable(slotTime)
 
       morningSlots.push({
         id: `${hour}-${minute}`,
@@ -114,20 +126,16 @@ const generateTimeSlots = (date: string) => {
     }
   }
 
+  // Generación de slots vespertinos (14:00 - 18:00)
   const afternoonSlots = []
   for (let hour = 14; hour < endHour; hour++) {
     for (let minute = 0; minute < 60; minute += slotDuration) {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      if (isToday && isBefore(slotTime, now)) {
-        continue
-      }
+      if (isToday && isBefore(slotTime, now)) continue
 
-      const seed = date + hour + minute
-      const pseudoRandom = Math.sin(Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0)) * 10000
-      const isAvailable = true
-      console.log(pseudoRandom % 10 > 3);
+      const isAvailable = isSlotAvailable(slotTime)
 
       afternoonSlots.push({
         id: `${hour}-${minute}`,
@@ -169,11 +177,23 @@ export function AppointmentCalendar() {
   useEffect(() => {
     if (selectedDate) {
       setLoadingSlots(true)
-      setTimeout(() => {
-        const slots = generateTimeSlots(selectedDate)
+
+      // Obtener citas para la fecha seleccionada
+      GetData({
+        url: "citas",
+        filters: {
+          "Filtros": [
+          ],
+          "Order": [{ "Key": "id", "Direction": "Desc" }]
+        },
+        pageSize: 100  // Ajustar según necesidades
+      }).unwrap().then((response) => {
+        const slots = generateTimeSlots(selectedDate, response.data || [])
         setTimeSlots(slots)
         setLoadingSlots(false)
-      }, 600)
+      }).catch(() => {
+        setLoadingSlots(false)
+      })
     }
   }, [selectedDate])
 
