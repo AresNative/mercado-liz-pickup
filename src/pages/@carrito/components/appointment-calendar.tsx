@@ -17,6 +17,8 @@ import {
   addMinutes,
   isBefore,
   startOfDay,
+  startOfWeek,
+  endOfWeek,
 } from "date-fns"
 import { es } from "date-fns/locale"
 import {
@@ -86,7 +88,7 @@ const generateTimeSlots = (date: string) => {
   const baseDate = parseISO(date)
   const startHour = 9
   const endHour = 18
-  const slotDuration = 30
+  const slotDuration = 15
   const now = new Date()
   const isToday = isSameDay(baseDate, now)
 
@@ -102,7 +104,7 @@ const generateTimeSlots = (date: string) => {
 
       const seed = date + hour + minute
       const pseudoRandom = Math.sin(Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0)) * 10000
-      const isAvailable = pseudoRandom % 10 > 3
+      const isAvailable = pseudoRandom
 
       morningSlots.push({
         id: `${hour}-${minute}`,
@@ -124,7 +126,8 @@ const generateTimeSlots = (date: string) => {
 
       const seed = date + hour + minute
       const pseudoRandom = Math.sin(Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0)) * 10000
-      const isAvailable = pseudoRandom % 10 > 3
+      const isAvailable = true
+      console.log(pseudoRandom % 10 > 3);
 
       afternoonSlots.push({
         id: `${hour}-${minute}`,
@@ -138,6 +141,9 @@ const generateTimeSlots = (date: string) => {
 }
 
 export function AppointmentCalendar() {
+
+  const precio = useAppSelector((state) => state.app.sucursal.precio);
+
   const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
 
   const history = useHistory();
@@ -236,7 +242,9 @@ export function AppointmentCalendar() {
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }) // Domingo como primer día
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })      // Sábado como último día
+  const daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   const handleCalendarKeyDown = (e: React.KeyboardEvent, day: Date) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -381,7 +389,8 @@ export function AppointmentCalendar() {
             </div>
 
             <div className="mt-2 grid grid-cols-7 gap-1">
-              {daysInMonth.map((day, dayIdx) => {
+              {daysInCalendar.map((day, dayIdx) => {
+                const isCurrentMonth = isSameMonth(day, currentMonth)
                 const isAvailable = isDateAvailable(day)
                 const isBlocked = isDateBlocked(day)
                 const isPast = isPastDate(day)
@@ -391,19 +400,19 @@ export function AppointmentCalendar() {
                 return (
                   <div key={dayIdx} className="relative">
                     <button
-                      onClick={() => isAvailable && handleDateClick(day)}
-                      onKeyDown={(e) => isAvailable && handleCalendarKeyDown(e, day)}
-                      disabled={!isAvailable || isPast}
+                      onClick={() => isCurrentMonth && isAvailable && handleDateClick(day)}
+                      onKeyDown={(e) => isCurrentMonth && isAvailable && handleCalendarKeyDown(e, day)}
+                      disabled={!isCurrentMonth || !isAvailable || isPast}
                       className={cn(
                         "flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors",
-                        !isSameMonth(day, currentMonth) && "text-gray-300",
-                        isSameMonth(day, currentMonth) &&
+                        !isCurrentMonth && "text-gray-300", // Días de otros meses
+                        isCurrentMonth &&
                         !isAvailable &&
                         !isBlocked &&
                         !isPast &&
                         "text-gray-400 cursor-not-allowed",
-                        isSameMonth(day, currentMonth) && isPast && "bg-gray-100 text-gray-400 cursor-not-allowed",
-                        isSameMonth(day, currentMonth) &&
+                        isCurrentMonth && isPast && "bg-gray-100 text-gray-400 cursor-not-allowed",
+                        isCurrentMonth &&
                         isAvailable &&
                         !isSelected &&
                         "bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer",
@@ -755,7 +764,8 @@ export function AppointmentCalendar() {
                       const clienteId = Clientes.data[0].id || clienteResponse.data.ids[0];
 
                       setLocalStorageItem("user", clienteId)
-                      const time = getSlotById(selectedSlot)?.time;
+                      const time = format(parseISO(getSlotById(selectedSlot)?.time), "yyyy-MM-dd'T'HH:mm:ss", { locale: es });
+
                       const service = getServiceById(selectedService)?.name;
 
                       if (!time || !service) {
@@ -783,7 +793,8 @@ export function AppointmentCalendar() {
                           Fecha: time,
                           Plan: service,
                           Id_Lista: listaId,
-                          Estado: "nuevo"
+                          Estado: "nuevo",
+                          Sucursal: precio,
                         }]
                       };
 
@@ -798,7 +809,6 @@ export function AppointmentCalendar() {
                           text: "ver",
                           side: 'end',
                           handler: () => {
-                            console.log("ver");
                             history.replace('/loading');
                           }
                         }]
