@@ -183,6 +183,7 @@ export function AppointmentCalendar() {
         url: "citas",
         filters: {
           "Filtros": [
+            { "Key": "sucursal", "Value": precio }
           ],
           "Order": [{ "Key": "id", "Direction": "Desc" }]
         },
