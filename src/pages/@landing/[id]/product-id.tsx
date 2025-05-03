@@ -28,8 +28,8 @@ export const LoadingScreen = () => (
 const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const dispatch = useAppDispatch();
-    const cartItems = useAppSelector((state) => state.cart.items);
-    const cartItem = cartItems.find((item) => item.id === id);
+    const cartItems = useAppSelector((state: any) => state.cart.items);
+    const cartItem = cartItems.find((item: any) => item.id === id);
     const quantityInCart = cartItem?.quantity || 0;
 
     const [product, setProduct] = useState<Product | null>(null);
