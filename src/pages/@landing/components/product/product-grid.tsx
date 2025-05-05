@@ -49,13 +49,12 @@ const ProductGrid: React.FC = () => {
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
-
             setCombinedData(prev =>
                 page === 1 ? mappedProducts : [...prev, ...mappedProducts]
             );
             setHasMore(mappedProducts.length >= PAGE_SIZE);
         }
-    }, [page]); // Considerar página actual
+    }, [data]); // Considerar página actual
 
     // Recargar cuando cambia la categoría
     useEffect(() => {
