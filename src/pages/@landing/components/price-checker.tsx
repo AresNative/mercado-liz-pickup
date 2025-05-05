@@ -139,7 +139,7 @@ function PriceChecker() {
                                                                 />
                                                                 <p className="mt-4 text-gray-600">Cargando pantalla...</p>
                                                             </div>
-                                                        </IonItem>) : (<IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.id}`}>
+                                                        </IonItem>) : (<IonItem className="w-full flex items-center gap-2" routerLink={`/products/${product.nombre}`}>
 
                                                             {product.image && ( // Mostrar imagen si existe
                                                                 <img
