@@ -5,20 +5,21 @@ import { IonContent, IonPage, IonFooter, IonToolbar } from "@ionic/react";
 import { Info, Phone, Mail, Clock, MapPin } from "lucide-react";
 import { branches } from "./@landing/utils/branches";
 import { setSucursal } from "@/hooks/slices/app";
+import { setLocalStorageItem } from "@/utils/functions/local-storage";
 
 const Layout: React.FC = () => {
   const dispatch = useDispatch();
   const history = useHistory();
 
   // Función para seleccionar sucursal y navegar
-  const handleSelectBranch = (branch: (typeof branches)[0]) => {
+  const handleSelectBranch = async (branch: (typeof branches)[0]) => {
     let branchData = {
       id: branch.id,
       name: branch.name,
       address: branch.address,
       precio: branch.precio
     };
-
+    await setLocalStorageItem("sucursal", branchData);
     dispatch(setSucursal(branchData));
     history.push("/products");
   };

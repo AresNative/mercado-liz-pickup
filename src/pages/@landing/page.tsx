@@ -11,11 +11,12 @@ import { branches } from "./utils/branches"
 import { useAppSelector } from "@/hooks/selector"
 import { clearAll } from "@/hooks/slices/app"
 import { clearCart } from "@/hooks/slices/cart"
+import { getLocalStorageItem, removeFromLocalStorage } from "@/utils/functions/local-storage"
 
 const Page: React.FC = () => {
     const dispatch = useDispatch()
     const history = useHistory()
-    const sucursal = useAppSelector((state: any) => state.app.sucursal)
+    const sucursal = getLocalStorageItem("sucursal") ?? useAppSelector((state: any) => state.app.sucursal)
 
     // Estado local sincronizado con Redux
     const [selectedBranch, setSelectedBranch] = useState<(typeof branches)[0] | null>(
@@ -31,7 +32,8 @@ const Page: React.FC = () => {
     }, [sucursal])
 
     // Cambiar sucursal
-    const changeBranch = () => {
+    const changeBranch = async () => {
+        await removeFromLocalStorage("sucursal") // Limpiar localStorage
         dispatch(clearAll()) // Limpiar Redux
         dispatch(clearCart()) // Limpiar Redux
         history.push('/layout') // Redirigir a selección

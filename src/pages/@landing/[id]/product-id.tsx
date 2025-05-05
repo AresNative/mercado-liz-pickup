@@ -8,6 +8,7 @@ import { useGetArticulosQuery } from "@/hooks/reducers/api";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 export const LoadingScreen = () => (
     <IonPage>
@@ -33,7 +34,7 @@ const ProductID: React.FC = () => {
     const quantityInCart = cartItem?.quantity || 0;
 
     const [product, setProduct] = useState<Product | null>(null);
-    const precio = useAppSelector((state) => state.app.sucursal.precio);
+    const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
     const { data, isFetching, error } = useGetArticulosQuery({
         page: 1,
         filtro: id,

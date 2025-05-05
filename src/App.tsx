@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { useAppSelector } from './hooks/selector';
+
+import { getLocalStorageItem } from './utils/functions/local-storage';
+import { RootState } from './hooks/store';
 
 // Importa tus componentes
 import Process from './pages/@proces/layout';
@@ -29,44 +32,56 @@ setupIonicReact({
   mode: 'ios',
 });
 const App: React.FC = () => {
-  const sucursal = useAppSelector((state: any) => state.app.sucursal);
+  // Usar useNavigate en lugar de useHistory para react-router v6 (si es posible)
   const history = useHistory();
   const location = useLocation();
 
-  React.useEffect(() => {
-    // Redirigir solo si no hay sucursal y no está en layout
-    if (!sucursal && location.pathname !== '/layout') {
+  // Obtener valores de forma correcta y tipada
+  const localBranch = getLocalStorageItem("sucursal");
+  const reduxBranch = useAppSelector((state: RootState) => state.app.sucursal);
+  const currentBranch = localBranch ?? reduxBranch;
+
+  // Usar useCallback para memoizar la lógica de redirección
+  const checkRedirect = useCallback(() => {
+    const isLayoutPage = location.pathname === '/layout';
+
+    if (!currentBranch && !isLayoutPage) {
       history.replace('/layout');
+      return;
     }
-    // Si hay sucursal y está en layout, redirigir a productos
-    if (sucursal && location.pathname === '/layout') {
+
+    if (currentBranch && isLayoutPage) {
       history.replace('/products');
     }
-  }, [sucursal, location.pathname, history]);
+  }, [currentBranch, location.pathname, history]);
+
+  // Efecto más limpio y eficiente
+  useEffect(() => {
+    checkRedirect();
+  }, [checkRedirect]);
 
   return (
     <IonApp>
       <IonRouterOutlet>
         <Switch>
           <Route exact path="/layout">
-            {sucursal ? <Redirect to="/products" /> : <Layout />}
+            {currentBranch ? <Redirect to="/products" /> : <Layout />}
           </Route>
-
           {/* Rutas protegidas */}
           <Route exact path="/products">
-            {sucursal ? <Page /> : <Redirect to="/layout" />}
+            {currentBranch ? <Page /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/process">
-            {sucursal ? <Process /> : <Redirect to="/layout" />}
+            {currentBranch ? <Process /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/carrito">
-            {sucursal ? <CarritoPage /> : <Redirect to="/layout" />}
+            {currentBranch ? <CarritoPage /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/loading">
-            {sucursal ? <LoadingPage /> : <Redirect to="/layout" />}
+            {currentBranch ? <LoadingPage /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/products/:id">
-            {sucursal ? <ProductID /> : <Redirect to="/layout" />}
+            {currentBranch ? <ProductID /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/">
             <Redirect to="/products" />

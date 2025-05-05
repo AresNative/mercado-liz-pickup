@@ -8,6 +8,7 @@ import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { mapApiProductToAppProduct } from "../../utils/fromat-data"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { clearFilters } from "@/hooks/reducers/filter"
+import { getLocalStorageItem } from "@/utils/functions/local-storage"
 
 const PAGE_SIZE = 10
 
@@ -20,7 +21,7 @@ const ProductGrid: React.FC = () => {
 
     const categoria = useAppSelector((state) => state.filterData.key?.value);
 
-    const precio = useAppSelector((state) => state.app.sucursal.precio);
+    const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
 
     const { data, isFetching, error } = useGetArticulosQuery({
         page,
@@ -32,20 +33,16 @@ const ProductGrid: React.FC = () => {
     });
 
     const clear = useCallback(() => {
-        if (!categoria) dispatch(clearFilters());
-        setHasMore(true);
         setPage(1);
         setCombinedData([]);
+        setHasMore(true);
+        if (!categoria) dispatch(clearFilters());
     }, [categoria, dispatch]); // Memoizar y simplificar
 
     const refreshProducts = useCallback(async () => {
-        try {
-            clear();
-            setRefreshTrigger(Date.now()); // Actualizar trigger para nueva recarga
-            window.scrollTo({ top: 0, behavior: 'auto' });
-        } catch (error) {
-            console.error("Error refreshing products:", error);
-        }
+        clear();
+        setRefreshTrigger(Date.now()); // Actualizar trigger para nueva recarga
+        window.scrollTo({ top: 0, behavior: 'auto' });
     }, [clear]);
 
     // Manejar actualización de datos
@@ -55,7 +52,7 @@ const ProductGrid: React.FC = () => {
             setCombinedData(prev =>
                 page === 1 ? mappedProducts : [...prev, ...mappedProducts]
             );
-            setHasMore(mappedProducts.length === PAGE_SIZE);
+            setHasMore(mappedProducts.length >= PAGE_SIZE);
         }
     }, [data, page]); // Considerar página actual
 

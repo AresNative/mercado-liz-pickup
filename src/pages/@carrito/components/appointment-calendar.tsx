@@ -47,7 +47,7 @@ import { useGetAllMutation, usePostMutation } from "@/hooks/reducers/api"
 import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
 import { clearCart } from "@/hooks/slices/cart"
-import { setLocalStorageItem } from "@/utils/functions/local-storage"
+import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -150,7 +150,7 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
 
 export function AppointmentCalendar() {
 
-  const precio = useAppSelector((state) => state.app.sucursal.precio);
+  const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
 
   const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
 

@@ -7,6 +7,7 @@ import { useGetArticulosQuery } from "@/hooks/reducers/api"
 import { Search } from "lucide-react"
 import { Product } from "@/utils/data/example-data"
 import { useAppSelector } from "@/hooks/selector"
+import { getLocalStorageItem } from "@/utils/functions/local-storage"
 
 const Input = ({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
     return (
@@ -24,7 +25,7 @@ function PriceChecker() {
     const [combinedData, setCombinedData] = useState<Product[]>([])
     const [query, setQuery] = useState("")
     const debouncedQuery = useDebounce(query, 200)
-    const precio = useAppSelector((state) => state.app.sucursal.precio);
+    const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
     const { data, isFetching, error } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
