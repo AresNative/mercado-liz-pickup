@@ -54,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     return (
         <div className="bg-background lg:w-9/12 md:m-auto border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-row md:flex-col">
             <IonRouterLink
-                routerLink={`/products/${product.id}`}
+                routerLink={`/products/${product.nombre}`}
                 className={`${product.image ? 'w-1/3 sm:w-1/3' : 'hidden'} md:w-full`}
             >
                 <div className="relative h-full md:aspect-square overflow-hidden">
@@ -76,7 +76,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </IonRouterLink>
 
             <div className={cn(product.image && "md:border-t-2 md:mt-2 md:pt-3", "p-2 flex-1 md:w-full w-2/3 ")}>
-                <IonRouterLink routerLink={`/products/${product.id}`}>
+                <IonRouterLink routerLink={`/products/${product.nombre}`}>
                     <h3 className="font-medium text-base truncate decoration-none text-black dark:text-white">{product.nombre}</h3>
                 </IonRouterLink>
 

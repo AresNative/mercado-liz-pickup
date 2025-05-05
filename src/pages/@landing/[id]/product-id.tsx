@@ -31,23 +31,25 @@ const ProductID: React.FC = () => {
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state: any) => state.cart.items);
     const cartItem = cartItems.find((item: any) => item.id === id);
-    const quantityInCart = cartItem?.quantity || 0;
-
-    const [product, setProduct] = useState<Product | null>(null);
     const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
+
     const { data, isFetching, error } = useGetArticulosQuery({
         page: 1,
         filtro: id,
         listaPrecio: precio
     })
 
+    const [variants, setVariants] = useState<Product[]>([]);
+    const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
+    const quantityInCart = cartItems.find((item: any) => item.id === selectedVariant?.id)?.quantity || 0;
+    // Modificar useEffect para cargar todas las variantes
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
-            setProduct(mappedProducts.find((item: Product) => item.id === id) || null);
+            setVariants(mappedProducts);
+            setSelectedVariant(mappedProducts[0] || null);
         }
     }, [data, id]);
-
 
     // Mostrar pantalla de carga mientras se obtienen datos
     if (isFetching) {
@@ -73,7 +75,7 @@ const ProductID: React.FC = () => {
             </IonPage>
         );
     }
-    if (!product) {
+    if (!selectedVariant) {
         return (
             <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -88,18 +90,18 @@ const ProductID: React.FC = () => {
 
 
     const handleAddToCart = () => {
-        dispatch(addToCart({ ...product, quantity: 1 }));
+        dispatch(addToCart({ ...selectedVariant, quantity: 1 }));
     };
 
     const increaseQuantity = () => {
-        dispatch(addToCart({ ...product, quantity: 1 }));
+        dispatch(addToCart({ ...selectedVariant, quantity: 1 }));
     };
 
     const decreaseQuantity = () => {
         if (quantityInCart === 1) {
-            dispatch(removeFromCart(product.id));
+            dispatch(removeFromCart(selectedVariant.id));
         } else {
-            dispatch(addToCart({ ...product, quantity: -1 }));
+            dispatch(addToCart({ ...selectedVariant, quantity: -1 }));
         }
     };
 
@@ -107,10 +109,10 @@ const ProductID: React.FC = () => {
         const newQuantity = Math.max(0, parseInt(e.target.value) || 0); // Forzar mínimo 0
         if (!isNaN(newQuantity)) {
             if (newQuantity <= 0) {
-                dispatch(removeFromCart(product.id));
+                dispatch(removeFromCart(selectedVariant.id));
             } else {
                 const delta = newQuantity - quantityInCart;
-                dispatch(addToCart({ ...product, quantity: delta }));
+                dispatch(addToCart({ ...selectedVariant, quantity: delta }));
             }
         }
     };
@@ -121,17 +123,17 @@ const ProductID: React.FC = () => {
             <IonContent className="ion-padding" fullscreen>
                 <IonGrid>
                     <IonRow>
-                        {product.image && (
+                        {selectedVariant.image && (
                             <IonCol size="12" sizeMd="6">
                                 <img
-                                    src={product.image || "/placeholder.svg"} // Usar imagen del producto
-                                    alt={product.nombre} // Alt dinámico
+                                    src={selectedVariant.image || "/placeholder.svg"} // Usar imagen del selectedVarianto
+                                    alt={selectedVariant.nombre} // Alt dinámico
                                     className="w-full h-full bg-slate-100 rounded-lg"
                                 />
                                 {/* Mostrar descuento si existe */}
-                                {product.descuento && (
+                                {selectedVariant.descuento && (
                                     <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                        {product.descuento}% OFF
+                                        {selectedVariant.descuento}% OFF
                                     </div>
                                 )}
                             </IonCol>
@@ -139,7 +141,7 @@ const ProductID: React.FC = () => {
 
                         <IonCol>
                             <div>
-                                <h1 style={{ margin: 0 }}>{product.nombre}</h1>
+                                <h1 style={{ margin: 0 }}>{selectedVariant.nombre}</h1>
                                 <div className="flex items-center gap-2">
                                     {/* Sección de reviews (mantenemos estática ya que no está en la interfaz) */}
                                     {[...Array(3)].map((_, i) => (
@@ -153,31 +155,31 @@ const ProductID: React.FC = () => {
 
                                 {/* Precio con descuento si aplica */}
                                 <div>
-                                    {product.precioRegular ? (
+                                    {selectedVariant.precioRegular ? (
                                         <>
                                             <h2 className="text-red-500">
-                                                ${product.precio.toFixed(2)}
+                                                ${selectedVariant.precio.toFixed(2)}
                                                 <span className="text-gray-400 line-through ml-2">
-                                                    ${product.precioRegular.toFixed(2)}
+                                                    ${selectedVariant.precioRegular.toFixed(2)}
                                                 </span>
                                             </h2>
                                         </>
                                     ) : (
-                                        <h2>${product.precio.toFixed(2)}</h2>
+                                        <h2>${selectedVariant.precio.toFixed(2)}</h2>
                                     )}
                                 </div>
 
                                 <p style={{ color: '#666' }}>
                                     {/* Descripción (agregar campo si es necesario) */}
-                                    {product.categoria}
+                                    {selectedVariant.categoria}
                                 </p>
                             </div>
 
                             {/* Resto del maquetado se mantiene igual */}
                             <ul className="items-center gap-2 w-full">
-                                {product.unidad === "Caja" && (
+                                {selectedVariant.unidad === "Caja" && (
                                     <li className="items-center">
-                                        La caja contiene - {product.factor} pieza(s)
+                                        La caja contiene - {selectedVariant.factor} pieza(s)
                                     </li>
                                 )}
                                 <li className="flex items-center gap-4">
@@ -221,7 +223,7 @@ const ProductID: React.FC = () => {
                                                     onBlur={(e) => {
                                                         const value = parseInt(e.target.value);
                                                         if (isNaN(value) || value < 1) {
-                                                            dispatch(removeFromCart(product.id));
+                                                            dispatch(removeFromCart(selectedVariant.id));
                                                         }
                                                     }}
                                                 />
@@ -236,6 +238,29 @@ const ProductID: React.FC = () => {
                                         )}
                                     </div>
                                 </li>
+                                {variants.length > 1 && (
+                                    <IonSegment
+                                        value={selectedVariant?.id}
+                                        onIonChange={(e) => {
+                                            const selected = variants.find(v => v.id === e.detail.value);
+                                            setSelectedVariant(selected || null);
+                                        }}
+                                        className="my-4"
+                                    >
+                                        {variants.map((variant) => (
+                                            <IonSegmentButton
+                                                key={variant.id}
+                                                value={variant.id}
+                                                className="text-sm"
+                                            >
+                                                <IonLabel>
+                                                    {variant.unidad} - ${variant.precio.toFixed(2)}
+                                                    {variant.factor && variant.factor > 1 && ` (${variant.factor} pzs)`}
+                                                </IonLabel>
+                                            </IonSegmentButton>
+                                        ))}
+                                    </IonSegment>
+                                )}
                                 <li>
                                     <IonButton
                                         expand="block"
@@ -243,7 +268,7 @@ const ProductID: React.FC = () => {
                                         onClick={
                                             quantityInCart === 0
                                                 ? handleAddToCart
-                                                : () => dispatch(removeFromCart(product.id)) // Elimina completamente el artículo
+                                                : () => dispatch(removeFromCart(selectedVariant.id)) // Elimina completamente el artículo
                                         }
                                     >
                                         {quantityInCart === 0
@@ -300,7 +325,7 @@ const ProductID: React.FC = () => {
                                 <li className="flex items-center text-sm gap-1">
                                     <ScanBarcode className="h-4 w-4 fill-[#8B5CF6]" />
                                     Codigo de barras:
-                                    <span className="text-[#8B5CF6]">{product.id}</span>
+                                    <span className="text-[#8B5CF6]">{selectedVariant.id}</span>
                                 </li>
                             </ul>
 
