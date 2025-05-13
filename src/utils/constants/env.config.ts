@@ -6,7 +6,7 @@ type EnvConfigType = {
 };
 
 export const EnvConfig = (): EnvConfigType => {
-  const mode = process.env.REACT_PUBLIC_MODE || "development";
+  const mode = process.env.REACT_PUBLIC_MODE ?? "development";
   const api =
     mode === "production"
       ? process.env.REACT_PUBLIC_API_URL ||
