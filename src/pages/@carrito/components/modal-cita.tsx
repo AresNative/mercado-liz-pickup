@@ -1,4 +1,4 @@
-import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent, IonDatetime, IonTextarea, IonBackButton } from "@ionic/react";
+import { IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, IonContent } from "@ionic/react";
 import { AppointmentCalendar } from "./appointment-calendar";
 
 export default function ModalCita(
