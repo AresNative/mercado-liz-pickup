@@ -14,6 +14,7 @@ import ProductID from './pages/@landing/[id]/product-id';
 import CarritoPage from './pages/@carrito/page';
 import Page from './pages/@landing/page';
 import LoadingPage from "@/pages/@proces/@loading/page"
+import PagoPage from './pages/@proces/@pay/page';
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
@@ -82,6 +83,9 @@ const App: React.FC = () => {
           </Route>
           <Route exact path="/products/:id">
             {currentBranch ? <ProductID /> : <Redirect to="/layout" />}
+          </Route>
+          <Route exact path="/pay">
+            {currentBranch ? <PagoPage /> : <Redirect to="/layout" />}
           </Route>
           <Route exact path="/">
             <Redirect to="/products" />
