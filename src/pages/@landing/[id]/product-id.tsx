@@ -30,7 +30,6 @@ const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state: any) => state.cart.items);
-    const cartItem = cartItems.find((item: any) => item.id === id);
     const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
 
     const { data, isFetching, error } = useGetArticulosQuery({
