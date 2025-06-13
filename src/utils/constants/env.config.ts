@@ -7,7 +7,7 @@ type EnvConfigType = {
 };
 
 export const EnvConfig = (): EnvConfigType => {
-  const mode = process.env.REACT_PUBLIC_MODE ?? "development";
+  const mode = process.env.REACT_PUBLIC_MODE || "development"; // Fallback a development si no está definido
   const api =
     mode === "production"
       ? process.env.REACT_PUBLIC_API_URL ||
@@ -16,6 +16,7 @@ export const EnvConfig = (): EnvConfigType => {
 
   const api_int =
     process.env.REACT_PUBLIC_API_URL_INT || "http://localhost:5000/api/";
+
   const itemsPerPage = parseInt(process.env.ITEMS_PER_PAGE || "10", 10); // Fallback a 10 si no está definido
 
   return {

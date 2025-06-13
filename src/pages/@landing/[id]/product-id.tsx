@@ -4,7 +4,7 @@ import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
 import { useEffect, useState } from "react";
-import { useGetArticulosQuery } from "@/hooks/reducers/api";
+import { useGetArticulosQuery } from "@/hooks/reducers/api_int";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
