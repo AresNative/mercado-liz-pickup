@@ -1,3 +1,5 @@
+import HeaderCart from "@/pages/@landing/components/header";
+import { IonContent, IonPage } from "@ionic/react";
 import React, { useState } from "react";
 
 type PaymentMethod = "credit" | "debit" | "cash";
@@ -39,55 +41,58 @@ const Page: React.FC = () => {
     };
 
     return (
-        <div style={{ maxWidth: 400, margin: "0 auto", padding: 24 }}>
-            <h2>Pasarela de Pago</h2>
-            <div>
-                <label>
-                    <input
-                        type="radio"
-                        checked={method === "credit"}
-                        onChange={() => setMethod("credit")}
-                    />
-                    Tarjeta de Crédito
-                </label>
-                <label style={{ marginLeft: 16 }}>
-                    <input
-                        type="radio"
-                        checked={method === "debit"}
-                        onChange={() => setMethod("debit")}
-                    />
-                    Tarjeta de Débito
-                </label>
-                <label style={{ marginLeft: 16 }}>
-                    <input
-                        type="radio"
-                        checked={method === "cash"}
-                        onChange={() => setMethod("cash")}
-                    />
-                    Efectivo
-                </label>
-            </div>
-            {(method === "credit" || method === "debit") && (
-                <div style={{ marginTop: 16 }}>
-                    <input
-                        type="text"
-                        placeholder="Número de tarjeta"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        style={{ width: "100%", padding: 8 }}
-                    />
+        <IonPage>
+            <HeaderCart back />
+            <IonContent fullscreen className="relative bg-[#f2f2f7]">
+                <h2>Pasarela de Pago</h2>
+                <div className="px-4 mb-32 flex flex-col gap-2 max-w-5xl mx-auto">
+                    <label>
+                        <input
+                            type="radio"
+                            checked={method === "credit"}
+                            onChange={() => setMethod("credit")}
+                        />
+                        Tarjeta de Crédito
+                    </label>
+                    <label style={{ marginLeft: 16 }}>
+                        <input
+                            type="radio"
+                            checked={method === "debit"}
+                            onChange={() => setMethod("debit")}
+                        />
+                        Tarjeta de Débito
+                    </label>
+                    <label style={{ marginLeft: 16 }}>
+                        <input
+                            type="radio"
+                            checked={method === "cash"}
+                            onChange={() => setMethod("cash")}
+                        />
+                        Efectivo
+                    </label>
+                    {(method === "credit" || method === "debit") && (
+                        <div style={{ marginTop: 16 }}>
+                            <input
+                                type="text"
+                                placeholder="Número de tarjeta"
+                                value={cardNumber}
+                                onChange={(e) => setCardNumber(e.target.value)}
+                                style={{ width: "100%", padding: 8 }}
+                            />
+                        </div>
+                    )}
+                    {error && (
+                        <div style={{ color: "red", marginTop: 8 }}>{error}</div>
+                    )}
+                    <button
+                        style={{ marginTop: 24, width: "100%", padding: 12 }}
+                        onClick={handlePay}
+                    >
+                        Pagar
+                    </button>
                 </div>
-            )}
-            {error && (
-                <div style={{ color: "red", marginTop: 8 }}>{error}</div>
-            )}
-            <button
-                style={{ marginTop: 24, width: "100%", padding: 12 }}
-                onClick={handlePay}
-            >
-                Pagar
-            </button>
-        </div>
+            </IonContent>
+        </IonPage>
     );
 };
 

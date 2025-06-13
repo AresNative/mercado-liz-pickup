@@ -4,7 +4,7 @@ import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/rea
 import ProductCard from "./product-card"
 import Badge from "@/components/badge"
 import { Product } from "@/utils/data/example-data"
-import { useGetArticulosQuery } from "@/hooks/reducers/api"
+import { useGetArticulosQuery } from "@/hooks/reducers/api_int"
 import { mapApiProductToAppProduct } from "../../utils/fromat-data"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { clearFilters } from "@/hooks/reducers/filter"
