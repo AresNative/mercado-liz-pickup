@@ -30,7 +30,7 @@ import {
   print,
   timeOutline,
 } from "ionicons/icons"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/functions/cn"
 
 interface AppointmentDetailsProps {
   appointment: any

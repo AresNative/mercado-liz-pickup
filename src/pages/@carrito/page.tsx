@@ -151,10 +151,10 @@ const CarritoPage = () => {
                                             <span>Subtotal:</span>
                                             <span>${subtotal.toFixed(2)}</span>
                                         </div>
-                                        <div className="flex justify-between text-purple-800">
+                                        {discountTotal > 0 && (<div className="flex justify-between text-purple-800">
                                             <span>Descuentos:</span>
                                             <span>-${discountTotal.toFixed(2)}</span>
-                                        </div>
+                                        </div>)}
                                         <div className="flex justify-between font-bold border-t pt-2">
                                             <span>Total:</span>
                                             <span>${total.toFixed(2)}</span>

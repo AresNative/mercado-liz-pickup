@@ -76,13 +76,13 @@ const serviceTypes = [
     color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
     description: "Los productos le son entregados y cobrados en su vehículo si necesidad de bajarse.",
   },
-  {
+  /* {
     id: "domicilio",
     name: "Entrega a domicilio",
     duration: 60,
     color: "bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200",
     description: "Los productos son llevados a su direccion.",
-  },
+  }, */
 ]
 
 const generateTimeSlots = (date: string, existingCitas: any[]) => {
