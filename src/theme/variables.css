@@ -120,15 +120,15 @@
     transition: var(--transition);
 }
 /* Efecto al pasar el mouse (hover) */
-.custom-tertiary:hover {
+/* .custom-tertiary:hover {
     transform: scale(1.05);
 }
-
+ */
 /* Efecto al hacer click (active) */
-.custom-tertiary:active {
+/* .custom-tertiary:active {
     transform: scale(0.98);
 }
-
+ */
 /* Opcional: Efecto en icono interno */
 .custom-tertiary ion-icon {
     transition: transform 0.2s ease-in-out;

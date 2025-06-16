@@ -49,12 +49,24 @@ const ProductGrid: React.FC = () => {
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
-            setCombinedData(prev =>
-                page === 1 ? mappedProducts : [...prev, ...mappedProducts]
-            );
+
+            // ✅ Evitar agregar datos vacíos o duplicados
+            if (mappedProducts.length === 0) {
+                setHasMore(false);
+                return;
+            }
+
+            setCombinedData(prev => {
+                const newProducts = mappedProducts.filter((p: any) =>
+                    !prev.some(existing => existing.id === p.id)
+                );
+                return page === 1 ? newProducts : [...prev, ...newProducts];
+            });
+
             setHasMore(mappedProducts.length >= PAGE_SIZE);
         }
-    }, [data]); // Considerar página actual
+    }, [data, page]);
+
 
     // Recargar cuando cambia la categoría
     useEffect(() => {

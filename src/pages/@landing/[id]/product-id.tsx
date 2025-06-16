@@ -277,7 +277,7 @@ const ProductID: React.FC = () => {
                                 </li>
                             </ul>
 
-                            <IonGrid>
+                            {/* <IonGrid>
                                 <IonRow className="gap-y-4 md:gap-y-0 p-2 md:p-0">
                                     <IonCol
                                         size="12"
@@ -306,8 +306,8 @@ const ProductID: React.FC = () => {
                                         <span className="text-sm md:text-base whitespace-nowrap">Devoluciones Fáciles</span>
                                     </IonCol>
                                 </IonRow>
-                            </IonGrid>
-
+                            </IonGrid> 
+                            
                             <IonSegment value="details">
                                 <IonSegmentButton value="details">
                                     <IonLabel>Detalles</IonLabel>
@@ -318,7 +318,7 @@ const ProductID: React.FC = () => {
                                 <IonSegmentButton value="reviews">
                                     <IonLabel>Reseñas</IonLabel>
                                 </IonSegmentButton>
-                            </IonSegment>
+                            </IonSegment> */}
 
                             <ul className="mt-5">
                                 <li className="flex items-center text-sm gap-1">
