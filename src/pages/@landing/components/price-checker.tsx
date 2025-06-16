@@ -1,6 +1,6 @@
 import type React from "react";
 import useDebounce from "@/hooks/use-debounce";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IonItem, IonLabel, IonList, IonSpinner } from "@ionic/react";
 import { useGetArticulosQuery } from "@/hooks/reducers/api_int";
@@ -24,25 +24,38 @@ function PriceChecker() {
     const [page, setPage] = useState(1);
     const [isFocused, setIsFocused] = useState(false);
     const [productos, setProductos] = useState<Product[]>([]);
+    const abortRef = useRef<AbortController | null>(null);
 
     const precio =
         getLocalStorageItem("sucursal")?.precio ??
         useAppSelector((state) => state.app.sucursal.precio);
 
-    // Crear objeto de parámetros para evitar re-renders innecesarios
     const params = useMemo(
         () => ({
             page,
             pageSize: PAGE_SIZE,
             listaPrecio: precio,
             filtro: debouncedQuery,
+            signal: abortRef.current?.signal
         }),
         [page, PAGE_SIZE, precio, debouncedQuery]
     );
 
-    const { data, isFetching, error } = useGetArticulosQuery(params);
+    // Controla el aborto de la petición
+    useEffect(() => {
+        abortRef.current?.abort();
+        abortRef.current = new AbortController();
+        return () => {
+            abortRef.current?.abort();
+        };
+    }, [query]);
 
-    // Mapeo de datos cuando cambia la respuesta
+    // Pasa el signal al hook si tu API lo soporta
+    const { data, isFetching, error } = useGetArticulosQuery(
+        { ...params },
+        { skip: !debouncedQuery }
+    );
+
     useEffect(() => {
         if (data?.data) {
             const mapped = data.data.map((item: any) => ({
