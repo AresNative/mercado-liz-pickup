@@ -9,6 +9,7 @@ export interface ApiProduct {
   Grupo: string;
   Nombre: string;
   PrecioRegular: number;
+  PrecioOferta: number;
   TieneOferta: boolean;
 }
 
@@ -17,7 +18,9 @@ export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
   categoria: apiProduct.Grupo,
   nombre: apiProduct.Nombre.trim(),
   precio: apiProduct.PrecioRegular,
-  precioRegular: apiProduct.TieneOferta ? apiProduct.PrecioRegular : undefined,
+  precioRegular: apiProduct.TieneOferta
+    ? apiProduct.PrecioOferta
+    : apiProduct.PrecioOferta,
   unidad: apiProduct.Unidad,
   descuento: apiProduct.TieneOferta ? 10 : undefined,
   factor: apiProduct.Factor,

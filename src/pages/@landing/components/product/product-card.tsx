@@ -104,7 +104,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     </div>
 
                     <motion.div whileTap={{ scale: 0.95 }}>
-                        {quantity === 0 ? (
+                        {product.precio && (quantity === 0 ? (
                             <IonButton
                                 size="small"
                                 fill="solid"
@@ -142,7 +142,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                                     +
                                 </IonButton>
                             </div>
-                        )}
+                        ))}
                     </motion.div>
                 </div>
             </div>

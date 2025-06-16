@@ -157,9 +157,9 @@ const ProductID: React.FC = () => {
                                     {selectedVariant.precioRegular ? (
                                         <>
                                             <h2 className="text-red-500">
-                                                ${selectedVariant.precio.toFixed(2)}
+                                                ${selectedVariant.precioRegular.toFixed(2)}
                                                 <span className="text-gray-400 line-through ml-2">
-                                                    ${selectedVariant.precioRegular.toFixed(2)}
+                                                    ${selectedVariant.precio.toFixed(2)}
                                                 </span>
                                             </h2>
                                         </>
