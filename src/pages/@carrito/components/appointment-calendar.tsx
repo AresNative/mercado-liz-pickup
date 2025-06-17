@@ -785,9 +785,10 @@ export function AppointmentCalendar() {
                       }
                       const clienteId = Clientes.data[0].id || clienteResponse.data.ids[0];
 
-                      setLocalStorageItem("user", clienteId)
-                      const time = format(parseISO(getSlotById(selectedSlot)?.time), "yyyy-MM-dd'T'HH:mm:ss", { locale: es });
+                      setLocalStorageItem("user", clienteId);
+                      setLocalStorageItem("user-data", Clientes.data[0])
 
+                      const time = format(parseISO(getSlotById(selectedSlot)?.time), "yyyy-MM-dd'T'HH:mm:ss", { locale: es });
                       const service = getServiceById(selectedService)?.name;
 
                       if (!time || !service) {

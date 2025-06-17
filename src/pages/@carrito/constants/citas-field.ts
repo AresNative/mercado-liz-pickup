@@ -1,6 +1,10 @@
 import { Field } from "@/utils/constants/interfaces";
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 export function CitasField(): Field[] {
+  const user_data = getLocalStorageItem("user-data");
+  console.log(user_data);
+
   return [
     {
       id: 1,
@@ -17,6 +21,7 @@ export function CitasField(): Field[] {
       label: "Teléfono",
       placeholder: "Escribe aquí tu teléfono",
       require: true,
+      valueDefined: user_data?.telefono || "",
     },
     {
       id: 3,
@@ -25,6 +30,7 @@ export function CitasField(): Field[] {
       label: "Nombre Completo",
       placeholder: "Escribe aquí tu nombre",
       require: true,
+      valueDefined: user_data?.nombre || "",
     },
     {
       id: 4,
@@ -38,6 +44,7 @@ export function CitasField(): Field[] {
           placeholder: "Escribe aquí tu código postal",
           maxLength: 5,
           require: false,
+          valueDefined: user_data?.cp || "",
         },
         {
           type: "INPUT",
@@ -45,6 +52,7 @@ export function CitasField(): Field[] {
           label: "Estado",
           placeholder: "Escribe aquí tu estado",
           require: false,
+          valueDefined: user_data?.estado || "",
         },
         {
           type: "INPUT",
@@ -52,6 +60,7 @@ export function CitasField(): Field[] {
           label: "Ciudad",
           placeholder: "Escribe aquí tu ciudad",
           require: false,
+          valueDefined: user_data?.ciudad || "",
         },
       ],
     },
@@ -62,6 +71,7 @@ export function CitasField(): Field[] {
       label: "Dirección",
       placeholder: "Escribe aquí tu dirección",
       require: true,
+      valueDefined: user_data?.direccion || "",
     },
   ];
 }
