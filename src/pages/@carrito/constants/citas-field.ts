@@ -3,8 +3,6 @@ import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 export function CitasField(): Field[] {
   const user_data = getLocalStorageItem("user-data");
-  console.log(user_data);
-
   return [
     {
       id: 1,
