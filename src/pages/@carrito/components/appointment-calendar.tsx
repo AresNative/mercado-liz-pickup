@@ -151,7 +151,7 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
 export function AppointmentCalendar() {
 
   const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
-
+  const user_id = getLocalStorageItem("user-id");
   const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
 
   const history = useHistory();
@@ -183,7 +183,8 @@ export function AppointmentCalendar() {
         url: "citas",
         filters: {
           "Filtros": [
-            { "Key": "sucursal", "Value": precio }
+            { "Key": "sucursal", "Value": precio }/* ,
+            { "Key": "id_cliente", "Value": user_id } */
           ],
           "Order": [{ "Key": "id", "Direction": "Desc" }]
         },
