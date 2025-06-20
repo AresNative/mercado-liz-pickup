@@ -1,16 +1,22 @@
-import { IonPage, IonContent, IonButton } from "@ionic/react";
+import { IonPage, IonContent } from "@ionic/react";
 import HeaderCart from "../@landing/components/header";
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { removeFromCart, updateQuantity, clearCart } from "@/hooks/slices/cart";
-import { Calendar, Trash } from "lucide-react";
+import { Calendar, Trash, Minus, Plus } from "lucide-react";
 import { useState, useRef } from "react";
 import ModalCita from "./components/modal-cita";
 
 const CarritoPage = () => {
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
-    console.log(cartItems);
-
+    const cartItemsWithDiscount = cartItems.map((item: any) => ({
+        ...item,
+        hasDiscount: item.precioRegular && item.descuento,
+        finalPrice: (item.precioRegular && item.descuento) ? item.precioRegular : item.precio,
+        savings: (item.precioRegular && item.descuento)
+            ? (item.precio - (item.precioRegular || 0)).toFixed(2)
+            : 0
+    }));
     // Cálculos de totales
     const subtotal = cartItems.reduce((acc, item: any) =>
         acc + (item.precioRegular || item.precio) * item.quantity, 0);
@@ -31,95 +37,113 @@ const CarritoPage = () => {
     };
 
     const [showModal, setShowModal] = useState(false);
-
     const modal = useRef<HTMLIonModalElement>(null);
 
     return (
         <IonPage>
             <HeaderCart back />
-            <IonContent fullscreen className="relative bg-[#f2f2f7]">
+            <IonContent fullscreen className="relative bg-gray-50">
                 {cartItems.length === 0 ? (
-                    <div className="container mx-auto flex flex-col items-center justify-center h-full p-4">
-                        <h1 className="text-2xl font-bold text-center">Carrito de Compras</h1>
-                        <p className="mt-4 text-lg text-gray-600">Tu carrito está vacío.</p>
+                    <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+                        <div className="bg-gray-100 rounded-full p-6 mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-3">Carrito de Compras</h1>
+                        <p className="text-gray-600 mb-6">Tu carrito está vacío.</p>
+                        <a
+                            href="/"
+                            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-medium rounded-xl hover:shadow-md transition-all"
+                        >
+                            Explorar productos
+                        </a>
                     </div>
                 ) : (
-                    <div className="flex flex-col h-full">
+                    <div className="flex flex-col h-full mb-64">
                         {/* Contenido scrollable */}
                         <ModalCita modal={modal} setShowModal={setShowModal} showModal={showModal} />
-                        <div className="container mx-auto flex-1 pb-40">
-                            <div className="px-4 pt-4">
-                                <h1 className="text-2xl font-bold mb-2">Carrito de Compras</h1>
-                                <p className="mb-4 text-gray-600">Tienes {cartItems.length} productos en tu carrito.</p>
+                        <div className="max-w-4xl mx-auto w-full px-4">
+                            <div className="pt-6 pb-4">
+                                <h1 className="text-2xl font-bold text-gray-900 mb-1">Carrito de Compras</h1>
+                                <p className="text-gray-600">
+                                    Tienes <span className="font-medium text-purple-700">{cartItems.length}</span> {cartItems.length === 1 ? 'producto' : 'productos'} en tu carrito
+                                </p>
                             </div>
 
                             {/* Listado de productos */}
-                            <div className="px-4 mb-32 flex flex-col gap-2">
-                                {cartItems.map((item: any, key) => (
+                            <div className="grid grid-cols-1 gap-4 mb-6">
+                                {cartItemsWithDiscount.map((item: any, key) => (
                                     <div
                                         key={key}
-                                        className="bg-white rounded-lg overflow-hidden transition-all hover:shadow-md border border-gray-100"
+                                        className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                                     >
-                                        <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
-                                            {item.image && (<div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
-                                                <img
-                                                    src={item.image}
-                                                    alt={item.nombre}
-                                                    className="w-full h-full object-contain"
-                                                />
-                                            </div>)}
+                                        <div className="flex flex-col sm:flex-row gap-4 p-4">
+                                            {item.image && (
+                                                <div className="bg-gray-100 rounded-xl flex items-center justify-center sm:w-24 w-full h-24 flex-shrink-0">
+                                                    <img
+                                                        src={item.image}
+                                                        alt={item.nombre}
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                </div>
+                                            )}
                                             <div className="flex-1 w-full">
-                                                <h3 className="font-medium line-clamp-2 text-lg">{item.nombre}</h3>
-                                                <p className="text-sm text-gray-500 mt-1">{item.category}</p>
-
-                                                <div className="my-3 border-t border-gray-100"></div>
-
-                                                <div className="flex flex-wrap items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-lg font-bold text-gray-900">${item.precio.toFixed(2)}</span>
-                                                        {item.precioRegular && (
-                                                            <span className="text-sm text-gray-500 line-through">${item.precioRegular.toFixed(2)}</span>
-                                                        )}
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 className="font-semibold text-gray-900 line-clamp-1">{item.nombre}</h3>
+                                                        <p className="text-sm text-gray-500 mt-1 capitalize">{item.categoria}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm text-r67tf5black font-semibold ml-2">• {item.unidad}</span>
-                                                        <div className="flex items-center border rounded-lg overflow-hidden">
-                                                            <button
-                                                                onClick={() => handleQuantityChange(item.id, item.quantity, "decrease")}
-                                                                className="h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    className="h-3 w-3"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    stroke="currentColor"
-                                                                >
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                                                </svg>
-                                                            </button>
-                                                            <span className="px-3 py-1 text-center min-w-[40px]">{item.quantity}</span>
-                                                            <button
-                                                                onClick={() => handleQuantityChange(item.id, item.quantity, "increase")}
-                                                                className="h-8 w-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
-                                                            >
-                                                                <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                    className="h-3 w-3"
-                                                                    fill="none"
-                                                                    viewBox="0 0 24 24"
-                                                                    stroke="currentColor"
-                                                                >
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                                                </svg>
-                                                            </button>
+                                                    <button
+                                                        onClick={() => dispatch(removeFromCart(item.id))}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+
+                                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-baseline gap-2">
+                                                                <span className="font-bold text-gray-900">
+                                                                    ${item.finalPrice.toFixed(2)}
+                                                                </span>
+                                                                {item.hasDiscount && (
+                                                                    <span className="text-sm text-gray-400 line-through">
+                                                                        ${item.precio.toFixed(2)}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {item.hasDiscount && (
+                                                                <span className="text-xs text-green-600 mt-1">
+                                                                    Ahorras ${item.savings}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-xs text-gray-500 mt-1">{item.unidad}</span>
                                                         </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1">
                                                         <button
-                                                            onClick={() => dispatch(removeFromCart(item.id))}
-                                                            className="h-8 w-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
+                                                            onClick={() => handleQuantityChange(item.id, item.quantity, "decrease")}
+                                                            className={`
+                                                                w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors
+                                                                ${item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}
+                                                            `}
+                                                            disabled={item.quantity <= 1}
                                                         >
-                                                            <Trash className="text-red-600 size-4" />
-                                                            <span className="sr-only">Eliminar</span>
+                                                            <Minus className="h-4 w-4" />
+                                                        </button>
+                                                        <span className="w-10 h-8 flex items-center justify-center text-center text-sm font-medium bg-white rounded-md">
+                                                            {item.quantity}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleQuantityChange(item.id, item.quantity, "increase")}
+                                                            className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -131,45 +155,40 @@ const CarritoPage = () => {
                         </div>
 
                         {/* Sección de totales fija */}
-                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
-                            <div className="container mx-auto max-w-screen-xl">
-                                <div className="px-4 py-2 bg-white">
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between">
-                                            <span>Subtotal:</span>
-                                            <span>${subtotal.toFixed(2)}</span>
-                                        </div>
-                                        {discountTotal > 0 && (<div className="flex justify-between text-purple-800">
+                        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg">
+                            <div className="max-w-4xl mx-auto w-full px-4 py-5">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Subtotal:</span>
+                                        <span className="font-medium">${subtotal.toFixed(2)}</span>
+                                    </div>
+                                    {discountTotal > 0 && (
+                                        <div className="flex justify-between text-purple-700">
                                             <span>Descuentos:</span>
-                                            <span>-${discountTotal.toFixed(2)}</span>
-                                        </div>)}
-                                        <div className="flex justify-between font-bold border-t pt-2">
-                                            <span>Total:</span>
-                                            <span>${total.toFixed(2)}</span>
+                                            <span className="font-medium">-${discountTotal.toFixed(2)}</span>
                                         </div>
+                                    )}
+                                    <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-100">
+                                        <span>Total:</span>
+                                        <span>${total.toFixed(2)}</span>
+                                    </div>
 
-                                        <section className="mt-4 flex flex-row gap-2">
-                                            <IonButton
-                                                onClick={() => dispatch(clearCart())}
-                                                color={"danger"}
-                                                fill="clear"
-                                                expand="block"
-                                                size="small"
-                                                className="flex items-center gap-2 w-full font-medium py-2 rounded-lg"
-                                            >
-                                                Vaciar Carrito <Trash className="ml-2 h-4 w-4" />
-                                            </IonButton>
+                                    <div className="grid grid-cols-2 gap-3 pt-2">
+                                        <button
+                                            onClick={() => dispatch(clearCart())}
+                                            className="flex items-center justify-center gap-2 w-full font-medium py-3 rounded-xl border border-red-500 text-red-500 hover:bg-red-50 transition-colors"
+                                        >
+                                            <Trash className="h-4 w-4" />
+                                            Vaciar
+                                        </button>
 
-                                            <IonButton
-                                                onClick={() => setShowModal(true)}
-                                                expand="block"
-                                                size="small"
-                                                className="custom-default flex gap-4 w-full font-medium py-2 rounded-lg"
-                                            >
-
-                                                <p>Agendar</p><Calendar className="ml-2 h-4 w-4" />
-                                            </IonButton>
-                                        </section>
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className="flex items-center justify-center gap-2 w-full font-medium py-3 rounded-xl bg-gradient-to-r from-purple-600 to-purple-700 text-white hover:shadow-md transition-all"
+                                        >
+                                            <Calendar className="h-4 w-4" />
+                                            Agendar
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -177,7 +196,7 @@ const CarritoPage = () => {
                     </div>
                 )}
             </IonContent>
-        </IonPage >
+        </IonPage>
     );
 }
 

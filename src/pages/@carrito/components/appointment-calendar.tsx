@@ -48,6 +48,7 @@ import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
 import { clearCart } from "@/hooks/slices/cart"
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage"
+import { driver } from "driver.js"
 
 const BLOCKED_DATES = [
   startOfDay(addDays(new Date(), 2)).toISOString(),
@@ -76,13 +77,6 @@ const serviceTypes = [
     color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
     description: "Los productos le son entregados y cobrados en su vehículo si necesidad de bajarse.",
   },
-  /* {
-    id: "domicilio",
-    name: "Entrega a domicilio",
-    duration: 60,
-    color: "bg-violet-100 text-violet-800 border-violet-300 hover:bg-violet-200",
-    description: "Los productos son llevados a su direccion.",
-  }, */
 ]
 
 const generateTimeSlots = (date: string, existingCitas: any[]) => {
@@ -93,21 +87,19 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
   const now = new Date()
   const isToday = isSameDay(baseDate, now)
 
-  // Convertir citas existentes a intervalos de tiempo
   const bookedSlots = existingCitas.map(cita => {
     const start = parseISO(cita.fecha)
-    const end = addMinutes(start, 5) // Asume duración de 30min si no está especificada
+    const end = addMinutes(start, 5)
     return { start, end }
   })
 
   const isSlotAvailable = (slotTime: Date) => {
-    // Verificar si el slot está dentro de algún intervalo reservado
     return !bookedSlots.some(({ start, end }) =>
       isWithinInterval(slotTime, { start, end }) ||
       isWithinInterval(addMinutes(slotTime, slotDuration), { start, end })
     )
   }
-  // Generación de slots matutinos (9:00 - 13:00)
+
   const morningSlots = []
   for (let hour = startHour; hour < 13; hour++) {
     for (let minute = 0; minute < 60; minute += slotDuration) {
@@ -126,7 +118,6 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
     }
   }
 
-  // Generación de slots vespertinos (14:00 - 18:00)
   const afternoonSlots = []
   for (let hour = 14; hour < endHour; hour++) {
     for (let minute = 0; minute < 60; minute += slotDuration) {
@@ -149,7 +140,6 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
 }
 
 export function AppointmentCalendar() {
-
   const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
   const user_id = getLocalStorageItem("user-id");
   const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
@@ -170,25 +160,100 @@ export function AppointmentCalendar() {
     morningSlots: [],
     afternoonSlots: [],
   })
-  const [showHelp, setShowHelp] = useState(false)
   const [present] = useIonToast();
   const formRef = useRef<HTMLDivElement>(null)
+
+  // Función para iniciar el tour guiado
+  const startTour = () => {
+    const driverObj = driver({
+      showProgress: true,
+      animate: true,
+      steps: [
+        {
+          element: '#calendar-header',
+          popover: {
+            title: 'Calendario de Citas',
+            description: 'Aquí puedes seleccionar una fecha disponible para tu cita.',
+            side: "bottom",
+            align: 'start'
+          }
+        },
+
+        {
+          element: '#help-button',
+          popover: {
+            title: '¿Necesitas ayuda?',
+            description: 'Siempre puedes volver a ver esta guía haciendo clic aquí.',
+            side: "left",
+            align: 'start'
+          }
+        },
+        {
+          element: '#date-step',
+          popover: {
+            title: 'Paso 1: Seleccionar Fecha',
+            description: 'Primero selecciona una fecha disponible (marcada en morado).',
+            side: "top",
+            align: 'start'
+          }
+        },
+        {
+          element: '#time-step',
+          popover: {
+            title: 'Paso 2: Seleccionar Hora',
+            description: 'Después elige un horario disponible.',
+            side: "top",
+            align: 'start'
+          }
+        },
+        {
+          element: '#service-step',
+          popover: {
+            title: 'Paso 3: Tipo de Servicio',
+            description: 'Selecciona el tipo de servicio que necesitas.',
+            side: "top",
+            align: 'start'
+          }
+        },
+        {
+          element: '#confirmation-section',
+          popover: {
+            title: 'Paso 4: Confirmación',
+            description: 'Finalmente completa tus datos y confirma la cita.',
+            side: "top",
+            align: 'start'
+          }
+        },
+      ]
+    });
+
+    driverObj.drive();
+  };
+
+  // Mostrar tour automáticamente al cargar (solo primera vez)
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('hasSeenAppointmentTour');
+    if (!hasSeenTour) {
+      setTimeout(() => {
+        startTour();
+        localStorage.setItem('hasSeenAppointmentTour', 'true');
+      }, 1000);
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedDate) {
       setLoadingSlots(true)
 
-      // Obtener citas para la fecha seleccionada
       GetData({
         url: "citas",
         filters: {
           "Filtros": [
-            { "Key": "sucursal", "Value": precio }/* ,
-            { "Key": "id_cliente", "Value": user_id } */
+            { "Key": "sucursal", "Value": precio }
           ],
           "Order": [{ "Key": "id", "Direction": "Desc" }]
         },
-        pageSize: 100  // Ajustar según necesidades
+        pageSize: 100
       }).unwrap().then((response) => {
         const slots = generateTimeSlots(selectedDate, response.data || [])
         setTimeSlots(slots)
@@ -264,8 +329,8 @@ export function AppointmentCalendar() {
 
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 }) // Domingo como primer día
-  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })      // Sábado como último día
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
   const daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
   const handleCalendarKeyDown = (e: React.KeyboardEvent, day: Date) => {
@@ -279,49 +344,23 @@ export function AppointmentCalendar() {
     <div className="rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm">
       <div className="p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Agenda tu cita</h2>
+          <h2 id="calendar-header" className="text-lg font-semibold">Agenda tu cita</h2>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setShowHelp(!showHelp)}
-              className="rounded-full p-2 transition-colors hover:bg-gray-100"
-              aria-label={showHelp ? "Ocultar ayuda" : "Mostrar ayuda"}
+              id="help-button"
+              onClick={startTour}
+              className="flex items-center gap-1 rounded-full p-2 transition-colors hover:bg-gray-100"
+              aria-label="Mostrar guía de ayuda"
             >
-              <HelpCircle className="h-5 w-5" />
+              <HelpCircle className="h-5 w-5" /> Ayuda
             </button>
           </div>
         </div>
 
-        {showHelp && (
-          <div className="mb-6 rounded-lg border border-purple-100 bg-purple-50 p-4 text-purple-800">
-            <div className="flex items-start">
-              <Info className="mr-3 h-5 w-5 flex-shrink-0 text-purple-600" />
-              <div>
-                <h3 className="font-medium">Cómo agendar una cita</h3>
-                <ol className="mt-2 list-inside list-decimal space-y-1 text-sm">
-                  <li>Selecciona una fecha disponible en el calendario (marcada en morado)</li>
-                  <li>Elige un horario disponible entre las opciones mostradas</li>
-                  <li>Selecciona el tipo de servicio que necesitas</li>
-                  <li>Completa el formulario con tus datos personales</li>
-                  <li>Confirma tu cita</li>
-                </ol>
-                <p className="mt-2 text-sm">
-                  Si necesitas ayuda adicional, contacta con nosotros al <strong>+123 456 7890</strong>
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowHelp(false)}
-              className="mt-2 flex w-full items-center justify-center rounded-md bg-purple-100 p-2 text-sm transition-colors hover:bg-purple-200"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Cerrar ayuda
-            </button>
-          </div>
-        )}
-
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <button
+              id="date-step"
               onClick={() => setSelectedDate(null)}
               className={cn(
                 "flex h-16 w-1/3 flex-col items-center justify-center rounded-l-lg border-r transition-colors",
@@ -338,6 +377,7 @@ export function AppointmentCalendar() {
             </button>
 
             <button
+              id="time-step"
               onClick={() => selectedDate && setSelectedSlot(null)}
               className={cn(
                 "flex h-16 w-1/3 flex-col items-center justify-center border-r transition-colors",
@@ -354,6 +394,7 @@ export function AppointmentCalendar() {
             </button>
 
             <button
+              id="service-step"
               onClick={() => selectedDate && selectedSlot && setSelectedService(null)}
               className={cn(
                 "flex h-16 w-1/3 flex-col items-center justify-center rounded-r-lg transition-colors",
@@ -427,7 +468,7 @@ export function AppointmentCalendar() {
                       disabled={!isCurrentMonth || !isAvailable || isPast}
                       className={cn(
                         "flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors",
-                        !isCurrentMonth && "text-gray-300", // Días de otros meses
+                        !isCurrentMonth && "text-gray-300",
                         isCurrentMonth &&
                         !isAvailable &&
                         !isBlocked &&
@@ -694,7 +735,7 @@ export function AppointmentCalendar() {
         )}
 
         {selectedDate && selectedSlot && selectedService && (
-          <div ref={formRef}>
+          <div ref={formRef} id="confirmation-section">
             <div className="mb-4 flex items-center justify-between">
               <h4 className="font-medium">Detalles de la cita:</h4>
               <div className="flex items-center space-x-4">

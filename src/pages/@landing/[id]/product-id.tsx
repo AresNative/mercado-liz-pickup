@@ -1,5 +1,5 @@
-import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
-import { ScanBarcode, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
+import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
+import { ScanBarcode, ShieldAlert, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
@@ -41,10 +41,9 @@ const ProductID: React.FC = () => {
 
     const [variants, setVariants] = useState<Product[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
-    const [localQuantity, setLocalQuantity] = useState(1); // Estado local para cantidad
-    const [isInCart, setIsInCart] = useState(false); // Estado para rastrear si el producto está en el carrito
+    const [localQuantity, setLocalQuantity] = useState(1);
+    const [isInCart, setIsInCart] = useState(false);
 
-    // Modificar useEffect para cargar todas las variantes
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
@@ -53,7 +52,6 @@ const ProductID: React.FC = () => {
         }
     }, [data, id]);
 
-    // Actualizar estado local cuando cambia el carrito o la variante
     useEffect(() => {
         const inCart = cartItems.some((item: any) => item.id === selectedVariant?.id);
         setIsInCart(inCart);
@@ -66,7 +64,6 @@ const ProductID: React.FC = () => {
         }
     }, [cartItems, selectedVariant]);
 
-    // Mostrar pantalla de carga mientras se obtienen datos
     if (isFetching) {
         return <LoadingScreen />;
     }
@@ -103,7 +100,6 @@ const ProductID: React.FC = () => {
         );
     }
 
-    // Controladores para modificar la cantidad local
     const increaseLocalQuantity = () => {
         setLocalQuantity(prev => prev + 1);
     };
@@ -117,7 +113,6 @@ const ProductID: React.FC = () => {
         setLocalQuantity(newQuantity);
     };
 
-    // Acción al presionar el botón principal
     const handleCartAction = () => {
         if (isInCart) {
             dispatch(removeFromCart(selectedVariant.id));
@@ -126,143 +121,171 @@ const ProductID: React.FC = () => {
         }
     };
 
+    const hasDiscount = selectedVariant.precioRegular && selectedVariant.descuento;
+    const finalPrice = hasDiscount ? selectedVariant.precioRegular : selectedVariant.precio;
+    const savings = hasDiscount ? (selectedVariant.precio - (selectedVariant.precioRegular || 0)).toFixed(2) : 0;
+
     return (
         <IonPage>
             <HeaderCart back />
 
             <IonContent className="ion-padding" fullscreen>
-                <IonGrid>
-                    <IonRow>
-                        {selectedVariant.image && (
-                            <IonCol size="12" sizeMd="6">
-                                <img
-                                    src={selectedVariant.image || "/placeholder.svg"} // Usar imagen del selectedVarianto
-                                    alt={selectedVariant.nombre} // Alt dinámico
-                                    className="w-full h-full bg-slate-100 rounded-lg"
-                                />
-                                {/* Mostrar descuento si existe */}
-                                {selectedVariant.descuento && (
-                                    <div className="absolute top-2 left-2 bg-purple-800 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                        {selectedVariant.descuento}% OFF
+                <div className="max-w-6xl mx-auto">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+                        <div className="flex flex-col md:flex-row">
+                            {/* Sección de imagen */}
+                            <div className="md:w-1/2 flex justify-center items-center p-6 bg-gray-50">
+                                {selectedVariant.image && (
+                                    <div className="relative w-full max-w-md">
+                                        <div className="aspect-square w-full bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
+                                            <img
+                                                src={selectedVariant.image}
+                                                alt={selectedVariant.nombre}
+                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                        </div>
+                                        {hasDiscount && (
+                                            <div className="absolute top-4 left-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md">
+                                                -{selectedVariant.descuento}% OFF
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                            </IonCol>
-                        )}
+                            </div>
 
-                        <IonCol>
-                            <div>
-                                <h1 style={{ margin: 0 }}>{selectedVariant.nombre}</h1>
-                                <div className="flex items-center gap-2">
-                                    {/* Sección de reviews (mantenemos estática ya que no está en la interfaz) */}
-                                    {[...Array(3)].map((_, i) => (
-                                        <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
-                                    ))}
-                                    {[...Array(2)].map((_, i) => (
-                                        <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
-                                    ))}
-                                    (2 reseñas)
-                                </div>
+                            {/* Sección de detalles */}
+                            <div className="md:w-1/2 p-6 flex flex-col">
+                                <div className="flex-1">
+                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedVariant.nombre}</h1>
 
-                                {/* Precio con descuento si aplica */}
-                                <div>
-                                    {selectedVariant.precioRegular ? (
-                                        <>
-                                            <h2 className="text-red-500">
-                                                ${selectedVariant.precioRegular.toFixed(2)}
-                                                <span className="text-gray-400 line-through ml-2">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="flex items-center">
+                                            {[...Array(3)].map((_, i) => (
+                                                <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 fill-yellow-400 text-yellow-400" />
+                                            ))}
+                                            {[...Array(2)].map((_, i) => (
+                                                <Star key={i} className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300" />
+                                            ))}
+                                        </div>
+                                        <span className="text-sm text-gray-500">(2 reseñas)</span>
+                                    </div>
+
+                                    {/* Precios */}
+                                    <div className="mb-4">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="font-bold text-2xl text-gray-900">
+                                                ${finalPrice?.toFixed(2)}
+                                            </span>
+                                            {hasDiscount && (
+                                                <span className="text-base text-gray-400 line-through">
                                                     ${selectedVariant.precio.toFixed(2)}
                                                 </span>
-                                            </h2>
-                                        </>
-                                    ) : (
-                                        <h2>${selectedVariant.precio.toFixed(2)}</h2>
-                                    )}
+                                            )}
+                                        </div>
+                                        {hasDiscount && (
+                                            <span className="text-sm text-green-600 font-medium">
+                                                Ahorras ${savings}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <p className="text-gray-600 mb-6">
+                                        {selectedVariant.categoria}
+                                    </p>
+
+                                    {/* Información adicional */}
+                                    <div className="space-y-3 mb-6">
+                                        {selectedVariant.unidad === "Caja" && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Truck className="h-4 w-4 text-gray-500" />
+                                                <span>La caja contiene - {selectedVariant.factor} pieza(s)</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <ScanBarcode className="h-4 w-4 text-gray-500" />
+                                            <span>Codigo de barras:</span>
+                                            <span className="text-purple-600 font-medium">{selectedVariant.id}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <p style={{ color: '#666' }}>
-                                    {/* Descripción (agregar campo si es necesario) */}
-                                    {selectedVariant.categoria}
-                                </p>
-                            </div>
-                            <nav className={cn(!selectedVariant.image && "md:flex")}>
-                                <ul className="items-center gap-2 w-full">
-                                    {selectedVariant.unidad === "Caja" && (
-                                        <li className="items-center">
-                                            La caja contiene - {selectedVariant.factor} pieza(s)
-                                        </li>
+                                {/* Controles y variantes */}
+                                <div className="border-t border-gray-100 pt-4">
+                                    {/* Selector de variantes */}
+                                    {variants.length > 1 && (
+                                        <div className="mb-6">
+                                            <h3 className="text-sm font-medium text-gray-700 mb-2">Selecciona una opción:</h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {variants.map((variant) => (
+                                                    <button
+                                                        key={variant.id}
+                                                        onClick={() => setSelectedVariant(variant)}
+                                                        className={cn(
+                                                            "border rounded-lg p-3 text-sm transition-colors",
+                                                            selectedVariant?.id === variant.id
+                                                                ? "border-purple-600 bg-purple-50 text-purple-700"
+                                                                : "border-gray-200 hover:border-gray-300"
+                                                        )}
+                                                    >
+                                                        <div className="font-medium">{variant.unidad}</div>
+                                                        <div className="font-bold">${variant.precio.toFixed(2)}</div>
+                                                        {variant.factor && variant.factor > 1 && (
+                                                            <div className="text-xs text-gray-500">{variant.factor} piezas</div>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     )}
-                                    <li className="flex items-center gap-4">
-                                        <span>Cantidad:</span>
-                                        <div className="flex items-center gap-2">
-                                            <IonButton
-                                                size="small"
-                                                onClick={decreaseLocalQuantity}
-                                                className="custom-tertiary"
-                                                disabled={localQuantity <= 1}
-                                            >
-                                                -
-                                            </IonButton>
-                                            <input
-                                                type="number"
-                                                className="text-sm w-10 text-center bg-white rounded-lg border p-1"
-                                                value={localQuantity}
-                                                min="1"
-                                                onChange={handleLocalQuantityChange}
-                                            />
-                                            <IonButton
-                                                size="small"
-                                                className="custom-tertiary"
-                                                onClick={increaseLocalQuantity}
-                                            >
-                                                +
-                                            </IonButton>
+
+                                    {/* Controles de cantidad */}
+                                    <div className="flex items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center">
+                                            <span className="text-gray-700 mr-3">Cantidad:</span>
+                                            <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
+                                                <button
+                                                    onClick={decreaseLocalQuantity}
+                                                    disabled={localQuantity <= 1}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors",
+                                                        localQuantity <= 1 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"
+                                                    )}
+                                                >
+                                                    <span className="text-lg font-medium">−</span>
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    className="w-12 h-8 text-center text-sm font-medium bg-white border-none focus:outline-none rounded-md"
+                                                    value={localQuantity}
+                                                    min="1"
+                                                    onChange={handleLocalQuantityChange}
+                                                />
+                                                <button
+                                                    onClick={increaseLocalQuantity}
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                                                >
+                                                    <span className="text-lg font-medium">+</span>
+                                                </button>
+                                            </div>
                                         </div>
 
-                                    </li>
-                                    <li className="flex items-center text-sm gap-1">
-                                        <ScanBarcode className="h-4 w-4 fill-[#8B5CF6]" />
-                                        Codigo de barras:
-                                        <span className="text-[#8B5CF6]">{selectedVariant.id}</span>
-                                    </li>
-                                </ul>
-                                <ul className={cn(!selectedVariant.image && "md:-mt-20", "items-center gap-2 w-full")}>
-                                    <li>
-                                        {variants.length > 1 && (
-                                            <IonSegment
-                                                value={selectedVariant?.id}
-                                                onIonChange={(e) => {
-                                                    const selected = variants.find(v => v.id === e.detail.value);
-                                                    setSelectedVariant(selected || null);
-                                                }}
-                                                className="my-4"
-                                            >
-                                                {variants.map((variant) => (
-                                                    <IonSegmentButton
-                                                        key={variant.id}
-                                                        value={variant.id}
-                                                        className="text-sm"
-                                                    >
-                                                        <IonLabel>
-                                                            {variant.unidad} - ${variant.precio.toFixed(2)}
-                                                            {variant.factor && variant.factor > 1 && ` (${variant.factor} pzs)`}
-                                                        </IonLabel>
-                                                    </IonSegmentButton>
-                                                ))}
-                                            </IonSegment>
-                                        )}
-                                        <IonButton
-                                            expand="block"
-                                            className={isInCart ? "custom-danger" : "custom-tertiary"}
+                                        <button
+                                            className={cn(
+                                                "flex-1 rounded-xl font-medium p-3 text-white transition-colors",
+                                                isInCart
+                                                    ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                                                    : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
+                                            )}
                                             onClick={handleCartAction}
                                         >
                                             {isInCart ? "Eliminar del Carrito" : "Añadir al Carrito"}
-                                        </IonButton>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </IonCol>
-                    </IonRow>
-                </IonGrid>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </IonContent>
         </IonPage>
     );
