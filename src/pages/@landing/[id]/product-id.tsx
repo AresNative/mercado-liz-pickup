@@ -1,5 +1,5 @@
 import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonItem, IonLabel, IonRadio, IonRadioGroup, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
-import { CloudDownload, ScanBarcode, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
+import { ScanBarcode, ShieldAlert, ShieldCheck, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
@@ -9,6 +9,7 @@ import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import { cn } from "@/utils/functions/cn";
 
 export const LoadingScreen = () => (
     <IonPage>
@@ -40,7 +41,9 @@ const ProductID: React.FC = () => {
 
     const [variants, setVariants] = useState<Product[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
-    const quantityInCart = cartItems.find((item: any) => item.id === selectedVariant?.id)?.quantity || 0;
+    const [localQuantity, setLocalQuantity] = useState(1); // Estado local para cantidad
+    const [isInCart, setIsInCart] = useState(false); // Estado para rastrear si el producto está en el carrito
+
     // Modificar useEffect para cargar todas las variantes
     useEffect(() => {
         if (data) {
@@ -49,6 +52,19 @@ const ProductID: React.FC = () => {
             setSelectedVariant(mappedProducts[0] || null);
         }
     }, [data, id]);
+
+    // Actualizar estado local cuando cambia el carrito o la variante
+    useEffect(() => {
+        const inCart = cartItems.some((item: any) => item.id === selectedVariant?.id);
+        setIsInCart(inCart);
+
+        if (inCart) {
+            const cartItem = cartItems.find((item: any) => item.id === selectedVariant?.id);
+            setLocalQuantity(cartItem.quantity);
+        } else {
+            setLocalQuantity(1);
+        }
+    }, [cartItems, selectedVariant]);
 
     // Mostrar pantalla de carga mientras se obtienen datos
     if (isFetching) {
@@ -87,34 +103,29 @@ const ProductID: React.FC = () => {
         );
     }
 
-
-    const handleAddToCart = () => {
-        dispatch(addToCart({ ...selectedVariant, quantity: 1 }));
+    // Controladores para modificar la cantidad local
+    const increaseLocalQuantity = () => {
+        setLocalQuantity(prev => prev + 1);
     };
 
-    const increaseQuantity = () => {
-        dispatch(addToCart({ ...selectedVariant, quantity: 1 }));
+    const decreaseLocalQuantity = () => {
+        setLocalQuantity(prev => Math.max(1, prev - 1));
     };
 
-    const decreaseQuantity = () => {
-        if (quantityInCart === 1) {
+    const handleLocalQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newQuantity = Math.max(1, parseInt(e.target.value) || 1);
+        setLocalQuantity(newQuantity);
+    };
+
+    // Acción al presionar el botón principal
+    const handleCartAction = () => {
+        if (isInCart) {
             dispatch(removeFromCart(selectedVariant.id));
         } else {
-            dispatch(addToCart({ ...selectedVariant, quantity: -1 }));
+            dispatch(addToCart({ ...selectedVariant, quantity: localQuantity }));
         }
     };
 
-    const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newQuantity = Math.max(0, parseInt(e.target.value) || 0); // Forzar mínimo 0
-        if (!isNaN(newQuantity)) {
-            if (newQuantity <= 0) {
-                dispatch(removeFromCart(selectedVariant.id));
-            } else {
-                const delta = newQuantity - quantityInCart;
-                dispatch(addToCart({ ...selectedVariant, quantity: delta }));
-            }
-        }
-    };
     return (
         <IonPage>
             <HeaderCart back />
@@ -173,161 +184,82 @@ const ProductID: React.FC = () => {
                                     {selectedVariant.categoria}
                                 </p>
                             </div>
-
-                            {/* Resto del maquetado se mantiene igual */}
-                            <ul className="items-center gap-2 w-full">
-                                {selectedVariant.unidad === "Caja" && (
-                                    <li className="items-center">
-                                        La caja contiene - {selectedVariant.factor} pieza(s)
-                                    </li>
-                                )}
-                                <li className="flex items-center gap-4">
-                                    <span>Cantidad:</span>
-                                    <div className="flex items-center gap-2">
-                                        {quantityInCart === 0 ? (
-                                            <>
-                                                <IonButton
-                                                    size="small"
-                                                    onClick={decreaseQuantity}
-                                                    className="custom-tertiary"
-                                                    disabled={quantityInCart <= 1}
-                                                >
-                                                    -
-                                                </IonButton>
-                                                <span className="w-8 text-center">{quantityInCart}</span>
-                                                <IonButton
-                                                    size="small"
-                                                    className="custom-tertiary"
-                                                    onClick={increaseQuantity}
-                                                >
-                                                    +
-                                                </IonButton>
-                                            </>
-                                        ) : (
-                                            <div className="flex items-center gap-2">
-                                                <IonButton
-                                                    size="small"
-                                                    onClick={decreaseQuantity}
-                                                    className="custom-tertiary"
-                                                    disabled={quantityInCart <= 1}
-                                                >
-                                                    -
-                                                </IonButton>
-                                                <input
-                                                    type="number"
-                                                    className="text-sm w-10 text-center bg-white rounded-lg border p-1"
-                                                    value={quantityInCart}
-                                                    min="0"
-                                                    onChange={handleQuantityChange}
-                                                    onBlur={(e) => {
-                                                        const value = parseInt(e.target.value);
-                                                        if (isNaN(value) || value < 1) {
-                                                            dispatch(removeFromCart(selectedVariant.id));
-                                                        }
-                                                    }}
-                                                />
-                                                <IonButton
-                                                    size="small"
-                                                    className="custom-tertiary"
-                                                    onClick={increaseQuantity}
-                                                >
-                                                    +
-                                                </IonButton>
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                                {variants.length > 1 && (
-                                    <IonSegment
-                                        value={selectedVariant?.id}
-                                        onIonChange={(e) => {
-                                            const selected = variants.find(v => v.id === e.detail.value);
-                                            setSelectedVariant(selected || null);
-                                        }}
-                                        className="my-4"
-                                    >
-                                        {variants.map((variant) => (
-                                            <IonSegmentButton
-                                                key={variant.id}
-                                                value={variant.id}
-                                                className="text-sm"
+                            <nav className={cn(!selectedVariant.image && "md:flex")}>
+                                <ul className="items-center gap-2 w-full">
+                                    {selectedVariant.unidad === "Caja" && (
+                                        <li className="items-center">
+                                            La caja contiene - {selectedVariant.factor} pieza(s)
+                                        </li>
+                                    )}
+                                    <li className="flex items-center gap-4">
+                                        <span>Cantidad:</span>
+                                        <div className="flex items-center gap-2">
+                                            <IonButton
+                                                size="small"
+                                                onClick={decreaseLocalQuantity}
+                                                className="custom-tertiary"
+                                                disabled={localQuantity <= 1}
                                             >
-                                                <IonLabel>
-                                                    {variant.unidad} - ${variant.precio.toFixed(2)}
-                                                    {variant.factor && variant.factor > 1 && ` (${variant.factor} pzs)`}
-                                                </IonLabel>
-                                            </IonSegmentButton>
-                                        ))}
-                                    </IonSegment>
-                                )}
-                                <li>
-                                    <IonButton
-                                        expand="block"
-                                        className={quantityInCart === 0 ? "custom-tertiary" : "custom-danger"} // Añade clase diferente para eliminar
-                                        onClick={
-                                            quantityInCart === 0
-                                                ? handleAddToCart
-                                                : () => dispatch(removeFromCart(selectedVariant.id)) // Elimina completamente el artículo
-                                        }
-                                    >
-                                        {quantityInCart === 0
-                                            ? "Añadir al Carrito"
-                                            : "Eliminar del Carrito"}
-                                    </IonButton>
-                                </li>
-                            </ul>
+                                                -
+                                            </IonButton>
+                                            <input
+                                                type="number"
+                                                className="text-sm w-10 text-center bg-white rounded-lg border p-1"
+                                                value={localQuantity}
+                                                min="1"
+                                                onChange={handleLocalQuantityChange}
+                                            />
+                                            <IonButton
+                                                size="small"
+                                                className="custom-tertiary"
+                                                onClick={increaseLocalQuantity}
+                                            >
+                                                +
+                                            </IonButton>
+                                        </div>
 
-                            {/* <IonGrid>
-                                <IonRow className="gap-y-4 md:gap-y-0 p-2 md:p-0">
-                                    <IonCol
-                                        size="12"
-                                        size-sm="4"
-                                        className="flex items-center gap-2 md:gap-3 flex-grow"
-                                    >
-                                        <Truck className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                                        <span className="text-sm md:text-base whitespace-nowrap">Envío Gratis</span>
-                                    </IonCol>
-
-                                    <IonCol
-                                        size="12"
-                                        size-sm="4"
-                                        className="flex items-center gap-2 md:gap-3 flex-grow"
-                                    >
-                                        <ShieldCheck className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                                        <span className="text-sm md:text-base whitespace-nowrap">Garantía de 1 Año</span>
-                                    </IonCol>
-
-                                    <IonCol
-                                        size="12"
-                                        size-sm="4"
-                                        className="flex items-center gap-2 md:gap-3 flex-grow"
-                                    >
-                                        <CloudDownload className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
-                                        <span className="text-sm md:text-base whitespace-nowrap">Devoluciones Fáciles</span>
-                                    </IonCol>
-                                </IonRow>
-                            </IonGrid> 
-                            
-                            <IonSegment value="details">
-                                <IonSegmentButton value="details">
-                                    <IonLabel>Detalles</IonLabel>
-                                </IonSegmentButton>
-                                <IonSegmentButton value="specifications">
-                                    <IonLabel>Especificaciones</IonLabel>
-                                </IonSegmentButton>
-                                <IonSegmentButton value="reviews">
-                                    <IonLabel>Reseñas</IonLabel>
-                                </IonSegmentButton>
-                            </IonSegment> */}
-
-                            <ul className="mt-5">
-                                <li className="flex items-center text-sm gap-1">
-                                    <ScanBarcode className="h-4 w-4 fill-[#8B5CF6]" />
-                                    Codigo de barras:
-                                    <span className="text-[#8B5CF6]">{selectedVariant.id}</span>
-                                </li>
-                            </ul>
-
+                                    </li>
+                                    <li className="flex items-center text-sm gap-1">
+                                        <ScanBarcode className="h-4 w-4 fill-[#8B5CF6]" />
+                                        Codigo de barras:
+                                        <span className="text-[#8B5CF6]">{selectedVariant.id}</span>
+                                    </li>
+                                </ul>
+                                <ul className={cn(!selectedVariant.image && "md:-mt-20", "items-center gap-2 w-full")}>
+                                    <li>
+                                        {variants.length > 1 && (
+                                            <IonSegment
+                                                value={selectedVariant?.id}
+                                                onIonChange={(e) => {
+                                                    const selected = variants.find(v => v.id === e.detail.value);
+                                                    setSelectedVariant(selected || null);
+                                                }}
+                                                className="my-4"
+                                            >
+                                                {variants.map((variant) => (
+                                                    <IonSegmentButton
+                                                        key={variant.id}
+                                                        value={variant.id}
+                                                        className="text-sm"
+                                                    >
+                                                        <IonLabel>
+                                                            {variant.unidad} - ${variant.precio.toFixed(2)}
+                                                            {variant.factor && variant.factor > 1 && ` (${variant.factor} pzs)`}
+                                                        </IonLabel>
+                                                    </IonSegmentButton>
+                                                ))}
+                                            </IonSegment>
+                                        )}
+                                        <IonButton
+                                            expand="block"
+                                            className={isInCart ? "custom-danger" : "custom-tertiary"}
+                                            onClick={handleCartAction}
+                                        >
+                                            {isInCart ? "Eliminar del Carrito" : "Añadir al Carrito"}
+                                        </IonButton>
+                                    </li>
+                                </ul>
+                            </nav>
                         </IonCol>
                     </IonRow>
                 </IonGrid>
