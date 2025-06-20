@@ -59,7 +59,7 @@ const Page: React.FC = () => {
                 </div>
 
                 <CategorySlider />
-                <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
+                {/*  <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} /> */}
                 <ProductGrid />
             </IonContent>
         </IonPage>

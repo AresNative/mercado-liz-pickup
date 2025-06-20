@@ -29,6 +29,8 @@ import '@ionic/react/css/flex-utils.css';
 import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.class.css';
 
+import "driver.js/dist/driver.css";
+
 setupIonicReact({
   mode: 'ios',
 });

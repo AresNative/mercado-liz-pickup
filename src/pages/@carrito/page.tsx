@@ -9,6 +9,7 @@ import ModalCita from "./components/modal-cita";
 const CarritoPage = () => {
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state) => state.cart.items.filter(item => item.quantity > 0));
+    console.log(cartItems);
 
     // Cálculos de totales
     const subtotal = cartItems.reduce((acc, item: any) =>
@@ -60,13 +61,13 @@ const CarritoPage = () => {
                                         className="bg-white rounded-lg overflow-hidden transition-all hover:shadow-md border border-gray-100"
                                     >
                                         <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
-                                            <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
+                                            {item.image && (<div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
                                                 <img
-                                                    src={item.image || "/placeholder.svg"}
+                                                    src={item.image}
                                                     alt={item.nombre}
                                                     className="w-full h-full object-contain"
                                                 />
-                                            </div>
+                                            </div>)}
                                             <div className="flex-1 w-full">
                                                 <h3 className="font-medium line-clamp-2 text-lg">{item.nombre}</h3>
                                                 <p className="text-sm text-gray-500 mt-1">{item.category}</p>
@@ -81,7 +82,7 @@ const CarritoPage = () => {
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-gray-500 ml-2">• {item.unidad}</span>
+                                                        <span className="text-sm text-r67tf5black font-semibold ml-2">• {item.unidad}</span>
                                                         <div className="flex items-center border rounded-lg overflow-hidden">
                                                             <button
                                                                 onClick={() => handleQuantityChange(item.id, item.quantity, "decrease")}
@@ -117,20 +118,7 @@ const CarritoPage = () => {
                                                             onClick={() => dispatch(removeFromCart(item.id))}
                                                             className="h-8 w-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors"
                                                         >
-                                                            <svg
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                                className="h-4 w-4"
-                                                                fill="none"
-                                                                viewBox="0 0 24 24"
-                                                                stroke="currentColor"
-                                                            >
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                                />
-                                                            </svg>
+                                                            <Trash className="text-red-600 size-4" />
                                                             <span className="sr-only">Eliminar</span>
                                                         </button>
                                                     </div>
