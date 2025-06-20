@@ -97,10 +97,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                 <div className="flex items-center justify-between">
                     <div>
-                        <span className="font-bold text-base">{product.precio ? "$" + product.precio.toFixed(2) : "No disponible"}</span>
-                        {product.precioRegular && (
-                            <span className="text-xs text-gray-500 line-through ml-2">${product.precioRegular.toFixed(2)}</span>
-                        )}
+                        {product.precioRegular ? (<>
+                            <span className="font-bold text-base">{product.precioRegular ? "$" + product.precioRegular.toFixed(2) : "No disponible"}</span>
+                            <span className="text-xs text-gray-500 line-through ml-2">${product.precio.toFixed(2)}</span>
+                        </>) : (<span className="font-bold text-base">{product.precio ? "$" + product.precio.toFixed(2) : "No disponible"}</span>)}
                     </div>
 
                     <motion.div whileTap={{ scale: 0.95 }}>
