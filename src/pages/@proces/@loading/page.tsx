@@ -11,6 +11,8 @@ import {
 import { es } from "date-fns/locale"
 import Sucursales from "./sections/Sucursales";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import ProductCard from "@/pages/@landing/components/product/product-card";
+import { mapApiProductLoadingPage } from "@/pages/@landing/utils/fromat-data";
 
 const Page: React.FC = () => {
     const [cartItems, setcartItems] = useState<any>([])
@@ -46,8 +48,8 @@ const Page: React.FC = () => {
                 },
                 pageSize: 1
             });
-
-            setcartItems(JSON.parse(Listas.data[0].array_lista) || [])
+            const mappedProducts = JSON.parse(Listas.data[0].array_lista).map(mapApiProductLoadingPage);
+            setcartItems(mappedProducts || [])
             setError(null);
         } catch (err) {
             setError('No pudimos cargar la información de tu cita');
@@ -96,47 +98,7 @@ const Page: React.FC = () => {
                             {cartItems.length > 0 ? (
                                 <>
                                     {cartItems.map((item: any, key: any) => (
-                                        <div
-                                            key={key}
-                                            className="group bg-white rounded-lg overflow-hidden transition-all hover:shadow-md border border-gray-100 flex-shrink-0 hover:border-primary/20"
-                                        >
-                                            <div className="flex flex-col sm:flex-row items-start gap-4 p-4">
-                                                <div className="bg-gray-100 rounded-md p-2 flex items-center justify-center sm:w-24 w-full h-24">
-                                                    <img
-                                                        src={item.image || "/placeholder.svg"}
-                                                        alt={`Imagen de ${item.nombre}`}
-                                                        className="w-full h-full object-contain transition-opacity opacity-0"
-                                                        onLoad={(e) => (e.currentTarget.style.opacity = "1")}
-                                                        loading="lazy"
-                                                    />
-                                                </div>
-                                                <div className="flex-1 w-full">
-                                                    <h3 className="font-medium line-clamp-2 text-lg">{item.nombre}</h3>
-                                                    <p className="text-sm text-gray-500 mt-1">{item.categoria}</p>
-
-                                                    <div className="my-3 border-t border-gray-100"></div>
-
-                                                    <div className="flex flex-wrap items-center justify-between gap-3">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-xs text-gray-500 ml-2">• {item.unidad}</span>
-                                                            <span className="text-lg font-bold text-gray-900">
-                                                                ${item.precio.toFixed(2)}
-                                                            </span>
-                                                            {item.precioRegular && (
-                                                                <span className="text-sm text-gray-500 line-through">
-                                                                    ${item.precioRegular.toFixed(2)}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2 text-sm">
-                                                            <span className="bg-primary/10 text-primary px-2 py-1 rounded">
-                                                                x{item.quantity}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <ProductCard product={item} />
                                     ))}
                                     <div className="space-y-2 mt-4">
                                         <div className="flex justify-between text-sm text-gray-600">

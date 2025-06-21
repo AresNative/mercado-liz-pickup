@@ -25,3 +25,13 @@ export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
   descuento: apiProduct.TieneOferta ? 10 : undefined,
   factor: apiProduct.Factor,
 });
+
+export const mapApiProductLoadingPage = (apiProduct: any): Product => ({
+  id: apiProduct.id,
+  categoria: apiProduct.categoria,
+  nombre: apiProduct.nombre.trim(),
+  precio: apiProduct.precio,
+  unidad: apiProduct.unidad,
+  descuento: apiProduct.TieneOferta ? 10 : undefined,
+  factor: apiProduct.quantity,
+});

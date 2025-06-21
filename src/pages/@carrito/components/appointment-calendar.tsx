@@ -170,21 +170,20 @@ export function AppointmentCalendar() {
       animate: true,
       steps: [
         {
-          element: '#calendar-header',
-          popover: {
-            title: 'Calendario de Citas',
-            description: 'Aquí puedes seleccionar una fecha disponible para tu cita.',
-            side: "bottom",
-            align: 'start'
-          }
-        },
-
-        {
           element: '#help-button',
           popover: {
             title: '¿Necesitas ayuda?',
             description: 'Siempre puedes volver a ver esta guía haciendo clic aquí.',
             side: "left",
+            align: 'start'
+          }
+        },
+        {
+          element: '#calendar-header',
+          popover: {
+            title: 'Calendario de Citas',
+            description: 'Aquí puedes seleccionar una fecha disponible para tu cita.',
+            side: "bottom",
             align: 'start'
           }
         },
