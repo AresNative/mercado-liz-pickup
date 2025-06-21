@@ -31,10 +31,8 @@ import {
   Calendar,
   FileText,
   AlertCircle,
-  Info,
   ArrowLeft,
   Loader2,
-  X,
   CheckCircle2,
   HelpCircle,
 } from "lucide-react"
@@ -141,7 +139,6 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
 
 export function AppointmentCalendar() {
   const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
-  const user_id = getLocalStorageItem("user-id");
   const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
 
   const history = useHistory();
@@ -231,11 +228,11 @@ export function AppointmentCalendar() {
 
   // Mostrar tour automáticamente al cargar (solo primera vez)
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('hasSeenAppointmentTour');
-    if (!hasSeenTour) {
+    const hasSeenTour = getLocalStorageItem('hasSeenAppointmentTour');
+    if (hasSeenTour !== true) {
       setTimeout(() => {
         startTour();
-        localStorage.setItem('hasSeenAppointmentTour', 'true');
+        /* setLocalStorageItem('hasSeenAppointmentTour', true); */
       }, 1000);
     }
   }, []);

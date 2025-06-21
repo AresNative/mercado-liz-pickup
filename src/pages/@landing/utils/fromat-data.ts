@@ -15,6 +15,7 @@ export interface ApiProduct {
 
 export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
   id: apiProduct.Codigo.toString(),
+  articulo: apiProduct.Cuenta.toString(),
   categoria: apiProduct.Grupo,
   nombre: apiProduct.Nombre.trim(),
   precio: apiProduct.PrecioRegular,
@@ -28,6 +29,7 @@ export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
 
 export const mapApiProductLoadingPage = (apiProduct: any): Product => ({
   id: apiProduct.id,
+  articulo: apiProduct.Cuenta,
   categoria: apiProduct.categoria,
   nombre: apiProduct.nombre.trim(),
   precio: apiProduct.precio,

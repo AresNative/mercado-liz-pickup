@@ -49,7 +49,6 @@ const ProductGrid: React.FC = () => {
     useEffect(() => {
         if (data) {
             const mappedProducts = data.data.map(mapApiProductToAppProduct);
-
             // ✅ Evitar agregar datos vacíos o duplicados
             if (mappedProducts.length === 0) {
                 setHasMore(false);
