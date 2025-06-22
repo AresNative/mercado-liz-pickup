@@ -114,7 +114,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                             <div className="flex items-center gap-1 text-xs text-gray-400">
                                 <Barcode className="w-3 h-3" />
-                                <span>ID: {product.id}</span>
+                                <span>CB: {product.id}</span>
                             </div>
                         </div>
                     </div>
