@@ -136,11 +136,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <div className="flex flex-col">
                             <div className="flex items-baseline gap-2">
                                 <span className="font-bold text-lg text-gray-900">
-                                    ${finalPrice.toFixed(2)}
+                                    ${finalPrice.toLocaleString('es-MX', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    })}
                                 </span>
                                 {hasDiscount && (
                                     <span className="text-sm text-gray-400 line-through">
-                                        ${product.precio.toFixed(2)}
+                                        ${product.precio.toLocaleString('es-MX', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}
                                     </span>
                                 )}
                             </div>

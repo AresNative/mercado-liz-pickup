@@ -180,11 +180,17 @@ const ProductID: React.FC = () => {
                                     <div className="mb-4">
                                         <div className="flex items-baseline gap-2">
                                             <span className="font-bold text-2xl text-gray-900">
-                                                ${finalPrice?.toFixed(2)}
+                                                ${finalPrice?.toLocaleString('es-MX', {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2
+                                                })}
                                             </span>
                                             {hasDiscount && (
                                                 <span className="text-base text-gray-400 line-through">
-                                                    ${selectedVariant.precio.toFixed(2)}
+                                                    ${selectedVariant.precio.toLocaleString('es-MX', {
+                                                        minimumFractionDigits: 2,
+                                                        maximumFractionDigits: 2
+                                                    })}
                                                 </span>
                                             )}
                                         </div>
