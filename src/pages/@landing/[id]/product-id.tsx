@@ -101,7 +101,9 @@ const ProductID: React.FC = () => {
     }
 
     const increaseLocalQuantity = () => {
-        setLocalQuantity(prev => prev + 1);
+        if (selectedVariant) {
+            setLocalQuantity(prev => Math.min(prev + 1, selectedVariant.cantidad));
+        }
     };
 
     const decreaseLocalQuantity = () => {
@@ -110,7 +112,11 @@ const ProductID: React.FC = () => {
 
     const handleLocalQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuantity = Math.max(1, parseInt(e.target.value) || 1);
-        setLocalQuantity(newQuantity);
+        if (selectedVariant) {
+            setLocalQuantity(Math.min(newQuantity, selectedVariant.cantidad));
+        } else {
+            setLocalQuantity(newQuantity);
+        }
     };
 
     const handleCartAction = () => {
@@ -206,6 +212,11 @@ const ProductID: React.FC = () => {
                                             <span>Codigo de barras:</span>
                                             <span className="text-purple-600 font-medium">{selectedVariant.id}</span>
                                         </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <ScanBarcode className="h-4 w-4 text-gray-500" />
+                                            <span>Pz disponible(s):</span>
+                                            <span className="text-purple-600 font-medium">{selectedVariant.cantidad}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -239,7 +250,7 @@ const ProductID: React.FC = () => {
                                     )}
 
                                     {/* Controles de cantidad */}
-                                    <div className="flex items-center justify-between gap-4 mb-6">
+                                    {variants[0].cantidad > 0 ? (<div className="flex items-center justify-between gap-4 mb-6">
                                         <div className="flex items-center">
                                             <span className="text-gray-700 mr-3">Cantidad:</span>
                                             <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
@@ -280,7 +291,7 @@ const ProductID: React.FC = () => {
                                         >
                                             {isInCart ? "Eliminar del Carrito" : "Añadir al Carrito"}
                                         </button>
-                                    </div>
+                                    </div>) : ("No disponible")}
                                 </div>
                             </div>
                         </div>

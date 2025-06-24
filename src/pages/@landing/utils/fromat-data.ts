@@ -11,6 +11,7 @@ export interface ApiProduct {
   PrecioRegular: number;
   PrecioOferta: number;
   TieneOferta: boolean;
+  TotalInventario: number;
 }
 
 export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
@@ -23,6 +24,7 @@ export const mapApiProductToAppProduct = (apiProduct: ApiProduct): Product => ({
     ? apiProduct.PrecioOferta
     : apiProduct.PrecioOferta,
   unidad: apiProduct.Unidad,
+  cantidad: apiProduct.TotalInventario,
   descuento: apiProduct.TieneOferta ? 10 : undefined,
   factor: apiProduct.Factor,
 });
@@ -35,5 +37,6 @@ export const mapApiProductLoadingPage = (apiProduct: any): Product => ({
   precio: apiProduct.precio,
   unidad: apiProduct.unidad,
   descuento: apiProduct.TieneOferta ? 10 : undefined,
+  cantidad: apiProduct.TotalInventario,
   factor: apiProduct.quantity,
 });

@@ -7,6 +7,7 @@ export interface Product {
   categoria: string;
   unidad: string;
   precio: number;
+  cantidad: number;
   precioRegular?: number;
   factor?: number;
 }

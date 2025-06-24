@@ -1,10 +1,11 @@
 import React from "react"
 import { IonRouterLink } from "@ionic/react"
 import { motion } from "framer-motion"
-import { Star, ShoppingCart, Barcode } from "lucide-react"
+import { Star, ShoppingCart, Barcode, Hash } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { addToCart, removeFromCart } from "@/hooks/slices/cart"
 import { Product } from "@/utils/data/example-data"
+import { cn } from "@/utils/functions/cn"; // Asegúrate de importar cn
 
 interface ProductCardProps {
     product: Product
@@ -21,7 +22,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
 
     const handleIncrement = () => {
-        dispatch(addToCart({ ...product, quantity: 1 }))
+        if (quantity < product.cantidad) {
+            dispatch(addToCart({ ...product, quantity: 1 }))
+        }
     }
 
     const handleDecrement = () => {
@@ -35,20 +38,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuantity = parseInt(e.target.value);
         if (!isNaN(newQuantity)) {
-            if (newQuantity <= 0) {
+            // Limitar la cantidad al stock disponible
+            const clampedQuantity = Math.min(Math.max(newQuantity, 0), product.cantidad);
+
+            if (clampedQuantity === 0) {
                 dispatch(removeFromCart(product.id));
             } else {
-                const delta = newQuantity - quantity;
+                const delta = clampedQuantity - quantity;
                 dispatch(addToCart({
                     ...product,
-                    quantity: delta > 0 ? delta : Math.max(delta, -quantity)
+                    quantity: delta
                 }));
             }
         }
     }
 
-    const hasDiscount = product.precioRegular && product.descuento
-    const finalPrice = hasDiscount ? product.precioRegular : product.precio
+    // Corrección en el cálculo de descuento
+    const hasDiscount = product.descuento && product.descuento > 0;
+    const finalPrice = product.precio;
     const savings = hasDiscount ? (product.precio - (product.precioRegular || 0)).toFixed(2) : 0
 
     return (
@@ -116,6 +123,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                                 <Barcode className="w-3 h-3" />
                                 <span>CB: {product.id}</span>
                             </div>
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                                <Hash className="w-3 h-3" />
+                                <span>Pz disponible(s): {product.cantidad}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -125,7 +136,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         <div className="flex flex-col">
                             <div className="flex items-baseline gap-2">
                                 <span className="font-bold text-lg text-gray-900">
-                                    ${finalPrice?.toFixed(2)}
+                                    ${finalPrice.toFixed(2)}
                                 </span>
                                 {hasDiscount && (
                                     <span className="text-sm text-gray-400 line-through">
@@ -145,42 +156,57 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                             className="flex-shrink-0"
                             whileTap={{ scale: 0.95 }}
                         >
-                            {quantity === 0 ? (
-                                <button
-                                    onClick={handleAddToCart}
-                                    className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 active:scale-95"
-                                    aria-label={`Agregar ${product.nombre} al carrito`}
-                                >
-                                    <ShoppingCart className="w-4 h-4" />
-                                </button>
+                            {product.cantidad > 0 ? (
+                                quantity === 0 ? (
+                                    <button
+                                        onClick={handleAddToCart}
+                                        className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 active:scale-95"
+                                        aria-label={`Agregar ${product.nombre} al carrito`}
+                                    >
+                                        <ShoppingCart className="w-4 h-4" />
+                                    </button>
+                                ) : (
+                                    <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
+                                        <button
+                                            className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                            onClick={handleDecrement}
+                                            aria-label="Disminuir cantidad"
+                                        >
+                                            <span className="text-lg font-medium">−</span>
+                                        </button>
+
+                                        <input
+                                            type="number"
+                                            value={quantity}
+                                            onChange={handleQuantityChange}
+                                            className="w-12 h-8 text-center text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-md"
+                                            min="0"
+                                            max={product.cantidad}
+                                            aria-label="Cantidad"
+                                        />
+
+                                        <button
+                                            className={cn(
+                                                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500",
+                                                quantity >= product.cantidad
+                                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    : "bg-purple-600 hover:bg-purple-700 text-white"
+                                            )}
+                                            onClick={handleIncrement}
+                                            disabled={quantity >= product.cantidad}
+                                            aria-label="Aumentar cantidad"
+                                        >
+                                            <span className="text-lg font-medium">+</span>
+                                        </button>
+                                    </div>
+                                )
                             ) : (
-                                <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
-                                    <button
-
-                                        className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        onClick={handleDecrement}
-                                        aria-label="Disminuir cantidad"
-                                    >
-                                        <span className="text-lg font-medium">−</span>
-                                    </button>
-
-                                    <input
-                                        type="number"
-                                        value={quantity}
-                                        onChange={handleQuantityChange}
-                                        className="w-12 h-8 text-center text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-md"
-                                        min="0"
-                                        aria-label="Cantidad"
-                                    />
-
-                                    <button
-                                        className="w-8 h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        onClick={handleIncrement}
-                                        aria-label="Aumentar cantidad"
-                                    >
-                                        <span className="text-lg font-medium">+</span>
-                                    </button>
-                                </div>
+                                <button
+                                    disabled
+                                    className="bg-gray-300 text-gray-500 p-2.5 rounded-xl shadow-md cursor-not-allowed"
+                                >
+                                    No disponible
+                                </button>
                             )}
                         </motion.div>
                     </div>
