@@ -99,9 +99,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                     <div className="flex-1">
                         <IonRouterLink
                             routerLink={`/products/${product.nombre}`}
-                            className="text-left w-full focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded-lg p-1 -m-1"
+                            className="text-left w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
                         >
-                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 group-hover:text-purple-700 transition-colors">
+                            <h3 className="font-semibold m-0 text-gray-900 text-sm sm:text-base group-hover:text-purple-700 transition-colors">
                                 {product.nombre}
                             </h3>
                         </IonRouterLink>
