@@ -160,17 +160,26 @@ const CarritoPage = () => {
                                 <div className="space-y-3">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Subtotal:</span>
-                                        <span className="font-medium">${subtotal.toFixed(2)}</span>
+                                        <span className="font-medium">${subtotal.toLocaleString('es-MX', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}</span>
                                     </div>
                                     {discountTotal > 0 && (
                                         <div className="flex justify-between text-purple-700">
                                             <span>Descuentos:</span>
-                                            <span className="font-medium">-${discountTotal.toFixed(2)}</span>
+                                            <span className="font-medium">-${discountTotal.toLocaleString('es-MX', {
+                                                minimumFractionDigits: 2,
+                                                maximumFractionDigits: 2
+                                            })}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between font-bold text-lg text-gray-900 pt-2 border-t border-gray-100">
                                         <span>Total:</span>
-                                        <span>${total.toFixed(2)}</span>
+                                        <span>${total.toLocaleString('es-MX', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}</span>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 pt-2">

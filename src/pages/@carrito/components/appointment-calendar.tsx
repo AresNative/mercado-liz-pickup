@@ -232,7 +232,7 @@ export function AppointmentCalendar() {
     if (hasSeenTour !== true) {
       setTimeout(() => {
         startTour();
-        /* setLocalStorageItem('hasSeenAppointmentTour', true); */
+        setLocalStorageItem('hasSeenAppointmentTour', true);
       }, 1000);
     }
   }, []);
@@ -862,7 +862,7 @@ export function AppointmentCalendar() {
                       dispatch(clearCart())
                       present({
                         message: `Cita creada correctamente`,
-                        duration: 2500,
+                        duration: 3500,
                         cssClass: "custom-tertiary",
                         position: 'bottom',
                         buttons: [{
@@ -875,6 +875,12 @@ export function AppointmentCalendar() {
                       });
                     } catch (error) {
                       console.error("Error in appointment creation process:", error);
+                      present({
+                        message: `Error al generar cita`,
+                        duration: 2500,
+                        color: "danger",
+                        position: 'bottom'
+                      });
                     }
                   }
                 }
