@@ -7,7 +7,7 @@ import { BarChart3, Calendar, Grid2x2X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import Sucursales from "./sections/Sucursales";
+import Sucursales, { sucursalesfind } from "./sections/Sucursales";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 // Definición de interfaces
@@ -371,6 +371,11 @@ const Page: React.FC = () => {
                                             <span className="col-span-2">
                                                 {cita.productos?.length || 0} artículos
                                             </span>
+
+                                            <span className="text-gray-500 font-medium">Sucursal:</span>
+                                            <span className="col-span-2">
+                                                {sucursalesfind.find((row) => row.precio === cita.sucursal)?.nombre || "No especificada"}
+                                            </span>
                                         </div>
                                         <Sucursales sucursalVista={cita.sucursal} />
                                     </div>
@@ -427,7 +432,7 @@ const Page: React.FC = () => {
 
                                             <span className="text-gray-500 font-medium">Sucursal:</span>
                                             <span className="col-span-2">
-                                                {cita.sucursal || 0} artículos
+                                                {sucursalesfind.find((row) => row.precio === cita.sucursal)?.nombre || "No especificada"}
                                             </span>
                                         </div>
                                     </div>
