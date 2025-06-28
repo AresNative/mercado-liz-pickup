@@ -55,7 +55,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     // Corrección en el cálculo de descuento
     const hasDiscount = product.descuento && product.descuento > 0;
-    const finalPrice = product.precio;
+    const finalPrice = hasDiscount ? product.precioRegular : product.precio;
     const savings = hasDiscount ? (product.precio - (product.precioRegular || 0)).toFixed(2) : 0
 
     return (
@@ -135,12 +135,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                         {/* Sección de precios */}
                         <div className="flex flex-col">
                             <div className="flex items-baseline gap-2">
-                                <span className="font-bold text-lg text-gray-900">
-                                    ${finalPrice.toLocaleString('es-MX', {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2
-                                    })}
-                                </span>
+                                {finalPrice && (
+                                    <span className="font-bold text-lg text-gray-900">
+                                        ${finalPrice.toLocaleString('es-MX', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2
+                                        })}
+                                    </span>)}
                                 {hasDiscount && (
                                     <span className="text-sm text-gray-400 line-through">
                                         ${product.precio.toLocaleString('es-MX', {
