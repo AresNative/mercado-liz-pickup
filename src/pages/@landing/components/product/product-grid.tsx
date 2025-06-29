@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/react"
 import ProductCard from "./product-card"
@@ -16,61 +16,69 @@ const ProductGrid: React.FC = () => {
     const [page, setPage] = useState(1);
     const [combinedData, setCombinedData] = useState<Product[]>([]);
     const [hasMore, setHasMore] = useState(true);
-    const [refreshTrigger, setRefreshTrigger] = useState(Date.now()); // Fuerza recarga
+    const [refreshTrigger, setRefreshTrigger] = useState(Date.now());
     const dispatch = useAppDispatch();
 
+    // Usar ref para rastrear la categoría actual
+    const currentCategoryRef = useRef<string | null>(null);
+
     const categoria = useAppSelector((state) => state.filterData.key?.value);
+    const precio = getLocalStorageItem("sucursal").precio ?? getLocalStorageItem("sucursal")?.precio;
 
-    const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
-
-    const { data, isFetching, error } = useGetArticulosQuery({
+    const { data, isFetching, error, refetch } = useGetArticulosQuery({
         page,
         pageSize: PAGE_SIZE,
         filtro: "",
         categoria: categoria,
         listaPrecio: precio,
-        refreshTrigger, // Nuevo parámetro para forzar recargas
+        refreshTrigger,
     });
 
-    const clear = useCallback(() => {
+    // Función para resetear completamente los datos
+    const resetData = useCallback(() => {
         setPage(1);
         setCombinedData([]);
         setHasMore(true);
-        /* if (!categoria) dispatch(clearFilters()); */
-    }, [categoria]); // Memoizar y simplificar
-
-    const refreshProducts = useCallback(async () => {
-        clear();
-        setRefreshTrigger(Date.now()); // Actualizar trigger para nueva recarga
+        setRefreshTrigger(Date.now());
         window.scrollTo({ top: 0, behavior: 'auto' });
-    }, [clear]);
+    }, []);
 
-    // Manejar actualización de datos
+    // Resetear cuando cambia la categoría o el precio
     useEffect(() => {
-        if (data) {
-            const mappedProducts = data.data.map(mapApiProductToAppProduct);
-            // ✅ Evitar agregar datos vacíos o duplicados
-            if (mappedProducts.length === 0) {
-                setHasMore(false);
-                return;
-            }
-
-            setCombinedData(prev => {
-                const newProducts = mappedProducts.filter((p: any) =>
-                    !prev.some(existing => existing.id === p.id)
-                );
-                return page === 1 ? newProducts : [...prev, ...newProducts];
-            });
-
-            setHasMore(mappedProducts.length >= PAGE_SIZE);
+        // Solo resetear si la categoría realmente cambió
+        if (currentCategoryRef.current !== categoria) {
+            resetData();
+            currentCategoryRef.current = categoria || null;
         }
-    }, [data, page]);
-    // Recargar cuando cambia la categoría
+
+        // Resetear adicional si el precio cambia
+        const currentPrecio = getLocalStorageItem("sucursal")?.precio;
+        if (precio !== currentPrecio) {
+            resetData();
+        }
+    }, [categoria, precio, resetData]);
+
+    // Manejar nuevos datos
     useEffect(() => {
-        clear();
-        refreshProducts();
-    }, [categoria]);
-    // Manejo de errores optimizado
+        // Ignorar si no hay datos válidos
+        if (!data || !Array.isArray(data.data)) return;
+
+        const mappedProducts = data.data.map(mapApiProductToAppProduct);
+
+        // Determinar si hay más páginas
+        const hasMoreData = mappedProducts.length >= PAGE_SIZE;
+
+        // Actualizar datos combinados
+        setCombinedData(prev => {
+            const newProducts = mappedProducts.filter((p: any) =>
+                !prev.some(existing => existing.id === p.id)
+            ); return page === 1 ? newProducts : [...prev, ...newProducts];
+        });
+
+        setHasMore(hasMoreData);
+    }, [data, page]);
+
+    // Manejar errores
     useEffect(() => {
         if (error) {
             console.error("Error fetching products:", error);
@@ -79,7 +87,7 @@ const ProductGrid: React.FC = () => {
     }, [error]);
 
     // Cargar más datos
-    const loadMore = useCallback(async (event: CustomEvent<void>) => {
+    const loadMore = useCallback((event: CustomEvent<void>) => {
         if (!isFetching && hasMore) {
             setPage(prev => prev + 1);
         }
@@ -100,7 +108,7 @@ const ProductGrid: React.FC = () => {
 
                 <button
                     className="shrink-0 mr-2 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={refreshProducts}
+                    onClick={resetData}
                     disabled={isFetching}
                 >
                     Actualizar
