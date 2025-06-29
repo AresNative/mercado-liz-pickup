@@ -222,7 +222,7 @@ const Page: React.FC = () => {
         return (
             <IonPage>
                 <HeaderCart back carr />
-                <IonContent fullscreen>
+                <IonContent role="feed" fullscreen>
                     <section className="w-full h-full flex flex-col gap-4 items-center justify-center text-gray-500">
                         <Grid2x2X className="w-40 h-40 text-gray-300" />
                         <span>No hay pedidos o clientes registrados</span>
@@ -235,7 +235,7 @@ const Page: React.FC = () => {
     return (
         <IonPage>
             <HeaderCart back carr />
-            <IonContent fullscreen>
+            <IonContent role="feed" fullscreen>
                 <BentoGrid>
                     {/* Productos de la cita seleccionada */}
                     <BentoItem

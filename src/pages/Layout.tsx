@@ -26,7 +26,7 @@ const Layout: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent className="bg-gray-50 dark:bg-gray-900">
+      <IonContent role="feed" className="bg-gray-50 dark:bg-gray-900">
         <img src="/logo.jpg" className="m-auto w-1/2 lg:w-1/5" />
         <ul className="list-inside flex flex-col sm:flex-row md:flex-nowrap flex-wrap gap-2 md:gap-4 lg:gap-6 mx-2 sm:mx-4 md:mx-6 lg:mx-8 mb-3 sm:mb-4 md:mb-6 items-stretch justify-center">
           {branches.map((branch, key) => (

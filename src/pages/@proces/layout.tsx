@@ -3,7 +3,7 @@ import { IonButton, IonContent, IonPage, IonSegment, IonSegmentButton } from "@i
 const Layout: React.FC = () => {
     return (
         <IonPage>
-            <IonContent>
+            <IonContent role="feed">
                 <div className="checkout-container p-4">
                     <h1 className="text-2xl font-bold mb-4">Checkout</h1>
                     <div className="checkout-content grid grid-cols-1 md:grid-cols-2 gap-6">

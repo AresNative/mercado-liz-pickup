@@ -42,7 +42,7 @@ const CarritoPage = () => {
     return (
         <IonPage>
             <HeaderCart back />
-            <IonContent fullscreen className="relative bg-gray-50">
+            <IonContent role="feed" fullscreen className="relative bg-gray-50">
                 {cartItems.length === 0 ? (
                     <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
                         <div className="bg-gray-100 rounded-full p-6 mb-6">

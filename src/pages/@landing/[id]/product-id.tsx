@@ -13,7 +13,7 @@ import { cn } from "@/utils/functions/cn";
 
 export const LoadingScreen = () => (
     <IonPage>
-        <IonContent className="ion-padding" fullscreen>
+        <IonContent role="feed" className="ion-padding" fullscreen>
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <IonSpinner
@@ -70,7 +70,7 @@ const ProductID: React.FC = () => {
     if (error) {
         return (
             <IonPage>
-                <IonContent className="ion-padding" fullscreen>
+                <IonContent role="feed" className="ion-padding" fullscreen>
                     <div className="min-h-screen flex items-center justify-center">
                         <div className="text-center text-red-500">
                             <ShieldAlert className="h-12 w-12 mx-auto" />
@@ -135,7 +135,7 @@ const ProductID: React.FC = () => {
         <IonPage>
             <HeaderCart back />
 
-            <IonContent className="ion-padding" fullscreen>
+            <IonContent role="feed" className="ion-padding" fullscreen>
                 <div className="max-w-6xl mx-auto">
                     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                         <div className="flex flex-col md:flex-row">

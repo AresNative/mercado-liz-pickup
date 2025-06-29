@@ -56,7 +56,7 @@ const CategorySlider: React.FC = () => {
                     <button
                         key={key}
                         onClick={() => {
-                            if (category.name) dispatch(dataFilter({ key: "key", value: category.name, type: "multi" }));
+                            if (category.name) dispatch(dataFilter({ key: "key", value: category.name !== 'todo' ? category.name : undefined, type: "multi" }));
                             if (!category.name) dispatch(clearFilters());
                         }}
                         className="flex flex-col items-center w-full h-full" // Altura 100% del grid

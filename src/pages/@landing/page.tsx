@@ -43,7 +43,7 @@ const Page: React.FC = () => {
     return (
         <IonPage>
             <HeaderCart />
-            <IonContent fullscreen>
+            <IonContent role="feed" fullscreen>
                 <div className="bg-purple-100 p-3 flex items-center justify-between">
                     {selectedBranch && (
                         <div className="flex items-center">

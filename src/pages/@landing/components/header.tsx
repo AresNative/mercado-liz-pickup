@@ -62,7 +62,7 @@ const HeaderCart: React.FC<HeaderCartProps> = (prosp) => {
                             <AlignLeft className="h-5 w-5" />
                         </button>
                         <IonPopover trigger="trigger-button">
-                            <IonContent>
+                            <IonContent role="feed">
                                 <IonList>
                                     <IonItem
                                         routerLink="/loading"

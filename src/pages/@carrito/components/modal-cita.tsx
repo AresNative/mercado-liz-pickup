@@ -24,7 +24,7 @@ export default function ModalCita(
                 </IonToolbar>
             </IonHeader>
 
-            <IonContent className="ion-padding">
+            <IonContent role="feed" className="ion-padding">
                 <AppointmentCalendar />
             </IonContent>
         </IonModal>

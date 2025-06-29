@@ -36,8 +36,8 @@ const ProductGrid: React.FC = () => {
         setPage(1);
         setCombinedData([]);
         setHasMore(true);
-        if (!categoria) dispatch(clearFilters());
-    }, [categoria, dispatch]); // Memoizar y simplificar
+        /* if (!categoria) dispatch(clearFilters()); */
+    }, [categoria]); // Memoizar y simplificar
 
     const refreshProducts = useCallback(async () => {
         clear();
@@ -65,13 +65,11 @@ const ProductGrid: React.FC = () => {
             setHasMore(mappedProducts.length >= PAGE_SIZE);
         }
     }, [data, page]);
-
-
     // Recargar cuando cambia la categoría
     useEffect(() => {
         clear();
-    }, [categoria]); // Solo depende de categoria
-
+        refreshProducts();
+    }, [categoria]);
     // Manejo de errores optimizado
     useEffect(() => {
         if (error) {
@@ -110,7 +108,7 @@ const ProductGrid: React.FC = () => {
             </div>
 
             {/* Lista de productos */}
-            <IonList>
+            {combinedData.length ? (<IonList>
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4"
                     initial={{ opacity: 0 }}
@@ -131,15 +129,28 @@ const ProductGrid: React.FC = () => {
                         ))}
                     </AnimatePresence>
                 </motion.div>
-            </IonList>
+            </IonList>) : (
+                <div className="mt-20 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="bg-gray-100 rounded-full p-6 mb-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">Categoria vacia</h1>
+                    <p className="text-gray-600 mb-6">Explora otras categorias para ver productos.</p>
+
+                </div>
+            )}
 
             {/* Infinite Scroll */}
             <IonInfiniteScroll
                 onIonInfinite={loadMore}
                 threshold="100px"
+                className="text-purple-800"
                 disabled={!hasMore || isFetching}
             >
                 <IonInfiniteScrollContent
+                    className="text-purple-800"
                     loadingText="Cargando más productos..."
                     loadingSpinner="bubbles"
                 />

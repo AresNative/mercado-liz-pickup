@@ -43,7 +43,7 @@ const Page: React.FC = () => {
     return (
         <IonPage>
             <HeaderCart back />
-            <IonContent fullscreen className="relative bg-[#f2f2f7]">
+            <IonContent role="feed" fullscreen className="relative bg-[#f2f2f7]">
                 <h2>Pasarela de Pago</h2>
                 <div className="px-4 mb-32 flex flex-col gap-2 max-w-5xl mx-auto">
                     <label>
