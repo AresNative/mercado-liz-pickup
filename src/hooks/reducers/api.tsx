@@ -48,6 +48,19 @@ export const api = createApi({
             }),
             extraOptions: { maxRetries: 2 }
         }),
+        put: builder.mutation({
+            query: ({ id, url, data, signal }) => ({
+                url: `v2/update/${url}?ID=${id}`,
+                method: "POST",
+                body: JSON.stringify(data),
+                signal
+            }),
+            transformErrorResponse: (response: any) => ({
+                status: response.status,
+                message: response.data?.message || 'Error fetching data',
+            }),
+            extraOptions: { maxRetries: 2 }
+        }),
         getArticulos: builder.query({
             query: ({ page, pageSize, id, filtro, categoria, listaPrecio, signal }) => ({
                 url: `v1/pick-up`,
@@ -74,5 +87,6 @@ export const api = createApi({
 export const {
     useGetAllMutation,
     usePostMutation,
+    usePutMutation,
     useGetArticulosQuery,
 } = api;

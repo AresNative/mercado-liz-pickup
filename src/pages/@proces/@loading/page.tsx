@@ -1,9 +1,9 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
-import { useGetAllMutation } from "@/hooks/reducers/api";
+import { useGetAllMutation, usePutMutation } from "@/hooks/reducers/api";
 import { LoadingScreen } from "@/pages/@landing/[id]/product-id";
 import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
-import { BarChart3, Calendar, Grid2x2X } from "lucide-react";
+import { BarChart3, Calendar, Grid2x2X, Trash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
@@ -68,7 +68,14 @@ const Page: React.FC = () => {
             total: subtotal - discountTotal
         };
     }, [selectedCita]);
-
+    const [putOrder] = usePutMutation();
+    const updateCita = async (dataUpdater: any, id: number) => {
+        await putOrder({
+            url: "citas",
+            data: dataUpdater,
+            id: id
+        });
+    };
     // Cargar todas las citas y sus productos
     useEffect(() => {
         const loadCitas = async () => {
@@ -86,11 +93,12 @@ const Page: React.FC = () => {
                     filters: {
                         Filtros: [
                             { Key: "id_cliente", Value: userId },
-                            { Key: "estado", Value: "listo", Operator: "<>" }
+                            { Key: "estado", Value: "nuevo", Operator: "like" },
+                            { Key: "estado", Value: "proceso", Operator: "=" }
                         ],
                         Order: [{ Key: "fecha", Direction: "Asc" }]
                     },
-                    pageSize: 5
+                    pageSize: 2
                 });
 
                 const activeCitasData = activeResponse.data?.data || [];
@@ -101,7 +109,8 @@ const Page: React.FC = () => {
                     filters: {
                         Filtros: [
                             { Key: "id_cliente", Value: userId },
-                            { Key: "estado", Value: "listo", operator: "like" }
+                            { Key: "estado", Value: "listo", operator: "like" },
+                            { Key: "estado", Value: "cancelado", operator: "like" }
                         ],
                         Order: [{ Key: "fecha", Direction: "Desc" }]
                     },
@@ -241,7 +250,7 @@ const Page: React.FC = () => {
                     <BentoItem
                         rowSpan={2}
                         colSpan={2}
-                        title="Productos de la cita"
+                        title={`Productos de la cita ${selectedCita ? selectedCita?.id : ""} `}
                         description={selectedCita?.productos?.length ? "" : "No hay productos en esta cita"}
                         icon={<BarChart3 className="h-6 w-6 text-primary" />}
                     >
@@ -319,6 +328,34 @@ const Page: React.FC = () => {
                                                     })}
                                                 </span>
                                             </div>
+                                            <footer>
+
+                                                {selectedCita.fecha && (() => {
+                                                    const fechaCita = new Date(selectedCita.fecha);
+                                                    const fechaLimite = new Date(fechaCita.getTime() + 15 * 60000); // 15 min en milisegundos
+                                                    const ahora = new Date();
+
+                                                    if (ahora < fechaLimite) {
+                                                        return (
+                                                            <button
+                                                                onClick={() => updateCita({
+                                                                    Citas: [{
+                                                                        Id_Cliente: userId,
+                                                                        Id_Usuario_Responsable: 1,
+                                                                        Plan: "Pick Up",
+                                                                        Id_Lista: selectedCita.id_lista,
+                                                                        Estado: "cancelado"
+                                                                    }]
+                                                                }, selectedCita.id)}
+                                                                className="flex gap-1 items-center bg-red-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
+                                                            >
+                                                                <Trash className="size-4" /> Cancelar
+                                                            </button>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+                                            </footer>
                                         </div>
                                     )}
                                 </>
@@ -425,11 +462,6 @@ const Page: React.FC = () => {
                                             <span className="text-gray-500 font-medium">Servicio:</span>
                                             <span className="col-span-2">{cita.plan}</span>
 
-                                            <span className="text-gray-500 font-medium">Productos:</span>
-                                            <span className="col-span-2">
-                                                {cita.productos?.length || 0} artículos
-                                            </span>
-
                                             <span className="text-gray-500 font-medium">Sucursal:</span>
                                             <span className="col-span-2">
                                                 {sucursalesfind.find((row) => row.precio === cita.sucursal)?.nombre || "No especificada"}
@@ -446,7 +478,7 @@ const Page: React.FC = () => {
                     </BentoItem>
                 </BentoGrid>
             </IonContent>
-        </IonPage>
+        </IonPage >
     );
 };
 
