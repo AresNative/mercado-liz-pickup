@@ -18,7 +18,7 @@ const ProductGrid: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(Date.now());
     const [activeSection, setActiveSection] = useState<string | null>(null); // Estado para sección activa
-    const dispatch = useAppDispatch();
+    //const dispatch = useAppDispatch();
 
     // Usar ref para rastrear la categoría actual
     const currentCategoryRef = useRef<string | null>(null);
@@ -33,7 +33,7 @@ const ProductGrid: React.FC = () => {
         categoria: categoria,
         listaPrecio: precio,
         refreshTrigger,
-    }, { skip: activeSection === 'Favoritos' }); // Saltar llamada API cuando se muestran favoritos
+    }, { skip: activeSection !== null }); // Saltar llamada API cuando se muestran favoritos
 
     // Función para obtener productos favoritos
     const getFavoriteProducts = (): Product[] => {
@@ -73,7 +73,7 @@ const ProductGrid: React.FC = () => {
     // Manejar nuevos datos
     useEffect(() => {
         // Si estamos en favoritos, no procesar datos de API
-        if (activeSection === 'Favoritos') return;
+        if (activeSection !== null) return;
 
         // Ignorar si no hay datos válidos
         if (!data || !Array.isArray(data.data)) return;
