@@ -10,7 +10,7 @@ import {
     IonToolbar
 } from '@ionic/react';
 import { listenRealTimeData, sendMessage, updateUserStatus } from '@/hooks/database/use-db-firebase';
-import { ArrowLeft, Send, UserCircle } from 'lucide-react';
+import { Send, UserCircle } from 'lucide-react';
 
 // Tipos para nuestro chat
 export type Message = {
@@ -32,10 +32,9 @@ export type User = {
 interface ChatComponentProps {
     chatId: string;
     currentUser: { id: string; name: string; email: string };
-    onBack?: () => void;
 }
 
-const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser, onBack }) => {
+const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [users, setUsers] = useState<Record<string, User>>({});

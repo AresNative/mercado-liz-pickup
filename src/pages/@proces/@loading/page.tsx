@@ -331,7 +331,12 @@ const Page: React.FC = () => {
                                                 </span>
                                             </div>
                                             <footer>
-
+                                                <button
+                                                    onClick={() => history.push(`/chat/${selectedCita.id}`)}
+                                                    className="flex gap-1 items-center bg-purple-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
+                                                >
+                                                    <MessageCircle className="size-4" /> Chat
+                                                </button>
                                                 {selectedCita.fecha && (() => {
                                                     const fechaCita = new Date(selectedCita.fecha);
                                                     const fechaLimite = new Date(fechaCita.getTime() + 15 * 60000); // 15 min en milisegundos
@@ -357,12 +362,7 @@ const Page: React.FC = () => {
                                                     }
                                                     return null;
                                                 })()}
-                                                <button
-                                                    onClick={() => history.push(`/chat/${selectedCita.id}`)}
-                                                    className="flex gap-1 items-center bg-purple-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
-                                                >
-                                                    <MessageCircle className="size-4" /> Chat
-                                                </button>
+
                                             </footer>
                                         </div>
                                     )}
