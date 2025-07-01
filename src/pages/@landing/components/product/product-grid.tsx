@@ -138,10 +138,10 @@ const ProductGrid: React.FC = () => {
             <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/90 backdrop-blur-sm dark:bg-zinc-950/90 border-b border-gray-200 dark:border-gray-700">
                 <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide pr-4">
                     {[{ text: null, label: "Todos" }, { text: 'Favoritos', label: "Favoritos" }].map((row: any, key: any) => (
-                        <div className="flex items-center gap-2 h-10 cursor-pointer"
+                        <div
+                            key={key} className="flex items-center gap-2 h-10 cursor-pointer"
                             onClick={() => handleSectionChange(row.text)}>
                             <Badge
-                                key={key}
                                 color={activeSection === row.text ? "purple" : "gray"}
                                 text={row.label}
                             />
