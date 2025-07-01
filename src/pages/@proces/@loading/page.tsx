@@ -3,12 +3,13 @@ import { useGetAllMutation, usePutMutation } from "@/hooks/reducers/api";
 import { LoadingScreen } from "@/pages/@landing/[id]/product-id";
 import HeaderCart from "@/pages/@landing/components/header";
 import { IonContent, IonPage } from "@ionic/react";
-import { BarChart3, Calendar, Grid2x2X, Trash } from "lucide-react";
+import { BarChart3, Calendar, Grid2x2X, MessageCircle, Trash } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import Sucursales, { sucursalesfind } from "./sections/Sucursales";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import { useHistory } from "react-router";
 
 // Definición de interfaces
 interface Product {
@@ -33,6 +34,7 @@ interface Cita {
 }
 
 const Page: React.FC = () => {
+    const history = useHistory();
     const [activeCitas, setActiveCitas] = useState<Cita[]>([]);
     const [completedCitas, setCompletedCitas] = useState<Cita[]>([]);
     const [selectedCita, setSelectedCita] = useState<Cita | null>(null);
@@ -355,6 +357,12 @@ const Page: React.FC = () => {
                                                     }
                                                     return null;
                                                 })()}
+                                                <button
+                                                    onClick={() => history.push(`/chat/${selectedCita.id}`)}
+                                                    className="flex gap-1 items-center bg-purple-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
+                                                >
+                                                    <MessageCircle className="size-4" /> Chat
+                                                </button>
                                             </footer>
                                         </div>
                                     )}

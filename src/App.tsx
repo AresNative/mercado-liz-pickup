@@ -30,6 +30,7 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.class.css';
 
 import "driver.js/dist/driver.css";
+import Chat from './pages/@proces/@chat/page';
 
 setupIonicReact({
   mode: 'ios',
@@ -92,7 +93,9 @@ const App: React.FC = () => {
           <Route exact path="/">
             <Redirect to="/products" />
           </Route>
-
+          <Route path="/chat/:chatId">
+            <Chat />
+          </Route>
           {/* Manejo de rutas no encontradas */}
           <Route>
             <NotFound />

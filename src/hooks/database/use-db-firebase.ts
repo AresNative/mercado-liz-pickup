@@ -7,6 +7,8 @@ import {
   onValue,
   off,
   DataSnapshot,
+  serverTimestamp,
+  push,
 } from "firebase/database";
 
 // Escribir datos (dinámico)
@@ -58,36 +60,63 @@ export const listenRealTimeData = (
   return () => off(dbRef, "value", snapshotHandler);
 };
 
-// Ejemplo de uso en componente React:
-/*
-import { useEffect, useState } from "react";
-import { listenRealTimeData } from "./tu-archivo";
+// Leer datos una sola vez (dinámico)
+/* export const readDataOnce = (path: string): Promise<any> => {
+  const dbRef = ref(database, path);
+  return new Promise((resolve, reject) => {
+    onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      resolve(data);
+    }, {
+      onlyOnce: true // Leer solo una vez
+    }, (error) => {
+      reject(error);
+    });
+  });
+} */
 
-const UserComponent = ({ userId }: { userId: string }) => {
-  const [userData, setUserData] = useState<any>(null);
-
-  useEffect(() => {
-    // Escuchar cambios en tiempo real
-    const unsubscribe = listenRealTimeData(
-      `users/${userId}`,
-      (data) => setUserData(data)
-    );
-
-    // Limpieza al desmontar
-    return () => unsubscribe();
-  }, [userId]);
-
-  return (
-    <div>
-      {userData ? (
-        <>
-          <h2>{userData.name}</h2>
-          <p>Email: {userData.email}</p>
-        </>
-      ) : (
-        <p>Cargando datos...</p>
-      )}
-    </div>
-  );
+// Añadir datos con ID único (push)
+export const pushData = (path: string, data: object) => {
+  const dbRef = ref(database, path);
+  const newRef = push(dbRef);
+  return set(newRef, data)
+    .then(() => {
+      console.log("Datos guardados con ID único");
+      return newRef.key; // Devolver el ID generado
+    })
+    .catch((error) => {
+      console.error("Error al guardar:", error);
+      return null;
+    });
 };
-*/
+
+// Funciones específicas para el chat
+export const sendMessage = (
+  chatId: string,
+  userId: string,
+  userName: string,
+  text: string
+) => {
+  const messageData = {
+    text,
+    userId,
+    userName,
+    timestamp: serverTimestamp(),
+  };
+
+  return pushData(`chats/${chatId}/messages`, messageData);
+};
+
+export const updateUserStatus = (
+  userId: string,
+  name: string,
+  email: string
+) => {
+  const userData = {
+    name,
+    email,
+    lastSeen: serverTimestamp(),
+  };
+
+  return writeData(`users/${userId}`, userData);
+};
