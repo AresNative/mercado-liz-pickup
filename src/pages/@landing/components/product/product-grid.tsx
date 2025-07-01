@@ -17,6 +17,7 @@ const ProductGrid: React.FC = () => {
     const [combinedData, setCombinedData] = useState<Product[]>([]);
     const [hasMore, setHasMore] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(Date.now());
+    const [activeSection, setActiveSection] = useState<string | null>(null); // Estado para sección activa
     const dispatch = useAppDispatch();
 
     // Usar ref para rastrear la categoría actual
@@ -32,7 +33,18 @@ const ProductGrid: React.FC = () => {
         categoria: categoria,
         listaPrecio: precio,
         refreshTrigger,
-    });
+    }, { skip: activeSection === 'Favoritos' }); // Saltar llamada API cuando se muestran favoritos
+
+    // Función para obtener productos favoritos
+    const getFavoriteProducts = (): Product[] => {
+        try {
+            const favorites = localStorage.getItem('favorites');
+            return favorites ? JSON.parse(favorites) : [];
+        } catch (e) {
+            console.error('Error al leer favoritos del localStorage', e);
+            return [];
+        }
+    };
 
     // Función para resetear completamente los datos
     const resetData = useCallback(() => {
@@ -60,6 +72,9 @@ const ProductGrid: React.FC = () => {
 
     // Manejar nuevos datos
     useEffect(() => {
+        // Si estamos en favoritos, no procesar datos de API
+        if (activeSection === 'Favoritos') return;
+
         // Ignorar si no hay datos válidos
         if (!data || !Array.isArray(data.data)) return;
 
@@ -72,11 +87,12 @@ const ProductGrid: React.FC = () => {
         setCombinedData(prev => {
             const newProducts = mappedProducts.filter((p: any) =>
                 !prev.some(existing => existing.id === p.id)
-            ); return page === 1 ? newProducts : [...prev, ...newProducts];
+            );
+            return page === 1 ? newProducts : [...prev, ...newProducts];
         });
 
         setHasMore(hasMoreData);
-    }, [data, page]);
+    }, [data, page, activeSection]);
 
     // Manejar errores
     useEffect(() => {
@@ -88,22 +104,49 @@ const ProductGrid: React.FC = () => {
 
     // Cargar más datos
     const loadMore = useCallback((event: CustomEvent<void>) => {
-        if (!isFetching && hasMore) {
+        if (!isFetching && hasMore && activeSection !== 'Favoritos') {
             setPage(prev => prev + 1);
         }
         (event.target as HTMLIonInfiniteScrollElement).complete();
-    }, [isFetching, hasMore]);
+    }, [isFetching, hasMore, activeSection]);
+
+    // Función para cambiar sección activa
+    const handleSectionChange = (section: string) => {
+        if (section === activeSection) {
+            setActiveSection(null); // Deseleccionar si ya está activa
+        } else {
+            setActiveSection(section);
+            setRefreshTrigger(Date.now()); // Forzar recarga
+        }
+    };
+
+    // Obtener productos para mostrar según sección activa
+    const getProductsToShow = (): Product[] => {
+        if (activeSection === 'Favoritos') {
+            return getFavoriteProducts();
+        }
+        return combinedData;
+    };
+
+    const productsToShow = getProductsToShow();
+    const isEmpty = productsToShow.length === 0;
+    const isFavoritesSection = activeSection === 'Favoritos';
 
     return (
         <div className="relative pb-16">
             {/* Encabezado */}
             <div className="sticky top-0 z-10 flex items-center justify-between p-4 bg-white/90 backdrop-blur-sm dark:bg-zinc-950/90 border-b border-gray-200 dark:border-gray-700">
                 <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide pr-4">
-                    <div className="flex items-center gap-2 h-10">
-                        {['Favoritos',/*  'Promociones', 'Recomendados', 'Nuevos' */].map((text) => (
-                            <Badge key={text} color="purple" text={text} />
-                        ))}
-                    </div>
+                    {[{ text: null, label: "Todos" }, { text: 'Favoritos', label: "Favoritos" }].map((row: any, key: any) => (
+                        <div className="flex items-center gap-2 h-10 cursor-pointer"
+                            onClick={() => handleSectionChange(row.text)}>
+                            <Badge
+                                key={key}
+                                color={activeSection === row.text ? "purple" : "gray"}
+                                text={row.label}
+                            />
+                        </div>
+                    ))}
                 </section>
 
                 <button
@@ -116,7 +159,7 @@ const ProductGrid: React.FC = () => {
             </div>
 
             {/* Lista de productos */}
-            {combinedData.length ? (<IonList>
+            {!isEmpty ? (<IonList>
                 <motion.div
                     className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4"
                     initial={{ opacity: 0 }}
@@ -124,7 +167,7 @@ const ProductGrid: React.FC = () => {
                     transition={{ duration: 0.3 }}
                 >
                     <AnimatePresence>
-                        {combinedData.map((product, key) => (
+                        {productsToShow.map((product, key) => (
                             <motion.div
                                 key={key}
                                 initial={{ opacity: 0, y: 10 }}
@@ -144,29 +187,36 @@ const ProductGrid: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-3">Categoria vacia</h1>
-                    <p className="text-gray-600 mb-6">Explora otras categorias para ver productos.</p>
-
+                    <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                        {isFavoritesSection ? 'Sin favoritos' : 'Categoria vacia'}
+                    </h1>
+                    <p className="text-gray-600 mb-6">
+                        {isFavoritesSection
+                            ? 'Agrega productos a tus favoritos para verlos aquí.'
+                            : 'Explora otras categorias para ver productos.'}
+                    </p>
                 </div>
             )}
 
-            {/* Infinite Scroll */}
-            <IonInfiniteScroll
-                onIonInfinite={loadMore}
-                threshold="100px"
-                className="text-purple-800"
-                disabled={!hasMore || isFetching}
-            >
-                <IonInfiniteScrollContent
+            {/* Infinite Scroll (solo para secciones que no son Favoritos) */}
+            {!isFavoritesSection && (
+                <IonInfiniteScroll
+                    onIonInfinite={loadMore}
+                    threshold="100px"
                     className="text-purple-800"
-                    loadingText="Cargando más productos..."
-                    loadingSpinner="bubbles"
-                />
-            </IonInfiniteScroll>
+                    disabled={!hasMore || isFetching}
+                >
+                    <IonInfiniteScrollContent
+                        className="text-purple-800"
+                        loadingText="Cargando más productos..."
+                        loadingSpinner="bubbles"
+                    />
+                </IonInfiniteScroll>
+            )}
 
             {/* Indicador de carga inicial */}
             <AnimatePresence>
-                {isFetching && page === 1 && (
+                {isFetching && page === 1 && !isFavoritesSection && (
                     <motion.div
                         className="fixed bottom-0 left-0 right-0 bg-purple-800 text-white py-3 px-4 flex items-center justify-center z-50 shadow-lg"
                         initial={{ y: 100, opacity: 0 }}

@@ -1,39 +1,67 @@
-import React from "react"
-import { IonRouterLink } from "@ionic/react"
-import { motion } from "framer-motion"
-import { Star, ShoppingCart, Barcode, Hash } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/hooks/selector"
-import { addToCart, removeFromCart } from "@/hooks/slices/cart"
-import { Product } from "@/utils/data/example-data"
-import { cn } from "@/utils/functions/cn"; // Asegúrate de importar cn
+import React, { useEffect, useState } from "react";
+import { IonRouterLink } from "@ionic/react";
+import { motion } from "framer-motion";
+import { Star, ShoppingCart, Barcode, Hash, Heart } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/hooks/selector";
+import { addToCart, removeFromCart } from "@/hooks/slices/cart";
+import { Product } from "@/utils/data/example-data";
+import { cn } from "@/utils/functions/cn";
 
 interface ProductCardProps {
-    product: Product
+    product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-    const dispatch = useAppDispatch()
-    const cartItems = useAppSelector((state) => state.cart.items)
-    const cartItem = cartItems.find((item) => item.id === product.id)
-    const quantity = cartItem?.quantity || 0
+    const dispatch = useAppDispatch();
+    const cartItems = useAppSelector((state) => state.cart.items);
+    const cartItem = cartItems.find((item) => item.id === product.id);
+    const quantity = cartItem?.quantity || 0;
+    const [isFavorite, setIsFavorite] = useState(false); // Estado para favorito
 
-    const handleAddToCart = () => {
-        dispatch(addToCart({ ...product, quantity: 1 }))
-    }
+    // Verificar si el producto es favorito al cargar
+    useEffect(() => {
+        const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        setIsFavorite(favorites.some((fav: Product) => fav.id === product.id));
+    }, [product.id]);
 
-    const handleIncrement = () => {
-        if (quantity < product.cantidad) {
-            dispatch(addToCart({ ...product, quantity: 1 }))
+    // Función para alternar favoritos
+    const toggleFavorite = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let newFavorites;
+
+        if (isFavorite) {
+            newFavorites = favorites.filter((fav: Product) => fav.id !== product.id);
+        } else {
+            newFavorites = [...favorites, product];
         }
-    }
 
-    const handleDecrement = () => {
+        localStorage.setItem('favorites', JSON.stringify(newFavorites));
+        setIsFavorite(!isFavorite);
+    };
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        dispatch(addToCart({ ...product, quantity: 1 }));
+    };
+
+    const handleIncrement = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (quantity < product.cantidad) {
+            dispatch(addToCart({ ...product, quantity: 1 }));
+        }
+    };
+
+    const handleDecrement = (e: React.MouseEvent) => {
+        e.stopPropagation();
         if (quantity === 1) {
             dispatch(removeFromCart(product.id));
         } else {
             dispatch(addToCart({ ...product, quantity: -1 }));
         }
-    }
+    };
 
     const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuantity = parseInt(e.target.value);
@@ -78,6 +106,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-l-2xl sm:rounded-l-none sm:rounded-t-2xl"
                                 />
                             </div>
+
                             {hasDiscount && (
                                 <div className="absolute top-2 left-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
                                     -{product.descuento}%
@@ -160,9 +189,25 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                         {/* Controles de cantidad */}
                         <motion.div
-                            className="flex-shrink-0"
+                            className="flex items-center flex-shrink-0"
                             whileTap={{ scale: 0.95 }}
                         >
+
+                            {/* Botón de favoritos */}
+                            <button
+                                onClick={toggleFavorite}
+                                className="top-2 right-2 p-1.5 bg-white/80 rounded-full backdrop-blur-sm hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                            >
+                                <Heart
+                                    className={cn(
+                                        "w-6 h-6 transition-colors",
+                                        isFavorite
+                                            ? "fill-red-400 text-red-500"
+                                            : "text-gray-300 hover:text-red-400"
+                                    )}
+                                />
+                            </button>
                             {product.cantidad > 0 ? (
                                 quantity === 0 ? (
                                     <button
@@ -223,4 +268,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     )
 }
 
-export default ProductCard
+export default ProductCard;

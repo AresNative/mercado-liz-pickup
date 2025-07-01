@@ -1,5 +1,5 @@
 import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
-import { ScanBarcode, ShieldAlert, Star, Truck } from "lucide-react";
+import { Heart, ScanBarcode, ShieldAlert, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
@@ -43,6 +43,7 @@ const ProductID: React.FC = () => {
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
     const [localQuantity, setLocalQuantity] = useState(1);
     const [isInCart, setIsInCart] = useState(false);
+    const [isFavorite, setIsFavorite] = useState(false); // Estado para favorito
 
     useEffect(() => {
         if (data) {
@@ -63,6 +64,32 @@ const ProductID: React.FC = () => {
             setLocalQuantity(1);
         }
     }, [cartItems, selectedVariant]);
+
+    // Efecto para verificar si el producto actual es favorito
+    useEffect(() => {
+        if (selectedVariant) {
+            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const isFav = favorites.some((fav: Product) => fav.id === selectedVariant.id);
+            setIsFavorite(isFav);
+        }
+    }, [selectedVariant]);
+
+    // Función para alternar favorito
+    const toggleFavorite = () => {
+        if (!selectedVariant) return;
+
+        const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        let newFavorites;
+
+        if (isFavorite) {
+            newFavorites = favorites.filter((fav: Product) => fav.id !== selectedVariant.id);
+        } else {
+            newFavorites = [...favorites, selectedVariant];
+        }
+
+        localStorage.setItem('favorites', JSON.stringify(newFavorites));
+        setIsFavorite(!isFavorite);
+    };
 
     if (isFetching) {
         return <LoadingScreen />;
@@ -162,7 +189,21 @@ const ProductID: React.FC = () => {
                             {/* Sección de detalles */}
                             <div className="md:w-1/2 p-6 flex flex-col">
                                 <div className="flex-1">
-                                    <h1 className="text-2xl font-bold text-gray-900 mb-2">{selectedVariant.nombre}</h1>
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h1 className="text-2xl font-bold text-gray-900">{selectedVariant.nombre}</h1>
+                                        <button
+                                            onClick={toggleFavorite}
+                                            className="text-gray-400 hover:text-red-500 focus:outline-none"
+                                            aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+                                        >
+                                            <Heart className={cn(
+                                                "h-6 w-6 transition-colors",
+                                                isFavorite
+                                                    ? "fill-red-400 text-red-500"
+                                                    : "text-gray-300 hover:text-red-400"
+                                            )} />
+                                        </button>
+                                    </div>
 
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="flex items-center">
