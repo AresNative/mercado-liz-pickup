@@ -104,7 +104,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) =>
             <IonHeader className="bg-white shadow-sm">
                 <IonToolbar className="flex items-center px-3 py-2">
                     <IonButtons>
-                        <IonBackButton color={'tertiary'} defaultHref='/loading' />
+                        <IonBackButton color={'tertiary'} defaultHref='/loading' type='reset' />
                     </IonButtons>
                     <IonTitle className="font-medium text-gray-800">
                         {chatId}

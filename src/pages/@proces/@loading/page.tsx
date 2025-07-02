@@ -335,7 +335,7 @@ const Page: React.FC = () => {
                                                     onClick={() => history.push(`/chat/${selectedCita.id}`)}
                                                     className="flex gap-1 items-center bg-purple-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
                                                 >
-                                                    <MessageCircle className="size-4" /> Chat
+                                                    <MessageCircle className="size-4" />
                                                 </button>
                                                 {selectedCita.fecha && (() => {
                                                     const fechaCita = new Date(selectedCita.fecha);
