@@ -2,14 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import ChatComponent from './components/chat-component';
 import { getLocalStorageItem } from '@/utils/functions/local-storage';
-import { useParams } from 'react-router';
 
 const Chat: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
     // En una aplicación real, esto vendría de tu sistema de autenticación
     const [currentUser, setCurrentUser] = useState({
         id: 'user1',
-        nombre: 'Ana García',
+        nombre: 'usuario1',
         telefono: '000-000-0000'
     });
     // En una aplicación real, tendrías múltiples chats
@@ -31,7 +29,6 @@ const Chat: React.FC = () => {
                 chatId={activeChat}
                 currentUser={currentUser}
             />
-
         </section>
     );
 };

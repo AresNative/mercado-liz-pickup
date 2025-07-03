@@ -91,7 +91,7 @@ const App: React.FC = () => {
             {currentBranch ? <PagoPage /> : <Redirect to="/layout" />}
           </Route>
           {/* Ruta del chat */}
-          <Route path="/chat/:chatId">
+          <Route path="/chat">
             <Chat />
           </Route>
           <Route exact path="/">
