@@ -110,11 +110,11 @@ export const sendMessage = (
 export const updateUserStatus = (
   userId: string,
   name: string,
-  email: string
+  telefono: string
 ) => {
   const userData = {
     name,
-    email,
+    telefono,
     lastSeen: serverTimestamp(),
   };
 

@@ -1,37 +1,38 @@
 // App.tsx (Ejemplo de uso)
-import React, { useState } from 'react';
-import { IonRouterOutlet, IonSplitPane } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import { Route, Redirect } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import ChatComponent from './components/chat-component';
+import { getLocalStorageItem } from '@/utils/functions/local-storage';
+import { useParams } from 'react-router';
 
 const Chat: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     // En una aplicación real, esto vendría de tu sistema de autenticación
-    const [currentUser] = useState({
+    const [currentUser, setCurrentUser] = useState({
         id: 'user1',
-        name: 'Ana García',
-        email: 'ana@example.com'
+        nombre: 'Ana García',
+        telefono: '000-000-0000'
     });
-
     // En una aplicación real, tendrías múltiples chats
-    const [activeChat] = useState('general');
+    const [activeChat, setActiveChat] = useState('general');
+    useEffect(() => {
+        const userData = getLocalStorageItem('user-data');
+        const user = {
+            id: userData.id || 'default-id',
+            nombre: userData.nombre || 'Usuario',
+            telefono: userData.telefono || '000-000-0000',
+        };
+        setActiveChat(`${userData.telefono}`)
+        setCurrentUser(user)
+    }, [])
 
     return (
-        <IonReactRouter>
-            <IonSplitPane contentId="main">
-                <IonRouterOutlet id="main">
-                    <Route exact path="/">
-                        <Redirect to={`/chat/${activeChat}`} />
-                    </Route>
-                    <Route path="/chat/:chatId">
-                        <ChatComponent
-                            chatId={activeChat}
-                            currentUser={currentUser}
-                        />
-                    </Route>
-                </IonRouterOutlet>
-            </IonSplitPane>
-        </IonReactRouter>
+        <section className="flex flex-col h-screen">
+            <ChatComponent
+                chatId={activeChat}
+                currentUser={currentUser}
+            />
+
+        </section>
     );
 };
 

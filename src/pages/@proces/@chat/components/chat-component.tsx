@@ -23,15 +23,15 @@ export type Message = {
 
 export type User = {
     id: string;
-    name: string;
-    email: string;
+    nombre: string;
+    telefono: string;
     lastSeen?: number;
 };
 
 // Props del componente de chat
 interface ChatComponentProps {
     chatId: string;
-    currentUser: { id: string; name: string; email: string };
+    currentUser: { id: string; nombre: string; telefono: string };
 }
 
 const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) => {
@@ -65,12 +65,12 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) =>
             if (usersData) setUsers(usersData);
         });
 
-        updateUserStatus(currentUser.id, currentUser.name, currentUser.email);
+        updateUserStatus(currentUser.id, currentUser.nombre, currentUser.telefono);
 
         return () => {
             unsubscribeMessages();
             unsubscribeUsers();
-            updateUserStatus(currentUser.id, currentUser.name, currentUser.email);
+            updateUserStatus(currentUser.id, currentUser.nombre, currentUser.telefono);
         };
     }, [chatId, currentUser]);
 
@@ -87,7 +87,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) =>
         if (!newMessage.trim()) return;
 
         try {
-            await sendMessage(chatId, currentUser.id, currentUser.name, newMessage.trim());
+            await sendMessage(chatId, currentUser.id, currentUser.nombre, newMessage.trim());
             setNewMessage('');
         } catch (error) {
             console.error('Error al enviar mensaje:', error);
@@ -141,7 +141,7 @@ const ChatComponent: React.FC<ChatComponentProps> = ({ chatId, currentUser }) =>
                                             <div>
                                                 {!isCurrentUser && (
                                                     <div className="text-xs font-medium text-gray-600 mb-1 ml-1">
-                                                        {user.name}
+                                                        {user.nombre}
                                                     </div>
                                                 )}
 

@@ -90,11 +90,12 @@ const App: React.FC = () => {
           <Route exact path="/pay">
             {currentBranch ? <PagoPage /> : <Redirect to="/layout" />}
           </Route>
-          <Route exact path="/">
-            <Redirect to="/products" />
-          </Route>
+          {/* Ruta del chat */}
           <Route path="/chat/:chatId">
             <Chat />
+          </Route>
+          <Route exact path="/">
+            <Redirect to="/products" />
           </Route>
           {/* Manejo de rutas no encontradas */}
           <Route>
