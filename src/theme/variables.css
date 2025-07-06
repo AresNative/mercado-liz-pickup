@@ -356,3 +356,69 @@ ion-item {
         transform: translateX(0);
     }
 }
+/* 
+
+.driver-popover.driverjs-theme {
+    background-color: #6e47fd;
+    color: #000;
+}
+
+.driver-popover.driverjs-theme .driver-popover-title {
+    font-size: 20px;
+}
+
+.driver-popover.driverjs-theme .driver-popover-title,
+.driver-popover.driverjs-theme .driver-popover-description,
+.driver-popover.driverjs-theme .driver-popover-progress-text {
+    color: #000;
+}
+
+.driver-popover.driverjs-theme button {
+    flex: 1;
+    text-align: center;
+    background-color: #ffffff;
+    color: #000;
+    border: 2px solid #ffffff;
+    text-shadow: none;
+    font-size: 14px;
+    padding: 1px 2px;
+    border-radius: 6px;
+}
+
+.driver-popover.driverjs-theme button:hover {
+    background-color: #000;
+    color: #ffffff;
+}
+
+.driver-popover.driverjs-theme .driver-popover-navigation-btns {
+    justify-content: space-between;
+    gap: 3px;
+}
+
+.driver-popover.driverjs-theme .driver-popover-close-btn {
+    color: #9b9b9b;
+}
+
+.driver-popover.driverjs-theme .driver-popover-close-btn:hover {
+    color: #000;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-left.driver-popover-arrow {
+    border-left-color: #6e47fd;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-right.driver-popover-arrow {
+    border-right-color: #6e47fd;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-top.driver-popover-arrow {
+    border-top-color: #6e47fd;
+}
+
+.driver-popover.driverjs-theme .driver-popover-arrow-side-bottom.driver-popover-arrow {
+    border-bottom-color: #6e47fd; } */
+
+.products{
+    content-visibility: auto;
+    contain-intrinsic-size: 1000px;
+}

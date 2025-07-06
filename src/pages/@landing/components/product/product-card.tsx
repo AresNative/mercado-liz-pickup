@@ -87,7 +87,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const savings = hasDiscount ? (product.precio - (product.precioRegular || 0)).toFixed(2) : 0
 
     return (
-        <article className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
+        <article className="products group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
             <div className="flex flex-row sm:flex-col h-full">
                 {/* Sección de imagen */}
                 <IonRouterLink

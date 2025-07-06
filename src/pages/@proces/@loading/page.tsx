@@ -349,7 +349,7 @@ const Page: React.FC = () => {
                                                                     Citas: [{
                                                                         Id_Cliente: userId,
                                                                         Id_Usuario_Responsable: 1,
-                                                                        Plan: "Pick Up",
+                                                                        Plan: "Pickup",
                                                                         Id_Lista: selectedCita.id_lista,
                                                                         Estado: "cancelado"
                                                                     }]

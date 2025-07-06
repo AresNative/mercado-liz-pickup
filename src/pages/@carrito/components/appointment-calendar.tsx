@@ -49,13 +49,19 @@ import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/loca
 import { driver } from "driver.js"
 
 // Eliminamos bloqueos manuales, solo domingos serán bloqueados
-const BLOCKED_DATES: string[] = []
+/* const BLOCKED_DATES = [
+  startOfDay(addDays(new Date(), 2)).toISOString(),
+  startOfDay(addDays(new Date(), 5)).toISOString(),
+  startOfDay(addDays(new Date(), 10)).toISOString(),
+] */
 
 // Fechas disponibles excluyendo domingos
 const AVAILABLE_DATES = Array.from({ length: 60 }, (_, i) => {
   const date = startOfDay(addDays(new Date(), i))
   // Excluir domingos (día 0)
   if (date.getDay() === 0) return null
+  //if (BLOCKED_DATES.some(blockedDate => isSameDay(parseISO(blockedDate), date))) return null
+
   return date.toISOString()
 }).filter(Boolean) as string[]
 
@@ -96,13 +102,21 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
     )
   }
 
+  // Función para verificar si el slot es válido
+  const isValidSlot = (slotTime: Date) => {
+    // Excluir slots que sean anteriores O IGUALES a la hora actual
+    if (isToday && slotTime <= now) return false
+    return true
+  }
+
   const morningSlots = []
   for (let hour = startHour; hour < 13; hour++) {
     for (let minute = 0; minute < 60; minute += slotDuration) {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      if (isToday && isBefore(slotTime, now)) continue
+      // Cambio clave: usar isValidSlot que excluye la hora actual
+      if (!isValidSlot(slotTime)) continue
 
       const isAvailable = isSlotAvailable(slotTime)
 
@@ -120,7 +134,8 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      if (isToday && isBefore(slotTime, now)) continue
+      // Cambio clave: usar isValidSlot que excluye la hora actual
+      if (!isValidSlot(slotTime)) continue
 
       const isAvailable = isSlotAvailable(slotTime)
 
@@ -165,14 +180,20 @@ export function AppointmentCalendar() {
     const driverObj = driver({
       showProgress: true,
       animate: true,
+      showButtons: ['next', 'previous', 'close'],
+      disableActiveInteraction: true,
       steps: [
         {
           element: '#help-button',
           popover: {
             title: '¿Necesitas ayuda?',
             description: 'Siempre puedes volver a ver esta guía haciendo clic aquí.',
-            side: "left",
-            align: 'start'
+            side: "top",
+            align: 'center'
+          },
+          onDeselected: () => {
+            // Mantén la posición actual después de abandonar el paso
+            window && window.scrollTo(window.scrollX, window.scrollY);
           }
         },
         {
@@ -180,8 +201,8 @@ export function AppointmentCalendar() {
           popover: {
             title: 'Calendario de Citas',
             description: 'Aquí puedes seleccionar una fecha disponible para tu cita.',
-            side: "bottom",
-            align: 'start'
+            side: "top",
+            align: 'center',
           }
         },
         {
@@ -510,11 +531,11 @@ export function AppointmentCalendar() {
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-4 w-4 rounded-full bg-gray-100"></div>
-                <span className="text-sm text-gray-600">Bloqueado</span>
+                <span className="text-sm text-gray-600">No disponible</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-4 w-4 rounded-full bg-red-100"></div>
-                <span className="text-sm text-gray-600">No disponible</span>
+                <span className="text-sm text-gray-600">Bloqueado</span>
               </div>
             </div>
           </div>

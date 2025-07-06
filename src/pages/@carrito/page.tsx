@@ -1,9 +1,11 @@
 import { IonPage, IonContent } from "@ionic/react";
 import HeaderCart from "../@landing/components/header";
+
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { removeFromCart, updateQuantity, clearCart } from "@/hooks/slices/cart";
 import { Calendar, Trash, Minus, Plus } from "lucide-react";
 import { useState, useRef } from "react";
+
 import ModalCita from "./components/modal-cita";
 
 const CarritoPage = () => {
@@ -72,7 +74,7 @@ const CarritoPage = () => {
                             </div>
 
                             {/* Listado de productos */}
-                            <div className="grid grid-cols-1 gap-4 mb-6">
+                            <div className="grid grid-cols-1 gap-4 md:mb-6 mb-80">
                                 {cartItemsWithDiscount.map((item: any, key) => (
                                     <div
                                         key={key}
