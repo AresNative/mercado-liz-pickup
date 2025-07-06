@@ -48,15 +48,14 @@ import { clearCart } from "@/hooks/slices/cart"
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage"
 import { driver } from "driver.js"
 
-const BLOCKED_DATES = [
-  startOfDay(addDays(new Date(), 2)).toISOString(),
-  startOfDay(addDays(new Date(), 5)).toISOString(),
-  startOfDay(addDays(new Date(), 10)).toISOString(),
-]
+// Eliminamos bloqueos manuales, solo domingos serán bloqueados
+const BLOCKED_DATES: string[] = []
+
+// Fechas disponibles excluyendo domingos
 const AVAILABLE_DATES = Array.from({ length: 60 }, (_, i) => {
   const date = startOfDay(addDays(new Date(), i))
+  // Excluir domingos (día 0)
   if (date.getDay() === 0) return null
-  if (BLOCKED_DATES.some(blockedDate => isSameDay(parseISO(blockedDate), date))) return null
   return date.toISOString()
 }).filter(Boolean) as string[]
 
@@ -64,14 +63,14 @@ const serviceTypes = [
   {
     id: "pickup",
     name: "Pickup",
-    duration: 30,
+    duration: 5,
     color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
-    description: "Recoja todos sus productos en tienda.",
+    description: "Todos sus productos son preparados en tienda para que solo tenga que pasar a recogerlos.",
   },
   {
     id: "vehiculo",
     name: "Entrega en vehículo",
-    duration: 25,
+    duration: 5,
     color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
     description: "Los productos le son entregados y cobrados en su vehículo si necesidad de bajarse.",
   },
@@ -93,8 +92,7 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
 
   const isSlotAvailable = (slotTime: Date) => {
     return !bookedSlots.some(({ start, end }) =>
-      isWithinInterval(slotTime, { start, end }) ||
-      isWithinInterval(addMinutes(slotTime, slotDuration), { start, end })
+      isWithinInterval(slotTime, { start, end })
     )
   }
 
@@ -160,7 +158,9 @@ export function AppointmentCalendar() {
   const [present] = useIonToast();
   const formRef = useRef<HTMLDivElement>(null)
 
-  // Función para iniciar el tour guiado
+  // Nuevo estado para fechas bloqueadas por falta de horarios
+  const [blockedDatesDueToNoSlots, setBlockedDatesDueToNoSlots] = useState<string[]>([])
+
   const startTour = () => {
     const driverObj = driver({
       showProgress: true,
@@ -226,7 +226,6 @@ export function AppointmentCalendar() {
     driverObj.drive();
   };
 
-  // Mostrar tour automáticamente al cargar (solo primera vez)
   useEffect(() => {
     const hasSeenTour = getLocalStorageItem('hasSeenAppointmentTour');
     if (hasSeenTour !== true) {
@@ -253,6 +252,12 @@ export function AppointmentCalendar() {
       }).unwrap().then((response) => {
         const slots = generateTimeSlots(selectedDate, response.data || [])
         setTimeSlots(slots)
+
+        // Bloquear fecha si no hay horarios disponibles
+        if (slots.morningSlots.length === 0 && slots.afternoonSlots.length === 0) {
+          setBlockedDatesDueToNoSlots(prev => [...prev, selectedDate])
+        }
+
         setLoadingSlots(false)
       }).catch(() => {
         setLoadingSlots(false)
@@ -276,7 +281,7 @@ export function AppointmentCalendar() {
 
   const handleDateClick = (date: Date) => {
     const dateString = startOfDay(date).toISOString()
-    if (AVAILABLE_DATES.includes(dateString)) {
+    if (AVAILABLE_DATES.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)) {
       setIsLoading(true)
       setSelectedSlot(null)
       setSelectedService(null)
@@ -302,13 +307,20 @@ export function AppointmentCalendar() {
       }
     }, 300)
   }
+
   const isDateAvailable = (date: Date) => {
     const dateString = startOfDay(date).toISOString()
-    return AVAILABLE_DATES.includes(dateString)
+    // Excluir fechas bloqueadas por falta de horarios
+    return AVAILABLE_DATES.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)
   }
 
   const isDateBlocked = (date: Date) => {
-    return BLOCKED_DATES.some((blockedDate) => isSameDay(parseISO(blockedDate), date))
+    const dateString = startOfDay(date).toISOString()
+    // Solo domingos y fechas sin disponibilidad
+    return (
+      date.getDay() === 0 || // Domingo
+      blockedDatesDueToNoSlots.includes(dateString) // Sin horarios
+    )
   }
 
   const isPastDate = (date: Date) => {
@@ -464,18 +476,18 @@ export function AppointmentCalendar() {
                       disabled={!isCurrentMonth || !isAvailable || isPast}
                       className={cn(
                         "flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors",
-                        !isCurrentMonth && "text-gray-300",
+                        !isCurrentMonth && "text-red-300",
                         isCurrentMonth &&
                         !isAvailable &&
                         !isBlocked &&
                         !isPast &&
-                        "text-gray-400 cursor-not-allowed",
-                        isCurrentMonth && isPast && "bg-gray-100 text-gray-400 cursor-not-allowed",
+                        "text-red-400 cursor-not-allowed",
+                        isCurrentMonth && isPast && "bg-red-100 text-red-400 cursor-not-allowed",
                         isCurrentMonth &&
                         isAvailable &&
                         !isSelected &&
                         "bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer",
-                        isBlocked && "bg-red-100 text-red-800 cursor-not-allowed",
+                        isBlocked && "bg-gray-100 text-gray-800 cursor-not-allowed",
                         isSelected && "bg-purple-600 text-white hover:bg-purple-700 cursor-pointer",
                         isDayToday && !isSelected && "ring-2 ring-purple-500 ring-offset-2"
                       )}
@@ -497,11 +509,11 @@ export function AppointmentCalendar() {
                 <span className="text-sm text-gray-600">Disponible</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-red-100"></div>
+                <div className="h-4 w-4 rounded-full bg-gray-100"></div>
                 <span className="text-sm text-gray-600">Bloqueado</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-gray-100"></div>
+                <div className="h-4 w-4 rounded-full bg-red-100"></div>
                 <span className="text-sm text-gray-600">No disponible</span>
               </div>
             </div>
@@ -700,7 +712,7 @@ export function AppointmentCalendar() {
                 >
                   <div>
                     <div className="font-medium">{service.name}</div>
-                    <div className="mt-1 text-sm opacity-80">Duración: {service.duration} minutos</div>
+                    <div className="mt-1 text-sm opacity-80">Demora maxima de entrega: {service.duration} minutos</div>
                     <div className="mt-1 text-sm opacity-80">{service.description}</div>
                   </div>
                   <Clock className="h-5 w-5 flex-shrink-0 text-purple-600" />
