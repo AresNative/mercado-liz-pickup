@@ -109,11 +109,8 @@ const Page: React.FC = () => {
                 const completedResponse = await GetData({
                     url: "citas",
                     filters: {
-                        Filtros: [
-                            { Key: "id_cliente", Value: userId },
-                            { Key: "estado", Value: "listo", operator: "like" },
-                            { Key: "estado", Value: "cancelado", operator: "like" }
-                        ],
+                        Filtros: [{ Key: "id_cliente", Value: userId, Operator: "=" },
+                        { Key: "estado", Value: "nuevo", Operator: "<>" }],
                         Order: [{ Key: "fecha", Direction: "Desc" }]
                     },
                     pageSize: 10
@@ -330,7 +327,7 @@ const Page: React.FC = () => {
                                                     })}
                                                 </span>
                                             </div>
-                                            <footer>
+                                            <footer className="flex items-center justify-between mt-4">
                                                 <button
                                                     onClick={() => history.push(`/chat/${selectedCita.id}`)}
                                                     className="flex gap-1 items-center bg-purple-500 text-white text-xs px-4 py-2 rounded-md cursor-pointer"
