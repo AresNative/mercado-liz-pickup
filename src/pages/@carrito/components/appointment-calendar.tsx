@@ -84,9 +84,9 @@ const serviceTypes = [
 
 const generateTimeSlots = (date: string, existingCitas: any[]) => {
   const baseDate = parseISO(date)
-  const startHour = 9
-  const endHour = 18
-  const slotDuration = 15
+  const startHour = 9.5 // 9:30 AM (9.5 horas = 9 horas y 30 minutos)
+  const endHour = 16 // 4:00 PM
+  const slotDuration = 30 // duración de cada slot en minutos
   const now = new Date()
   const isToday = isSameDay(baseDate, now)
 
@@ -110,12 +110,14 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
   }
 
   const morningSlots = []
-  for (let hour = startHour; hour < 13; hour++) {
-    for (let minute = 0; minute < 60; minute += slotDuration) {
+  // Comenzar desde las 9:30 (startHour = 9.5)
+  for (let hour = Math.floor(startHour); hour < 13; hour++) {
+    // Para la hora 9, comenzar desde los 30 minutos
+    const startMinute = hour === 9 ? 30 : 0
+    for (let minute = startMinute; minute < 60; minute += slotDuration) {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      // Cambio clave: usar isValidSlot que excluye la hora actual
       if (!isValidSlot(slotTime)) continue
 
       const isAvailable = isSlotAvailable(slotTime)
@@ -129,12 +131,13 @@ const generateTimeSlots = (date: string, existingCitas: any[]) => {
   }
 
   const afternoonSlots = []
-  for (let hour = 14; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += slotDuration) {
+  for (let hour = 14; hour <= Math.floor(endHour); hour++) {
+    // Para la hora 16, terminar a los 30 minutos
+    const endMinute = hour === 16 ? 30 : 60
+    for (let minute = 0; minute < endMinute; minute += slotDuration) {
       const slotTime = new Date(baseDate)
       slotTime.setHours(hour, minute, 0, 0)
 
-      // Cambio clave: usar isValidSlot que excluye la hora actual
       if (!isValidSlot(slotTime)) continue
 
       const isAvailable = isSlotAvailable(slotTime)

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IonRouterLink } from "@ionic/react";
 import { motion } from "framer-motion";
-import { Star, ShoppingCart, Barcode, Hash, Heart } from "lucide-react";
+import { Star, ShoppingCart, Barcode, Hash, Heart, Truck } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
 import { Product } from "@/utils/data/example-data";
@@ -14,7 +14,19 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state) => state.cart.items);
-    const cartItem = cartItems.find((item) => item.id === product.id);
+
+    // Encuentra el item por id (asumiendo que product.id es único)
+    const cartItem = useMemo(() =>
+        cartItems.find((item) => item.id === product.id),
+        [cartItems, product.id]
+    );
+
+    // Encuentra el item por artículo (asumiendo que product.articulo existe)
+    const artData = useMemo(() =>
+        cartItems.find((item: any) => item.articulo === product?.articulo),
+        [cartItems, product?.articulo]
+    );
+
     const quantity = cartItem?.quantity || 0;
     const [isFavorite, setIsFavorite] = useState(false); // Estado para favorito
 
@@ -44,7 +56,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.stopPropagation();
-        dispatch(addToCart({ ...product, quantity: 1 }));
+        if (product && product.factor && ((product.factor * quantity) < product.cantidad)) {
+            dispatch(addToCart({ ...product, quantity: 1 }));
+        }
     };
 
     const handleIncrement = (e: React.MouseEvent) => {
@@ -87,7 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     const savings = hasDiscount ? (product.precio - (product.precioRegular || 0)).toFixed(2) : 0
 
     return (
-        <article className="products group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
+        <article onClick={() => { }} className="products h-full group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden">
             <div className="flex flex-row sm:flex-col h-full">
                 {/* Sección de imagen */}
                 <IonRouterLink
@@ -137,15 +151,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                         {/* Metadatos del producto */}
                         <div className="mt-2 space-y-1">
-                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                            <div className="flex flex-row md:items-center gap-2 text-xs text-gray-500">
                                 <div className="flex items-center gap-1">
                                     <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
                                     <span className="font-medium">4.8</span>
+                                    <span>•</span>
                                 </div>
-                                <span>•</span>
                                 <span className="capitalize">{product.categoria}</span>
-                                <span className="hidden sm:inline">•</span>
-                                <span className="hidden sm:inline">{product.unidad}</span>
+                                <div className="flex items-center gap-1">
+                                    <span>•</span>
+                                    <span>{product.unidad}</span>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-1 text-xs text-gray-400">
@@ -156,6 +172,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                                 <Hash className="w-3 h-3" />
                                 <span>Pz disponible(s): {product.cantidad}</span>
                             </div>
+                            {product.unidad === "Caja" && (
+                                <div className="flex items-center gap-2 text-xs text-gray-400">
+                                    <Truck className="h-4 w-4 text-gray-400" />
+                                    <span>La caja contiene - {product.factor} pieza(s)</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -212,7 +234,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                                 quantity === 0 ? (
                                     <button
                                         onClick={handleAddToCart}
-                                        className="bg-purple-600 hover:bg-purple-700 text-white p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 active:scale-95"
+                                        disabled={
+                                            product?.cantidad <= 0 ||
+                                            (product?.factor && (product.factor * (quantity + 1)) > product.cantidad) ||
+                                            (artData && artData.id !== product.id)
+                                        }
+                                        className={cn("bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 active:scale-95")}
                                         aria-label={`Agregar ${product.nombre} al carrito`}
                                     >
                                         <ShoppingCart className="w-4 h-4" />

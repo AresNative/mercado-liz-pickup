@@ -1,4 +1,4 @@
-import { IonPage, IonContent, IonButton, IonCol, IonGrid, IonRow, IonSegment, IonSegmentButton, IonSpinner } from "@ionic/react";
+import { IonPage, IonContent, IonButton, IonSpinner } from "@ionic/react";
 import { Heart, ScanBarcode, ShieldAlert, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
@@ -38,16 +38,26 @@ const ProductID: React.FC = () => {
         filtro: id,
         listaPrecio: precio
     })
-
     const [variants, setVariants] = useState<Product[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
     const [localQuantity, setLocalQuantity] = useState(1);
     const [isInCart, setIsInCart] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false); // Estado para favorito
+    const [artData, setArtData] = useState<any>(null);
 
     useEffect(() => {
         if (data) {
-            const mappedProducts = data.data.map(mapApiProductToAppProduct);
+            const seenFactors = new Set();
+            const mappedProducts = data.data
+                .map(mapApiProductToAppProduct)
+                .filter((product: any) => {
+                    if (seenFactors.has(product.factor)) {
+                        return false; // Si ya existe, excluirlo
+                    }
+                    seenFactors.add(product.factor);
+                    return true; // Si es único, incluirlo
+                });
+
             setVariants(mappedProducts);
             setSelectedVariant(mappedProducts[0] || null);
         }
@@ -55,6 +65,9 @@ const ProductID: React.FC = () => {
 
     useEffect(() => {
         const inCart = cartItems.some((item: any) => item.id === selectedVariant?.id);
+        const artFilter = cartItems.find((item: any) => item.articulo === selectedVariant?.articulo);
+
+        setArtData(artFilter);
         setIsInCart(inCart);
 
         if (inCart) {
@@ -128,7 +141,7 @@ const ProductID: React.FC = () => {
     }
 
     const increaseLocalQuantity = () => {
-        if (selectedVariant) {
+        if (selectedVariant && selectedVariant.factor && ((selectedVariant.factor * localQuantity) < selectedVariant.cantidad)) {
             setLocalQuantity(prev => Math.min(prev + 1, selectedVariant.cantidad));
         }
     };
@@ -329,11 +342,22 @@ const ProductID: React.FC = () => {
 
                                         <button
                                             className={cn(
-                                                "flex-1 rounded-xl font-medium p-3 text-white transition-colors",
+                                                "flex-1 rounded-xl font-medium p-3 text-white transition-colors disabled:opacity-50",
                                                 isInCart
                                                     ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
                                                     : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800"
                                             )}
+                                            disabled={
+                                                !!selectedVariant &&
+                                                !!selectedVariant.factor &&
+                                                (
+                                                    (selectedVariant.factor * localQuantity) > selectedVariant.cantidad ||
+                                                    (
+                                                        artData?.id !== selectedVariant.id &&
+                                                        (selectedVariant.factor * localQuantity) > (selectedVariant.cantidad - (artData?.quantity * artData?.factor))
+                                                    )
+                                                )
+                                            }
                                             onClick={handleCartAction}
                                         >
                                             {isInCart ? "Eliminar del Carrito" : "Añadir al Carrito"}
