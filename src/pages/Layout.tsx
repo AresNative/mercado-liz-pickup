@@ -6,6 +6,7 @@ import { Info, Phone, Mail, Clock, MapPin } from "lucide-react";
 import { branches } from "./@landing/utils/branches";
 import { setSucursal } from "@/hooks/slices/app";
 import { setLocalStorageItem } from "@/utils/functions/local-storage";
+import { cn } from "@/utils/functions/cn";
 
 const Layout: React.FC = () => {
   const dispatch = useDispatch();
@@ -32,8 +33,8 @@ const Layout: React.FC = () => {
           {branches.map((branch, key) => (
             <li
               key={key}
-              onClick={() => handleSelectBranch(branch)}
-              className="bg-white dark:bg-gray-800 cursor-pointer rounded-xl shadow-lg overflow-hidden border-l-4 border-[#A855F7] active:bg-gray-50 dark:active:bg-gray-700"
+              onClick={() => branch.status === 'activo' && handleSelectBranch(branch)}
+              className={cn(branch.status === 'activo' ? "bg-white dark:bg-gray-800 cursor-pointer " : "opacity-50", " rounded-xl shadow-lg overflow-hidden border-l-4 border-[#A855F7] active:bg-gray-50 dark:active:bg-gray-700")}
             >
               <div className="flex items-center p-2">
                 <div className="bg-purple-50 dark:bg-purple-900 p-3 rounded-full mr-4">

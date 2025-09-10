@@ -264,7 +264,7 @@ const ProductID: React.FC = () => {
                                         {selectedVariant.unidad === "Caja" && (
                                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <Truck className="h-4 w-4 text-gray-500" />
-                                                <span>La caja contiene - {selectedVariant.factor} pieza(s)</span>
+                                                <span>La caja contiene {selectedVariant.factor} pieza(s)</span>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 text-sm text-gray-600">

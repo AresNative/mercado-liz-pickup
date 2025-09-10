@@ -71,5 +71,23 @@ export function CitasField(): Field[] {
       require: true,
       valueDefined: user_data?.direccion || "",
     },
+    {
+      id: 6,
+      type: "SELECT",
+      name: "Tipo_pago",
+      label: "Tipo de pago",
+      placeholder: "Selecciona un tipo de pago",
+      options: [
+        { label: "Efectivo", value: "Efectivo" },
+        {
+          label: "Tarjeta de crédito/débito",
+          value: "Tarjeta de crédito/débito",
+        },
+        { label: "Transferencia bancaria", value: "Transferencia bancaria" },
+        { label: "Pago móvil", value: "Pago móvil" },
+      ],
+      require: true,
+      valueDefined: user_data?.tipo_pago || "",
+    },
   ];
 }
