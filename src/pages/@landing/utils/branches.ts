@@ -6,6 +6,7 @@ export const branches = [
     name: "Mayoreo",
     icon: Warehouse,
     address: "11 6, Francisco Zarco, 22750 Francisco Zarco, B.C.",
+    status: "activo",
     precio: "(Precio Lista)",
   },
   {
@@ -14,6 +15,7 @@ export const branches = [
     icon: Store,
     address:
       "Calle Principal 216, Francisco Zarco, 22750 Francisco Zarco, B.C.",
+    status: "inactivo",
     precio: "(Precio 2)",
   },
   {
@@ -21,6 +23,7 @@ export const branches = [
     name: "Palmas",
     icon: Store,
     address: "México 3, Ampliación Valle de las Palmas, 21500 Espuela, B.C.",
+    status: "inactivo",
     precio: "(Precio 4)",
   },
   {
@@ -28,6 +31,7 @@ export const branches = [
     name: "Testerazo",
     icon: Store,
     address: "Carretera Tecate Ensenada Km 49, Tecate, Baja California, 21570.",
+    status: "inactivo",
     precio: "(Precio 3)",
   },
 ];

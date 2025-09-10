@@ -175,7 +175,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                             {product.unidad === "Caja" && (
                                 <div className="flex items-center gap-2 text-xs text-gray-400">
                                     <Truck className="h-4 w-4 text-gray-400" />
-                                    <span>La caja contiene - {product.factor} pieza(s)</span>
+                                    <span>La caja contiene {product.factor} pieza(s)</span>
                                 </div>
                             )}
                         </div>
