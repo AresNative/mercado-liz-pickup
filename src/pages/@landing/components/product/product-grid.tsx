@@ -4,7 +4,7 @@ import { IonInfiniteScroll, IonInfiniteScrollContent, IonList } from "@ionic/rea
 import ProductCard from "./product-card"
 import Badge from "@/components/badge"
 import { Product } from "@/utils/data/example-data"
-import { useGetArticulosQuery } from "@/hooks/reducers/api_int"
+import { useGetArticulosMutation } from "@/hooks/reducers/api_int"
 import { mapApiProductToAppProduct } from "../../utils/fromat-data"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
 import { clearFilters } from "@/hooks/reducers/filter"
@@ -17,23 +17,95 @@ const ProductGrid: React.FC = () => {
     const [combinedData, setCombinedData] = useState<Product[]>([]);
     const [hasMore, setHasMore] = useState(true);
     const [refreshTrigger, setRefreshTrigger] = useState(Date.now());
-    const [activeSection, setActiveSection] = useState<string | null>(null); // Estado para sección activa
-    //const dispatch = useAppDispatch();
+    const [activeSection, setActiveSection] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiData, setApiData] = useState<any>(null);
 
-    // Usar ref para rastrear la categoría actual
+    const [getData] = useGetArticulosMutation();
     const currentCategoryRef = useRef<string | null>(null);
 
     const categoria = useAppSelector((state) => state.filterData.key?.value);
-    const precio = getLocalStorageItem("sucursal").precio ?? getLocalStorageItem("sucursal")?.precio;
+    const precio = getLocalStorageItem("sucursal")?.precio ?? getLocalStorageItem("sucursal")?.precio;
 
-    const { data, isFetching, error, refetch } = useGetArticulosQuery({
-        page,
-        pageSize: PAGE_SIZE,
-        filtro: "",
-        categoria: categoria,
-        listaPrecio: precio,
-        refreshTrigger,
-    }, { skip: activeSection !== null }); // Saltar llamada API cuando se muestran favoritos
+    // Función para obtener datos de la API
+    const fetchData = useCallback(async () => {
+        if (activeSection === 'Favoritos') return; // No hacer llamada API si estamos en favoritos
+
+        setIsLoading(true);
+        try {
+            const result = await getData({
+                page,
+                pageSize: PAGE_SIZE,
+                filtro: {
+                    "Filtros": [
+                        {
+                            "Key": "Precio",
+                            "Value": "0",
+                            "Operator": ">"
+                        }
+                    ],
+                    "Selects": [
+                        {
+                            "Key": "cb.Codigo"
+                        },
+                        {
+                            "Key": "cb.Cuenta"
+                        },
+                        {
+                            "Key": "art.Grupo"
+                        },
+                        {
+                            "Key": "art.Descripcion1"
+                        },
+                        {
+                            "Key": "art.Unidad"
+                        },
+                        {
+                            "Key": "lpu.Precio"
+                        },
+                        {
+                            "Key": "au.Unidad"
+                        },
+                        {
+                            "Key": "au.Factor"
+                        },
+                        {
+                            "Key": "inv.TotalInventario"
+                        }
+                    ],
+                    "Agregaciones": [
+                        {
+                            "Key": "",
+                            "Operation": "",
+                            "Alias": ""
+                        }
+                    ],
+                    "Order": [
+                        {
+                            "key": "Codigo",
+                            "direction": "desc"
+                        }
+                    ]
+                },
+                categoria: categoria,
+                listaPrecio: precio,
+                refreshTrigger,
+            });
+
+            if (result.data) {
+                setApiData(result.data);
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [page, categoria, precio, refreshTrigger, activeSection, getData]);
+
+    // Efecto para obtener datos
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     // Función para obtener productos favoritos
     const getFavoriteProducts = (): Product[] => {
@@ -73,12 +145,12 @@ const ProductGrid: React.FC = () => {
     // Manejar nuevos datos
     useEffect(() => {
         // Si estamos en favoritos, no procesar datos de API
-        if (activeSection !== null) return;
+        if (activeSection === 'Favoritos') return;
 
         // Ignorar si no hay datos válidos
-        if (!data || !Array.isArray(data.data)) return;
+        if (!apiData || !Array.isArray(apiData.data)) return;
 
-        const mappedProducts = data.data.map(mapApiProductToAppProduct);
+        const mappedProducts = apiData.data.map(mapApiProductToAppProduct);
 
         // Determinar si hay más páginas
         const hasMoreData = mappedProducts.length >= PAGE_SIZE;
@@ -92,23 +164,15 @@ const ProductGrid: React.FC = () => {
         });
 
         setHasMore(hasMoreData);
-    }, [data, page, activeSection]);
-
-    // Manejar errores
-    useEffect(() => {
-        if (error) {
-            console.error("Error fetching products:", error);
-            setHasMore(false);
-        }
-    }, [error]);
+    }, [apiData, page, activeSection]);
 
     // Cargar más datos
     const loadMore = useCallback((event: CustomEvent<void>) => {
-        if (!isFetching && hasMore && activeSection !== 'Favoritos') {
+        if (hasMore && activeSection !== 'Favoritos') {
             setPage(prev => prev + 1);
         }
         (event.target as HTMLIonInfiniteScrollElement).complete();
-    }, [isFetching, hasMore, activeSection]);
+    }, [hasMore, activeSection]);
 
     // Función para cambiar sección activa
     const handleSectionChange = (section: string) => {
@@ -152,7 +216,6 @@ const ProductGrid: React.FC = () => {
                 <button
                     className="shrink-0 mr-2 inline-flex items-center justify-center font-medium rounded-lg bg-purple-800 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600 text-white px-4 py-2 text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={resetData}
-                    disabled={isFetching}
                 >
                     Actualizar
                 </button>
@@ -204,7 +267,6 @@ const ProductGrid: React.FC = () => {
                     onIonInfinite={loadMore}
                     threshold="100px"
                     className="text-purple-800"
-                    disabled={!hasMore || isFetching}
                 >
                     <IonInfiniteScrollContent
                         className="text-purple-800"
@@ -216,7 +278,7 @@ const ProductGrid: React.FC = () => {
 
             {/* Indicador de carga inicial */}
             <AnimatePresence>
-                {isFetching && page === 1 && !isFavoritesSection && (
+                {isLoading && (
                     <motion.div
                         className="fixed bottom-0 left-0 right-0 bg-purple-800 text-white py-3 px-4 flex items-center justify-center z-50 shadow-lg"
                         initial={{ y: 100, opacity: 0 }}

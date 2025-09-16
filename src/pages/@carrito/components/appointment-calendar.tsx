@@ -69,16 +69,26 @@ const serviceTypes = [
   {
     id: "pickup",
     name: "Pickup",
+    active: true,
     duration: 5,
-    color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200",
+    color: "bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-purple-100",
     description: "Todos sus productos son preparados en tienda para que solo tenga que pasar a recogerlos.",
   },
   {
     id: "vehiculo",
     name: "Entrega en vehículo",
+    active: true,
     duration: 5,
-    color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200",
+    color: "bg-indigo-100 text-indigo-800 border-indigo-300 hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-100",
     description: "Los productos le son entregados y cobrados en su vehículo si necesidad de bajarse.",
+  },
+  {
+    id: "a_diomicilio",
+    name: "Entrega a domicilio",
+    active: false,
+    duration: 30,
+    color: "bg-cyan-100 text-cyan-800 border-cyan-300 hover:bg-cyan-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-cyan-100",
+    description: "Los productos le son entregados en la puerta de su casa u oficina.",
   },
 ]
 
@@ -728,6 +738,7 @@ export function AppointmentCalendar() {
               {serviceTypes.map((service) => (
                 <button
                   key={service.id}
+                  disabled={!service.active || cartItems.length === 0}
                   onClick={() => handleSelectService(service.id)}
                   className={cn(
                     "flex items-start justify-between rounded-md border p-3 text-left transition-colors",

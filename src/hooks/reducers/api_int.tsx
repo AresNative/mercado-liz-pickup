@@ -48,18 +48,16 @@ export const api_int = createApi({
             }),
             extraOptions: { maxRetries: 2 }
         }),
-        getArticulos: builder.query({
-            query: ({ page, pageSize, id, filtro, categoria, listaPrecio, signal }) => ({
-                url: `v1/pick-up`,
-                method: "GET",
+        getArticulos: builder.mutation({
+            query: ({ page, pageSize, filtro, listaPrecio, signal }) => ({
+                url: `v1/pickUp/consultar/filtros`,
+                method: "POST",
                 params: {
                     page,
                     pageSize,
-                    listaPrecio,
-                    categoria,
-                    id,
-                    filtro// codigo de barras o nombre
+                    listaPrecio
                 },
+                body: filtro,
                 signal
             }),
             transformErrorResponse: (response: any) => ({
@@ -74,5 +72,5 @@ export const api_int = createApi({
 export const {
     useGetAllMutation,
     usePostMutation,
-    useGetArticulosQuery,
+    useGetArticulosMutation,
 } = api_int;

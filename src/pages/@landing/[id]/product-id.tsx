@@ -3,8 +3,8 @@ import { Heart, ScanBarcode, ShieldAlert, Star, Truck } from "lucide-react";
 import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
-import { useEffect, useState } from "react";
-import { useGetArticulosQuery } from "@/hooks/reducers/api_int";
+import { useEffect, useState, useCallback } from "react";
+import { useGetArticulosMutation } from "@/hooks/reducers/api_int";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
@@ -31,50 +31,124 @@ const ProductID: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const dispatch = useAppDispatch();
     const cartItems = useAppSelector((state: any) => state.cart.items);
-    const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
+    const precio = getLocalStorageItem("sucursal")?.precio ?? useAppSelector((state) => state.app.sucursal.precio);
 
-    const { data, isFetching, error } = useGetArticulosQuery({
-        page: 1,
-        filtro: id,
-        listaPrecio: precio
-    })
+    const [getArticulos] = useGetArticulosMutation();
     const [variants, setVariants] = useState<Product[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
     const [localQuantity, setLocalQuantity] = useState(1);
     const [isInCart, setIsInCart] = useState(false);
-    const [isFavorite, setIsFavorite] = useState(false); // Estado para favorito
+    const [isFavorite, setIsFavorite] = useState(false);
     const [artData, setArtData] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (data) {
-            const seenFactors = new Set();
-            const mappedProducts = data.data
-                .map(mapApiProductToAppProduct)
-                .filter((product: any) => {
-                    if (seenFactors.has(product.factor)) {
-                        return false; // Si ya existe, excluirlo
-                    }
-                    seenFactors.add(product.factor);
-                    return true; // Si es único, incluirlo
-                });
+    // Función para obtener datos del producto
+    const fetchProductData = useCallback(async () => {
+        if (!id) return;
 
-            setVariants(mappedProducts);
-            setSelectedVariant(mappedProducts[0] || null);
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await getArticulos({
+                page: 1, filtro: {
+                    "Filtros": [
+                        {
+                            "Key": "Descripcion1",
+                            "Value": id,
+                            "Operator": "like"
+                        }
+                    ],
+                    "Selects": [
+                        {
+                            "Key": "cb.Codigo"
+                        },
+                        {
+                            "Key": "cb.Cuenta"
+                        },
+                        {
+                            "Key": "art.Grupo"
+                        },
+                        {
+                            "Key": "art.Descripcion1"
+                        },
+                        {
+                            "Key": "art.Unidad"
+                        },
+                        {
+                            "Key": "lpu.Precio"
+                        },
+                        {
+                            "Key": "au.Unidad"
+                        },
+                        {
+                            "Key": "au.Factor"
+                        },
+                        {
+                            "Key": "inv.TotalInventario"
+                        }
+                    ],
+                    "Agregaciones": [
+                        {
+                            "Key": "",
+                            "Operation": "",
+                            "Alias": ""
+                        }
+                    ],
+                    "Order": [
+                        {
+                            "key": "TotalInventario",
+                            "direction": "desc"
+                        }
+                    ]
+                },
+
+                listaPrecio: precio
+            }).unwrap();
+
+            if (result && result.data) {
+                const seenFactors = new Set();
+                const mappedProducts = result.data
+                    .map(mapApiProductToAppProduct)
+                    .filter((product: any) => {
+                        if (seenFactors.has(product.factor)) {
+                            return false;
+                        }
+                        seenFactors.add(product.factor);
+                        return true;
+                    });
+
+                setVariants(mappedProducts);
+                setSelectedVariant(mappedProducts[0] || null);
+            }
+        } catch (err: any) {
+            console.error("Error fetching product:", err);
+            setError("Error cargando el producto");
+        } finally {
+            setIsLoading(false);
         }
-    }, [data, id]);
+    }, [id, precio, getArticulos]);
 
+    // Efecto para cargar datos del producto
     useEffect(() => {
-        const inCart = cartItems.some((item: any) => item.id === selectedVariant?.id);
-        const artFilter = cartItems.find((item: any) => item.articulo === selectedVariant?.articulo);
+        fetchProductData();
+    }, [fetchProductData]);
 
-        setArtData(artFilter);
-        setIsInCart(inCart);
+    // Efecto para verificar si el producto está en el carrito
+    useEffect(() => {
+        if (selectedVariant) {
+            const inCart = cartItems.some((item: any) => item.id === selectedVariant.id);
+            const artFilter = cartItems.find((item: any) => item.articulo === selectedVariant.articulo);
 
-        if (inCart) {
-            const cartItem = cartItems.find((item: any) => item.id === selectedVariant?.id);
-            setLocalQuantity(cartItem.quantity);
-        } else {
-            setLocalQuantity(1);
+            setArtData(artFilter);
+            setIsInCart(inCart);
+
+            if (inCart) {
+                const cartItem = cartItems.find((item: any) => item.id === selectedVariant.id);
+                setLocalQuantity(cartItem.quantity);
+            } else {
+                setLocalQuantity(1);
+            }
         }
     }, [cartItems, selectedVariant]);
 
@@ -104,9 +178,10 @@ const ProductID: React.FC = () => {
         setIsFavorite(!isFavorite);
     };
 
-    if (isFetching) {
+    if (isLoading) {
         return <LoadingScreen />;
     }
+
     if (error) {
         return (
             <IonPage>
@@ -116,7 +191,7 @@ const ProductID: React.FC = () => {
                             <ShieldAlert className="h-12 w-12 mx-auto" />
                             <p className="mt-4">Error cargando el producto</p>
                             <IonButton
-                                onClick={() => window.location.reload()}
+                                onClick={() => fetchProductData()}
                                 className="mt-4"
                             >
                                 Reintentar
@@ -127,6 +202,7 @@ const ProductID: React.FC = () => {
             </IonPage>
         );
     }
+
     if (!selectedVariant) {
         return (
             <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
@@ -310,7 +386,7 @@ const ProductID: React.FC = () => {
                                     )}
 
                                     {/* Controles de cantidad */}
-                                    {variants[0].cantidad > 0 ? (<div className="flex items-center justify-between gap-4 mb-6">
+                                    {variants[0]?.cantidad > 0 ? (<div className="flex items-center justify-between gap-4 mb-6">
                                         <div className="flex items-center">
                                             <span className="text-gray-700 mr-3">Cantidad:</span>
                                             <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
