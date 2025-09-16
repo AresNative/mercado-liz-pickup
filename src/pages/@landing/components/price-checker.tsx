@@ -1,9 +1,9 @@
 import type React from "react";
 import useDebounce from "@/hooks/use-debounce";
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IonItem, IonLabel, IonList, IonSpinner, IonButton } from "@ionic/react";
-import { useGetArticulosQuery } from "@/hooks/reducers/api_int";
+import { useGetArticulosMutation } from "@/hooks/reducers/api_int";
 import { Search } from "lucide-react";
 import { Product } from "@/utils/data/example-data";
 import { useAppSelector } from "@/hooks/selector";
@@ -25,7 +25,7 @@ function PriceChecker() {
     const [showResults, setShowResults] = useState(false);
     const [productos, setProductos] = useState<Product[]>([]);
     const [totalPages, setTotalPages] = useState(0);
-    const abortRef = useRef<AbortController | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const listContainerRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,34 +33,83 @@ function PriceChecker() {
         getLocalStorageItem("sucursal")?.precio ??
         useAppSelector((state) => state.app.sucursal.precio);
 
-    const params = useMemo(
-        () => ({
-            page,
-            pageSize: PAGE_SIZE,
-            listaPrecio: precio,
-            filtro: debouncedQuery,
-            signal: abortRef.current?.signal
-        }),
-        [page, precio, debouncedQuery]
-    );
+    const [getArticulos] = useGetArticulosMutation();
 
     const hasMore = page < totalPages;
 
+    // Función para obtener datos de la API
+    const fetchData = useCallback(async (pageNum: number, searchQuery: string, abortController?: AbortController) => {
+        if (!searchQuery) {
+            setProductos([]);
+            setTotalPages(0);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const result = await getArticulos({
+                page: pageNum,
+                pageSize: PAGE_SIZE,
+                listaPrecio: precio,
+                filtro: searchQuery,
+                signal: abortController?.signal
+            }).unwrap();
+
+            if (result) {
+                setTotalPages(result.totalPages);
+
+                const mapped = result.data.map((item: any) => ({
+                    id: item.Codigo,
+                    nombre: item.Nombre,
+                    precio: item.PrecioRegular,
+                    categoria: item.Grupo,
+                    unidad: item.Unidad,
+                    image: item.Imagen
+                }));
+
+                if (pageNum === 1) {
+                    setProductos(mapped);
+                } else {
+                    setProductos(prev => [...prev, ...mapped]);
+                }
+            }
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
+                console.error("Error fetching products:", error);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, [getArticulos, precio]);
+
+    // Efecto para buscar cuando cambia el query debounced
     useEffect(() => {
-        if (!debouncedQuery) {
+        const abortController = new AbortController();
+
+        if (debouncedQuery) {
+            setPage(1);
+            fetchData(1, debouncedQuery, abortController);
+        } else {
             setProductos([]);
             setTotalPages(0);
         }
-    }, [debouncedQuery]);
 
-    // Controla el aborto de la petición
-    useEffect(() => {
-        abortRef.current?.abort();
-        abortRef.current = new AbortController();
         return () => {
-            abortRef.current?.abort();
+            abortController.abort();
         };
-    }, [query]);
+    }, [debouncedQuery, fetchData]);
+
+    // Efecto para cargar más datos cuando cambia la página
+    useEffect(() => {
+        if (page > 1 && debouncedQuery) {
+            const abortController = new AbortController();
+            fetchData(page, debouncedQuery, abortController);
+
+            return () => {
+                abortController.abort();
+            };
+        }
+    }, [page, debouncedQuery, fetchData]);
 
     // Cerrar resultados al hacer clic fuera
     useEffect(() => {
@@ -76,37 +125,10 @@ function PriceChecker() {
         };
     }, []);
 
-    // Pasa el signal al hook si tu API lo soporta
-    const { data, isFetching, error } = useGetArticulosQuery(
-        { ...params },
-        { skip: !debouncedQuery }
-    );
-
-    useEffect(() => {
-        if (data) {
-            setTotalPages(data.totalPages);
-
-            const mapped = data.data.map((item: any) => ({
-                id: item.Codigo,
-                nombre: item.Nombre,
-                precio: item.PrecioRegular,
-                categoria: item.Grupo,
-                unidad: item.Unidad,
-                image: item.Imagen
-            }));
-
-            if (page === 1) {
-                setProductos(mapped);
-            } else {
-                setProductos(prev => [...prev, ...mapped]);
-            }
-        }
-    }, [data]);
-
     // Manejar scroll infinito
     useEffect(() => {
         const container = listContainerRef.current;
-        if (!container || !hasMore || isFetching) return;
+        if (!container || !hasMore || isLoading) return;
 
         const handleScroll = () => {
             const { scrollTop, scrollHeight, clientHeight } = container;
@@ -119,16 +141,17 @@ function PriceChecker() {
 
         container.addEventListener('scroll', handleScroll);
         return () => container.removeEventListener('scroll', handleScroll);
-    }, [hasMore, isFetching]);
+    }, [hasMore, isLoading]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value);
-        setPage(1);
         setShowResults(true);
     };
 
     const handleInputFocus = () => {
-        setShowResults(true);
+        if (productos.length > 0 || debouncedQuery) {
+            setShowResults(true);
+        }
     };
 
     const handleProductClick = () => {
@@ -187,18 +210,14 @@ function PriceChecker() {
                                 ref={listContainerRef}
                             >
                                 <motion.ul>
-                                    {isFetching && page === 1 ? (
+                                    {isLoading && page === 1 ? (
                                         <IonItem className="w-full flex items-center gap-2 justify-center p-4">
                                             <div className="text-center">
                                                 <IonSpinner name="crescent" className="h-12 w-12 text-purple-600" />
                                                 <p className="mt-4 text-gray-600">Cargando productos...</p>
                                             </div>
                                         </IonItem>
-                                    ) : error ? (
-                                        <IonItem className="text-red-500 p-4">
-                                            {"Error al cargar productos"}
-                                        </IonItem>
-                                    ) : productos.length === 0 ? (
+                                    ) : productos.length === 0 && debouncedQuery ? (
                                         <IonItem className="p-4">
                                             <p className="text-gray-500 text-center w-full">
                                                 No se encontraron productos
@@ -239,7 +258,7 @@ function PriceChecker() {
                                                 </motion.li>
                                             ))}
 
-                                            {isFetching && page > 1 && (
+                                            {isLoading && page > 1 && (
                                                 <div className="flex justify-center py-4">
                                                     <IonSpinner name="crescent" className="h-8 w-8 text-purple-600" />
                                                 </div>
@@ -254,20 +273,22 @@ function PriceChecker() {
                                     )}
                                 </motion.ul>
 
-                                <div className="bottom-0 mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
-                                        <span>
-                                            Resultados: {productos.length} de {data?.totalRecords || 0}
-                                        </span>
-                                        <IonButton
-                                            size="small"
-                                            fill="clear"
-                                            onClick={() => setShowResults(false)}
-                                        >
-                                            Cerrar
-                                        </IonButton>
+                                {productos.length > 0 && (
+                                    <div className="bottom-0 mt-2 px-3 py-2 border-t border-gray-100 dark:border-gray-800">
+                                        <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <span>
+                                                Resultados: {productos.length} de {productos.length * totalPages || 0}
+                                            </span>
+                                            <IonButton
+                                                size="small"
+                                                fill="clear"
+                                                onClick={() => setShowResults(false)}
+                                            >
+                                                Cerrar
+                                            </IonButton>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </motion.div>
                         )}
                     </AnimatePresence>
