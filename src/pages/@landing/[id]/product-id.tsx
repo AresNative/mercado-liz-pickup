@@ -4,7 +4,7 @@ import { useParams } from "react-router";
 import HeaderCart from "../components/header";
 import { Product } from "@/utils/data/example-data";
 import { useEffect, useState, useCallback } from "react";
-import { useGetArticulosMutation } from "@/hooks/reducers/api_int";
+import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { mapApiProductToAppProduct } from "../utils/fromat-data";
 import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
@@ -33,7 +33,7 @@ const ProductID: React.FC = () => {
     const cartItems = useAppSelector((state: any) => state.cart.items);
     const precio = getLocalStorageItem("sucursal")?.precio ?? useAppSelector((state) => state.app.sucursal.precio);
 
-    const [getArticulos] = useGetArticulosMutation();
+    const [getData] = useGetWithFiltersGeneralInIntelisisMutation();
     const [variants, setVariants] = useState<Product[]>([]);
     const [selectedVariant, setSelectedVariant] = useState<Product | null>(null);
     const [localQuantity, setLocalQuantity] = useState(1);
@@ -50,60 +50,55 @@ const ProductID: React.FC = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const result = await getArticulos({
-                page: 1, filtro: {
-                    "Filtros": [
-                        {
-                            "Key": "Descripcion1",
-                            "Value": id,
-                            "Operator": "like"
-                        }
+            const result = await getData({
+                page: 1,
+                pageSize: 10,
+                table: `[CB] 
+                INNER JOIN [Art] ON [CB].Cuenta = [Art].Articulo 
+                INNER JOIN [ListaPreciosDUnidad] ON [Art].Articulo = [ListaPreciosDUnidad].Articulo 
+                AND [CB].Unidad = [ListaPreciosDUnidad].Unidad 
+                INNER JOIN [ArtUnidad] ON [Art].Articulo = [ArtUnidad].Articulo 
+                AND [ListaPreciosDUnidad].Unidad = [ArtUnidad].Unidad 
+                INNER JOIN (SELECT [ArtDisponible].Articulo,SUM([ArtDisponible].DispMenosApartado) as TotalInventario 
+                            FROM [ArtDisponible] 
+                            GROUP BY [ArtDisponible].Articulo) AS inv 
+                 ON [Art].Articulo = inv.Articulo WHERE [CB].Codigo LIKE '%${id}%'`,
+                filtros: {
+                    Selects: [
+                        { Key: "CB.Codigo" },
+                        { Key: "CB.Cuenta" },
+                        { Key: "Art.Grupo" },
+                        { Key: "Art.Descripcion1" },
+                        { Key: "Art.Unidad" },
+                        { Key: "ListaPreciosDUnidad.Precio" },
+                        { Key: "ArtUnidad.Factor" },
+                        { Key: "inv.TotalInventario" },
                     ],
-                    "Selects": [
+                    /*Filtros: [
                         {
-                            "Key": "cb.Codigo"
+                            Key: "[CB].Codigo",
+                            Value: id,
+                            Operator: "like",
                         },
                         {
-                            "Key": "cb.Cuenta"
+                            Key: "[TC032841E].[dbo].[ListaPreciosDUnidad].Lista",
+                            Value: "(Precio Lista)",
+                            Operator: "=",
                         },
                         {
-                            "Key": "art.Grupo"
-                        },
+                            Key: "inv.TotalInventario",
+                            Value: "0",
+                            Operator: ">",
+                        }, 
+                    ],*/
+                    Order: [
                         {
-                            "Key": "art.Descripcion1"
+                            Key: "[TC032841E].[dbo].[Art].Descripcion1",
+                            Direction: "ASC",
                         },
-                        {
-                            "Key": "art.Unidad"
-                        },
-                        {
-                            "Key": "lpu.Precio"
-                        },
-                        {
-                            "Key": "au.Unidad"
-                        },
-                        {
-                            "Key": "au.Factor"
-                        },
-                        {
-                            "Key": "inv.TotalInventario"
-                        }
                     ],
-                    "Agregaciones": [
-                        {
-                            "Key": "",
-                            "Operation": "",
-                            "Alias": ""
-                        }
-                    ],
-                    "Order": [
-                        {
-                            "key": "TotalInventario",
-                            "direction": "desc"
-                        }
-                    ]
-                },
-
-                listaPrecio: precio
+                }
+                /* listaPrecio: precio, */
             }).unwrap();
 
             if (result && result.data) {
@@ -127,7 +122,7 @@ const ProductID: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [id, precio, getArticulos]);
+    }, [id, precio, getData]);
 
     // Efecto para cargar datos del producto
     useEffect(() => {
@@ -184,25 +179,16 @@ const ProductID: React.FC = () => {
 
     if (error) {
         return (
-            <IonPage>
-                <IonContent role="feed" className="ion-padding" fullscreen>
-                    <div className="min-h-screen flex items-center justify-center">
-                        <div className="text-center text-red-500">
-                            <ShieldAlert className="h-12 w-12 mx-auto" />
-                            <p className="mt-4">Error cargando el producto</p>
-                            <IonButton
-                                onClick={() => fetchProductData()}
-                                className="mt-4"
-                            >
-                                Reintentar
-                            </IonButton>
-                        </div>
-                    </div>
-                </IonContent>
-            </IonPage>
+            <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-4xl font-bold text-gray-800 dark:text-white">500</h1>
+                    <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Error en servidor</p>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">El producto no esta disponible o se enviaron mal los datos <span className="text-red-500">({error})</span>.</p>
+                    <a onClick={() => fetchProductData()} className="mt-6 inline-block px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700">Reintentar</a>
+                </div>
+            </section>
         );
     }
-
     if (!selectedVariant) {
         return (
             <section className="bg-white dark:bg-gray-900 min-h-screen flex items-center justify-center">

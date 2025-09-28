@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import {
   format,
   startOfMonth,
@@ -41,30 +41,14 @@ import { cn } from "@/utils/functions/cn"
 import MainForm from "@/components/form/main-form"
 import { CitasField } from "../constants/citas-field"
 import { useAppDispatch, useAppSelector } from "@/hooks/selector"
-import { useGetAllMutation, usePostMutation } from "@/hooks/reducers/api"
+import { useGetWithFiltersMutation, usePostMutation } from "@/hooks/reducers/api"
 import { useIonToast } from "@ionic/react"
 import { useHistory } from "react-router"
 import { clearCart } from "@/hooks/slices/cart"
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage"
 import { driver } from "driver.js"
 
-// Eliminamos bloqueos manuales, solo domingos serán bloqueados
-/* const BLOCKED_DATES = [
-  startOfDay(addDays(new Date(), 2)).toISOString(),
-  startOfDay(addDays(new Date(), 5)).toISOString(),
-  startOfDay(addDays(new Date(), 10)).toISOString(),
-] */
-
-// Fechas disponibles excluyendo domingos
-const AVAILABLE_DATES = Array.from({ length: 60 }, (_, i) => {
-  const date = startOfDay(addDays(new Date(), i))
-  // Excluir domingos (día 0)
-  if (date.getDay() === 0) return null
-  //if (BLOCKED_DATES.some(blockedDate => isSameDay(parseISO(blockedDate), date))) return null
-
-  return date.toISOString()
-}).filter(Boolean) as string[]
-
+// Configuración de servicios
 const serviceTypes = [
   {
     id: "pickup",
@@ -92,104 +76,192 @@ const serviceTypes = [
   },
 ]
 
-const generateTimeSlots = (date: string, existingCitas: any[]) => {
-  const baseDate = parseISO(date)
-  const startHour = 9.5 // 9:30 AM (9.5 horas = 9 horas y 30 minutos)
-  const endHour = 16 // 4:00 PM
-  const slotDuration = 30 // duración de cada slot en minutos
-  const now = new Date()
-  const isToday = isSameDay(baseDate, now)
+// Hook personalizado para la gestión de citas
+const useCitas = () => {
+  const [GetData] = useGetWithFiltersMutation()
+  const [PostData] = usePostMutation()
+  const precio = getLocalStorageItem("sucursal")?.precio ?? useAppSelector((state) => state.app?.sucursal?.precio)
+  const cartItems = useAppSelector((state: any) => state.cart?.items?.filter((item: any) => item.quantity > 0) || [])
 
-  const bookedSlots = existingCitas.map(cita => {
-    const start = parseISO(cita.fecha)
-    const end = addMinutes(start, 5)
-    return { start, end }
-  })
+  const [citasExistentes, setCitasExistentes] = useState<any[]>([])
+  const [loadingCitas, setLoadingCitas] = useState(false)
+  const [errorCitas, setErrorCitas] = useState<string | null>(null)
 
-  const isSlotAvailable = (slotTime: Date) => {
-    return !bookedSlots.some(({ start, end }) =>
-      isWithinInterval(slotTime, { start, end })
-    )
-  }
+  const cargarCitasExistentes = useCallback(async () => {
+    setLoadingCitas(true)
+    setErrorCitas(null)
 
-  // Función para verificar si el slot es válido
-  const isValidSlot = (slotTime: Date) => {
-    // Excluir slots que sean anteriores O IGUALES a la hora actual
-    if (isToday && slotTime <= now) return false
-    return true
-  }
-
-  const morningSlots = []
-  // Comenzar desde las 9:30 (startHour = 9.5)
-  for (let hour = Math.floor(startHour); hour < 13; hour++) {
-    // Para la hora 9, comenzar desde los 30 minutos
-    const startMinute = hour === 9 ? 30 : 0
-    for (let minute = startMinute; minute < 60; minute += slotDuration) {
-      const slotTime = new Date(baseDate)
-      slotTime.setHours(hour, minute, 0, 0)
-
-      if (!isValidSlot(slotTime)) continue
-
-      const isAvailable = isSlotAvailable(slotTime)
-
-      morningSlots.push({
-        id: `${hour}-${minute}`,
-        time: slotTime.toISOString(),
-        isAvailable,
-      })
+    try {
+      const response = await GetData({
+        url: "v1/pickup/listas",
+        filtros: {
+          Filtros: [
+            /* { Key: "sucursal", Value: precio } */
+            { Key: "estado", Value: "nuevo", Operator: "Like" },
+            { Key: "tipo_lista", Value: "pickup", Operator: "Like" }
+          ],
+          Order: [{ Key: "id", Direction: "Desc" }]
+        },
+        pageSize: 100
+      }).unwrap()
+      setCitasExistentes(response.data || [])
+    } catch (error) {
+      console.error("Error cargando citas:", error)
+      setErrorCitas("No se pudieron cargar las citas existentes")
+    } finally {
+      setLoadingCitas(false)
     }
+  }, [GetData, precio])
+
+  return {
+    citasExistentes,
+    loadingCitas,
+    errorCitas,
+    cargarCitasExistentes,
+    PostData,
+    GetData,
+    precio,
+    cartItems
   }
+}
 
-  const afternoonSlots = []
-  for (let hour = 14; hour <= Math.floor(endHour); hour++) {
-    // Para la hora 16, terminar a los 30 minutos
-    const endMinute = hour === 16 ? 30 : 60
-    for (let minute = 0; minute < endMinute; minute += slotDuration) {
-      const slotTime = new Date(baseDate)
-      slotTime.setHours(hour, minute, 0, 0)
+// Hook para generar slots de tiempo
+const useTimeSlots = (selectedDate: string | null, citasExistentes: any[]) => {
+  const generateTimeSlots = useCallback((date: string, existingCitas: any[]) => {
+    const baseDate = parseISO(date)
+    const startHour = 9.5 // 9:30 AM
+    const endHour = 16 // 4:00 PM
+    const slotDuration = 30 // minutos
+    const now = new Date()
+    const isToday = isSameDay(baseDate, now)
 
-      if (!isValidSlot(slotTime)) continue
+    const bookedSlots = existingCitas.map(cita => {
+      const start = parseISO(cita.fecha)
+      const end = addMinutes(start, 5)
+      return { start, end }
+    })
 
-      const isAvailable = isSlotAvailable(slotTime)
-
-      afternoonSlots.push({
-        id: `${hour}-${minute}`,
-        time: slotTime.toISOString(),
-        isAvailable,
-      })
+    const isSlotAvailable = (slotTime: Date) => {
+      return !bookedSlots.some(({ start, end }) =>
+        isWithinInterval(slotTime, { start, end })
+      )
     }
-  }
 
-  return { morningSlots, afternoonSlots }
+    const isValidSlot = (slotTime: Date) => {
+      if (isToday && slotTime <= now) return false
+      return true
+    }
+
+    const generateSlotsForPeriod = (startHour: number, endHour: number) => {
+      const slots = []
+      for (let hour = Math.floor(startHour); hour < endHour; hour++) {
+        const startMinute = hour === 9 ? 30 : 0
+        const endMinute = hour === 16 ? 30 : 60
+
+        for (let minute = startMinute; minute < endMinute; minute += slotDuration) {
+          const slotTime = new Date(baseDate)
+          slotTime.setHours(hour, minute, 0, 0)
+
+          if (!isValidSlot(slotTime)) continue
+
+          const isAvailable = isSlotAvailable(slotTime)
+
+          slots.push({
+            id: `${hour}-${minute}`,
+            time: slotTime.toISOString(),
+            isAvailable,
+          })
+        }
+      }
+      return slots
+    }
+
+    const morningSlots = generateSlotsForPeriod(startHour, 13)
+    const afternoonSlots = generateSlotsForPeriod(14, endHour + 0.5) // +0.5 para incluir 16:30
+
+    return { morningSlots, afternoonSlots }
+  }, [])
+
+  const timeSlots = useMemo(() => {
+    if (!selectedDate) return { morningSlots: [], afternoonSlots: [] }
+    return generateTimeSlots(selectedDate, citasExistentes)
+  }, [selectedDate, citasExistentes, generateTimeSlots])
+
+  return timeSlots
+}
+
+// Hook para fechas disponibles
+const useAvailableDates = () => {
+  const availableDates = useMemo(() => {
+    return Array.from({ length: 60 }, (_, i) => {
+      const date = startOfDay(addDays(new Date(), i))
+      // Excluir domingos (día 0)
+      if (date.getDay() === 0) return null
+      return date.toISOString()
+    }).filter(Boolean) as string[]
+  }, [])
+
+  return availableDates
 }
 
 export function AppointmentCalendar() {
-  const precio = getLocalStorageItem("sucursal").precio ?? useAppSelector((state) => state.app.sucursal.precio);
-  const cartItems = useAppSelector((state: any) => state.cart.items.filter((item: any) => item.quantity > 0));
+  const history = useHistory()
+  const dispatch = useAppDispatch()
+  const [present] = useIonToast()
 
-  const history = useHistory();
-  const dispatch = useAppDispatch();
-
-  const [PostData, { isLoading: isLoadingPost }] = usePostMutation();
-  const [GetData, { isLoading: isLoadingGet }] = useGetAllMutation();
-
+  // Estados principales
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null)
   const [selectedService, setSelectedService] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [timeSlots, setTimeSlots] = useState<{ morningSlots: any[]; afternoonSlots: any[] }>({
-    morningSlots: [],
-    afternoonSlots: [],
-  })
-  const [present] = useIonToast();
-  const formRef = useRef<HTMLDivElement>(null)
-
-  // Nuevo estado para fechas bloqueadas por falta de horarios
   const [blockedDatesDueToNoSlots, setBlockedDatesDueToNoSlots] = useState<string[]>([])
 
-  const startTour = () => {
+  const formRef = useRef<HTMLDivElement>(null)
+
+  // Hooks personalizados
+  const {
+    citasExistentes,
+    loadingCitas,
+    errorCitas,
+    cargarCitasExistentes,
+    PostData,
+    GetData,
+    precio,
+    cartItems
+  } = useCitas()
+
+  const timeSlots = useTimeSlots(selectedDate, citasExistentes)
+  const availableDates = useAvailableDates()
+
+  // Efecto para cargar citas existentes
+  useEffect(() => {
+    cargarCitasExistentes()
+  }, [cargarCitasExistentes])
+
+  // Efecto para verificar disponibilidad de slots
+  useEffect(() => {
+    if (selectedDate && !loadingCitas) {
+      setIsLoading(true)
+
+      const hasAvailableSlots = timeSlots.morningSlots.length > 0 || timeSlots.afternoonSlots.length > 0
+
+      if (!hasAvailableSlots) {
+        setBlockedDatesDueToNoSlots(prev =>
+          prev.includes(selectedDate) ? prev : [...prev, selectedDate]
+        )
+      } else {
+        setBlockedDatesDueToNoSlots(prev =>
+          prev.filter(date => date !== selectedDate)
+        )
+      }
+
+      setTimeout(() => setIsLoading(false), 300)
+    }
+  }, [selectedDate, timeSlots, loadingCitas])
+
+  // Tour de ayuda
+  const startTour = useCallback(() => {
     const driverObj = driver({
       showProgress: true,
       animate: true,
@@ -203,10 +275,6 @@ export function AppointmentCalendar() {
             description: 'Siempre puedes volver a ver esta guía haciendo clic aquí.',
             side: "top",
             align: 'center'
-          },
-          onDeselected: () => {
-            // Mantén la posición actual después de abandonar el paso
-            window && window.scrollTo(window.scrollX, window.scrollY);
           }
         },
         {
@@ -255,205 +323,223 @@ export function AppointmentCalendar() {
           }
         },
       ]
-    });
+    })
 
-    driverObj.drive();
-  };
+    driverObj.drive()
+  }, [])
 
+  // Inicializar tour
   useEffect(() => {
-    const hasSeenTour = getLocalStorageItem('hasSeenAppointmentTour');
+    const hasSeenTour = getLocalStorageItem('hasSeenAppointmentTour')
     if (hasSeenTour !== true) {
       setTimeout(() => {
-        startTour();
-        setLocalStorageItem('hasSeenAppointmentTour', true);
-      }, 1000);
+        startTour()
+        setLocalStorageItem('hasSeenAppointmentTour', true)
+      }, 1000)
     }
-  }, []);
+  }, [startTour])
 
-  useEffect(() => {
-    if (selectedDate) {
-      setLoadingSlots(true)
+  // Handlers
+  const handlePreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1))
+  const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1))
 
-      GetData({
-        url: "citas",
-        filters: {
-          "Filtros": [
-            { "Key": "sucursal", "Value": precio }
-          ],
-          "Order": [{ "Key": "id", "Direction": "Desc" }]
-        },
-        pageSize: 100
-      }).unwrap().then((response) => {
-        const slots = generateTimeSlots(selectedDate, response.data || [])
-        setTimeSlots(slots)
-
-        // Bloquear fecha si no hay horarios disponibles
-        if (slots.morningSlots.length === 0 && slots.afternoonSlots.length === 0) {
-          setBlockedDatesDueToNoSlots(prev => [...prev, selectedDate])
-        }
-
-        setLoadingSlots(false)
-      }).catch(() => {
-        setLoadingSlots(false)
-      })
-    }
-  }, [selectedDate])
-
-  useEffect(() => {
-    if (selectedService && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth" })
-    }
-  }, [selectedService])
-
-  const handlePreviousMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1))
-  }
-
-  const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1))
-  }
-
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = useCallback((date: Date) => {
     const dateString = startOfDay(date).toISOString()
-    if (AVAILABLE_DATES.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)) {
+    if (availableDates.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)) {
       setIsLoading(true)
       setSelectedSlot(null)
       setSelectedService(null)
       setSelectedDate(dateString)
-      setTimeout(() => {
-        setIsLoading(false)
-      }, 600)
     }
-  }
+  }, [availableDates, blockedDatesDueToNoSlots])
 
-  const handleSelectSlot = (slotId: string) => {
+  const handleSelectSlot = useCallback((slotId: string) => {
     setSelectedSlot(slotId)
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" })
-    }, 300)
-  }
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 300)
+  }, [])
 
-  const handleSelectService = (serviceId: string) => {
+  const handleSelectService = useCallback((serviceId: string) => {
     setSelectedService(serviceId)
-    setTimeout(() => {
-      if (formRef.current) {
-        formRef.current.scrollIntoView({ behavior: "smooth" })
-      }
-    }, 300)
-  }
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth" }), 300)
+  }, [])
 
-  const isDateAvailable = (date: Date) => {
+  // Funciones de utilidad
+  const isDateAvailable = useCallback((date: Date) => {
     const dateString = startOfDay(date).toISOString()
-    // Excluir fechas bloqueadas por falta de horarios
-    return AVAILABLE_DATES.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)
-  }
+    return availableDates.includes(dateString) && !blockedDatesDueToNoSlots.includes(dateString)
+  }, [availableDates, blockedDatesDueToNoSlots])
 
-  const isDateBlocked = (date: Date) => {
+  const isDateBlocked = useCallback((date: Date) => {
     const dateString = startOfDay(date).toISOString()
-    // Solo domingos y fechas sin disponibilidad
-    return (
-      date.getDay() === 0 || // Domingo
-      blockedDatesDueToNoSlots.includes(dateString) // Sin horarios
-    )
-  }
+    return date.getDay() === 0 || blockedDatesDueToNoSlots.includes(dateString)
+  }, [blockedDatesDueToNoSlots])
 
-  const isPastDate = (date: Date) => {
+  const isPastDate = useCallback((date: Date) => {
     return isBefore(date, startOfDay(new Date()))
-  }
+  }, [])
 
-  const getSlotById = (slotId: string) => {
-    return [...timeSlots.morningSlots, ...timeSlots.afternoonSlots].find((slot) => slot.id === slotId)
-  }
+  const getSlotById = useCallback((slotId: string) => {
+    return [...timeSlots.morningSlots, ...timeSlots.afternoonSlots].find(slot => slot.id === slotId)
+  }, [timeSlots])
 
-  const getServiceById = (serviceId: string) => {
-    return serviceTypes.find((service) => service.id === serviceId)
-  }
+  const getServiceById = useCallback((serviceId: string) => {
+    return serviceTypes.find(service => service.id === serviceId)
+  }, [])
 
+  // Handler para crear cita
+  const handleCreateAppointment = useCallback(async (values: any) => {
+    try {
+      let clienteId
+
+      if (!selectedDate || !selectedSlot || !selectedService) {
+        throw new Error('Información de cita incompleta')
+      }
+
+      // Buscar o crear cliente
+      const { data: clientes } = await GetData({
+        url: "v1/pickup/clientes",
+        filtros: {
+          Filtros: [{ Key: "telefono", Value: values.Telefono }],
+          Order: [{ Key: "id", Direction: "Desc" }]
+        },
+        pageSize: 1
+      })
+
+      if (!clientes.data.length) {
+        const dataCliente = {
+          nombre: values.Nombre,
+          telefono: values.Telefono,
+          cp: values.CodigoPostal,
+          estado: values.Estado,
+          ciudad: values.Ciudad,
+          direccion: values.Direccion,
+        }
+        const clienteResponse = await PostData({ url: "v1/pickup/clientes", data: dataCliente }).unwrap()
+        clienteId = clienteResponse.data.ids[0]
+      } else {
+        clienteId = clientes.data[0].id
+      }
+
+      setLocalStorageItem("user", clienteId)
+      setLocalStorageItem("user-data", clientes.data[0])
+
+      // Crear lista
+      const listaPayload = {
+        id_cliente: clienteId,
+        usuario_id: clienteId,
+        sucursal_id: 1,
+        nombre_lista: `Pickup ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}`,
+        servicio: getServiceById(selectedService)?.name,
+        fecha_creacion: new Date().toISOString(),
+        estado: "nuevo",
+        array_lista: JSON.stringify(cartItems)
+      }
+
+      const listaResponse = await PostData({ url: "v1/pickup/listas", data: listaPayload })
+      console.log(listaResponse);
+
+      const listaId = listaResponse.data.data.id;
+
+      dispatch(clearCart())
+
+      present({
+        message: `Cita creada correctamente (ID: ${listaId})`,
+        duration: 3500,
+        cssClass: "custom-tertiary",
+        position: 'bottom',
+        buttons: [{
+          text: "ver",
+          side: 'end',
+          handler: () => history.replace('/loading')
+        }]
+      })
+
+      // Resetear formulario
+      setSelectedDate(null)
+      setSelectedSlot(null)
+      setSelectedService(null)
+
+    } catch (error) {
+      console.error("Error creando cita:", error)
+      present({
+        message: "Error al generar cita",
+        duration: 2500,
+        color: "danger",
+        position: 'bottom'
+      })
+    }
+  }, [selectedDate, selectedSlot, selectedService, GetData, PostData, getServiceById, cartItems, precio, dispatch, present, history, getSlotById])
+
+  // Renderizado del calendario
   const monthStart = startOfMonth(currentMonth)
   const monthEnd = endOfMonth(currentMonth)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 })
   const daysInCalendar = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
-  const handleCalendarKeyDown = (e: React.KeyboardEvent, day: Date) => {
+  const handleCalendarKeyDown = useCallback((e: React.KeyboardEvent, day: Date) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
       handleDateClick(day)
     }
-  }
+  }, [handleDateClick])
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white text-gray-900 shadow-sm">
       <div className="p-6">
+        {/* Header */}
         <div className="mb-4 flex items-center justify-between">
           <h2 id="calendar-header" className="text-lg font-semibold">Agenda tu cita</h2>
-          <div className="flex items-center space-x-2">
-            <button
-              id="help-button"
-              onClick={startTour}
-              className="flex items-center gap-1 rounded-full p-2 transition-colors hover:bg-gray-100"
-              aria-label="Mostrar guía de ayuda"
-            >
-              <HelpCircle className="h-5 w-5" /> Ayuda
-            </button>
-          </div>
+          <button
+            id="help-button"
+            onClick={startTour}
+            className="flex items-center gap-1 rounded-full p-2 transition-colors hover:bg-gray-100"
+            aria-label="Mostrar guía de ayuda"
+          >
+            <HelpCircle className="h-5 w-5" /> Ayuda
+          </button>
         </div>
 
+        {/* Indicador de pasos */}
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <button
-              id="date-step"
-              onClick={() => setSelectedDate(null)}
-              className={cn(
-                "flex h-16 w-1/3 flex-col items-center justify-center rounded-l-lg border-r transition-colors",
-                !selectedDate ? "bg-purple-50 text-purple-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-              )}
-            >
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
-                !selectedDate ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-500"
-              )}>
-                1
-              </div>
-              <div className="mt-1 text-sm font-medium">Fecha</div>
-            </button>
-
-            <button
-              id="time-step"
-              onClick={() => selectedDate && setSelectedSlot(null)}
-              className={cn(
-                "flex h-16 w-1/3 flex-col items-center justify-center border-r transition-colors",
-                selectedDate && !selectedSlot ? "bg-purple-50 text-purple-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-              )}
-            >
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
-                selectedDate && (!selectedSlot || (selectedSlot && !selectedService)) ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-500"
-              )}>
-                2
-              </div>
-              <div className="mt-1 text-sm font-medium">Hora</div>
-            </button>
-
-            <button
-              id="service-step"
-              onClick={() => selectedDate && selectedSlot && setSelectedService(null)}
-              className={cn(
-                "flex h-16 w-1/3 flex-col items-center justify-center rounded-r-lg transition-colors",
-                selectedDate && selectedSlot && !selectedService ? "bg-purple-50 text-purple-700" : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-              )}
-            >
-              <div className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
-                selectedDate && selectedSlot && selectedService ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-500"
-              )}>
-                3
-              </div>
-              <div className="mt-1 text-sm font-medium">Confirmar</div>
-            </button>
+            {['Fecha', 'Hora', 'Confirmar'].map((step, index) => (
+              <button
+                key={step}
+                id={`${step.toLowerCase()}-step`}
+                onClick={() => {
+                  if (index === 0) setSelectedDate(null)
+                  else if (index === 1) selectedDate && setSelectedSlot(null)
+                  else if (index === 2) selectedDate && selectedSlot && setSelectedService(null)
+                }}
+                className={cn(
+                  "flex h-16 w-1/3 flex-col items-center justify-center transition-colors",
+                  index === 0 ? "rounded-l-lg border-r" :
+                    index === 2 ? "rounded-r-lg" : "border-r",
+                  (index === 0 && !selectedDate) ||
+                    (index === 1 && selectedDate && !selectedSlot) ||
+                    (index === 2 && selectedDate && selectedSlot && !selectedService)
+                    ? "bg-purple-50 text-purple-700"
+                    : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                )}
+              >
+                <div className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium",
+                  (index === 0 && selectedDate) ||
+                    (index === 1 && selectedSlot) ||
+                    (index === 2 && selectedService)
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-200 text-gray-500"
+                )}>
+                  {index + 1}
+                </div>
+                <div className="mt-1 text-sm font-medium">{step}</div>
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
             <div className="flex flex-col items-center rounded-lg bg-white p-6">
@@ -463,6 +549,7 @@ export function AppointmentCalendar() {
           </div>
         )}
 
+        {/* Paso 1: Selección de fecha */}
         {!selectedDate && (
           <div>
             <div className="mb-4 flex items-center justify-between">
@@ -470,26 +557,18 @@ export function AppointmentCalendar() {
                 {format(currentMonth, "MMMM yyyy", { locale: es })}
               </h2>
               <div className="flex space-x-2">
-                <button
-                  onClick={handlePreviousMonth}
-                  className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100"
-                >
+                <button onClick={handlePreviousMonth} className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
-                <button
-                  onClick={handleNextMonth}
-                  className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100"
-                >
+                <button onClick={handleNextMonth} className="rounded-md p-2 text-gray-500 transition-colors hover:bg-gray-100">
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </div>
             </div>
 
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500">
-              {["D", "L", "M", "X", "J", "V", "S"].map((day, index) => (
-                <div key={index} className="py-2">
-                  {day}
-                </div>
+              {["D", "L", "M", "X", "J", "V", "S"].map((day) => (
+                <div key={day} className="py-2">{day}</div>
               ))}
             </div>
 
@@ -503,78 +582,62 @@ export function AppointmentCalendar() {
                 const isDayToday = isToday(day)
 
                 return (
-                  <div key={dayIdx} className="relative">
-                    <button
-                      onClick={() => isCurrentMonth && isAvailable && handleDateClick(day)}
-                      onKeyDown={(e) => isCurrentMonth && isAvailable && handleCalendarKeyDown(e, day)}
-                      disabled={!isCurrentMonth || !isAvailable || isPast}
-                      className={cn(
-                        "flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors",
-                        !isCurrentMonth && "text-red-300",
-                        isCurrentMonth &&
-                        !isAvailable &&
-                        !isBlocked &&
-                        !isPast &&
-                        "text-red-400 cursor-not-allowed",
-                        isCurrentMonth && isPast && "bg-red-100 text-red-400 cursor-not-allowed",
-                        isCurrentMonth &&
-                        isAvailable &&
-                        !isSelected &&
-                        "bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer",
-                        isBlocked && "bg-gray-100 text-gray-800 cursor-not-allowed",
-                        isSelected && "bg-purple-600 text-white hover:bg-purple-700 cursor-pointer",
-                        isDayToday && !isSelected && "ring-2 ring-purple-500 ring-offset-2"
-                      )}
-                    >
-                      {format(day, "d")}
-                    </button>
-                  </div>
+                  <button
+                    key={dayIdx}
+                    onClick={() => isCurrentMonth && isAvailable && handleDateClick(day)}
+                    onKeyDown={(e) => isCurrentMonth && isAvailable && handleCalendarKeyDown(e, day)}
+                    disabled={!isCurrentMonth || !isAvailable || isPast}
+                    className={cn(
+                      "flex h-10 w-full items-center justify-center rounded-md text-sm transition-colors",
+                      !isCurrentMonth && "text-red-300",
+                      isCurrentMonth && isPast && "bg-red-100 text-red-400 cursor-not-allowed",
+                      isCurrentMonth && isAvailable && !isSelected && "bg-purple-100 text-purple-800 hover:bg-purple-200 cursor-pointer",
+                      isBlocked && "bg-gray-100 text-gray-800 cursor-not-allowed",
+                      isSelected && "bg-purple-600 text-white hover:bg-purple-700 cursor-pointer",
+                      isDayToday && !isSelected && "ring-2 ring-purple-500 ring-offset-2"
+                    )}
+                  >
+                    {format(day, "d")}
+                  </button>
                 )
               })}
             </div>
 
+            {/* Leyenda */}
             <div className="mt-6 flex flex-wrap gap-4">
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-white ring-2 ring-purple-500"></div>
-                <span className="text-sm text-gray-600">Hoy</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-purple-100"></div>
-                <span className="text-sm text-gray-600">Disponible</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-gray-100"></div>
-                <span className="text-sm text-gray-600">No disponible</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-4 w-4 rounded-full bg-red-100"></div>
-                <span className="text-sm text-gray-600">Bloqueado</span>
-              </div>
+              {[
+                { color: "bg-white ring-2 ring-purple-500", label: "Hoy" },
+                { color: "bg-purple-100", label: "Disponible" },
+                { color: "bg-gray-100", label: "No disponible" },
+                { color: "bg-red-100", label: "Bloqueado" }
+              ].map((item, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <div className={`h-4 w-4 rounded-full ${item.color}`}></div>
+                  <span className="text-sm text-gray-600">{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Botón siguiente */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => {
+                  const firstAvailableDate = availableDates[0]
+                  if (firstAvailableDate) {
+                    setIsLoading(true)
+                    setSelectedDate(firstAvailableDate)
+                  }
+                }}
+                className="flex items-center rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
+              >
+                Siguiente
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </button>
             </div>
           </div>
         )}
 
-        {!selectedDate && (
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={() => {
-                const firstAvailableDate = AVAILABLE_DATES[0]
-                if (firstAvailableDate) {
-                  setIsLoading(true)
-                  setSelectedDate(firstAvailableDate)
-                  setTimeout(() => {
-                    setIsLoading(false)
-                  }, 600)
-                }
-              }}
-              className="flex items-center rounded-md bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
-            >
-              Siguiente
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </button>
-          </div>
-        )}
-
+        {/* Paso 2: Selección de hora */}
         {selectedDate && !selectedSlot && (
           <div>
             <div className="mb-4 flex items-center justify-between">
@@ -593,10 +656,21 @@ export function AppointmentCalendar() {
               </button>
             </div>
 
-            {loadingSlots ? (
+            {loadingCitas ? (
               <div className="flex h-40 items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
                 <span className="ml-2">Cargando horarios disponibles...</span>
+              </div>
+            ) : errorCitas ? (
+              <div className="flex flex-col items-center justify-center rounded-md border border-red-200 bg-red-50 p-8">
+                <AlertCircle className="h-10 w-10 text-red-500" />
+                <p className="mt-2 text-center font-medium text-red-700">{errorCitas}</p>
+                <button
+                  onClick={cargarCitasExistentes}
+                  className="mt-4 rounded-md bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700"
+                >
+                  Reintentar
+                </button>
               </div>
             ) : (
               <>
@@ -666,23 +740,10 @@ export function AppointmentCalendar() {
                     </button>
                   </div>
                 )}
-
-                {(timeSlots.morningSlots.length > 0 || timeSlots.afternoonSlots.length > 0) && (
-                  <div className="mt-4 rounded-md bg-purple-50 p-3 text-sm text-purple-800">
-                    <p className="flex items-center">
-                      <Clock className="mr-2 h-4 w-4 text-purple-600" />
-                      Selecciona un horario para continuar con tu reserva
-                    </p>
-                  </div>
-                )}
               </>
             )}
-          </div>
-        )}
 
-        {selectedDate &&
-          !selectedSlot &&
-          (timeSlots.morningSlots.length > 0 || timeSlots.afternoonSlots.length > 0) && (
+            {/* Navegación */}
             <div className="mt-6 flex justify-between">
               <button
                 onClick={() => setSelectedDate(null)}
@@ -691,30 +752,26 @@ export function AppointmentCalendar() {
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Anterior
               </button>
-
-              <button
-                disabled={true}
-                className="flex cursor-not-allowed items-center rounded-md bg-purple-600 px-4 py-2 text-white opacity-50"
-              >
+              <button disabled className="flex cursor-not-allowed items-center rounded-md bg-purple-600 px-4 py-2 text-white opacity-50">
                 Siguiente
                 <ChevronRight className="ml-2 h-4 w-4" />
               </button>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Paso 3: Selección de servicio */}
         {selectedDate && selectedSlot && !selectedService && (
           <div>
             <div className="mb-4 flex items-center justify-between">
               <h4 className="font-medium">Selecciona un servicio:</h4>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setSelectedSlot(null)}
-                  className="flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
-                >
-                  <ArrowLeft className="mr-1 h-4 w-4" />
-                  Cambiar horario
-                </button>
-              </div>
+              <button
+                onClick={() => setSelectedSlot(null)}
+                className="flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Cambiar horario
+              </button>
             </div>
 
             <div className="mb-4 rounded-md bg-gray-50 p-3">
@@ -754,42 +811,36 @@ export function AppointmentCalendar() {
                 </button>
               ))}
             </div>
+
+            {/* Navegación */}
+            <div className="mt-6 flex justify-between">
+              <button
+                onClick={() => setSelectedSlot(null)}
+                className="flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+              >
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                Anterior
+              </button>
+              <button disabled className="flex cursor-not-allowed items-center rounded-md bg-purple-600 px-4 py-2 text-white opacity-50">
+                Siguiente
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </button>
+            </div>
           </div>
         )}
 
-        {selectedDate && selectedSlot && !selectedService && (
-          <div className="mt-6 flex justify-between">
-            <button
-              onClick={() => setSelectedSlot(null)}
-              className="flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Anterior
-            </button>
-
-            <button
-              disabled={true}
-              className="flex cursor-not-allowed items-center rounded-md bg-purple-600 px-4 py-2 text-white opacity-50"
-            >
-              Siguiente
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </button>
-          </div>
-        )}
-
+        {/* Paso 4: Confirmación */}
         {selectedDate && selectedSlot && selectedService && (
           <div ref={formRef} id="confirmation-section">
             <div className="mb-4 flex items-center justify-between">
               <h4 className="font-medium">Detalles de la cita:</h4>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => setSelectedService(null)}
-                  className="flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
-                >
-                  <ArrowLeft className="mr-1 h-4 w-4" />
-                  Cambiar servicio
-                </button>
-              </div>
+              <button
+                onClick={() => setSelectedService(null)}
+                className="flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700"
+              >
+                <ArrowLeft className="mr-1 h-4 w-4" />
+                Cambiar servicio
+              </button>
             </div>
 
             <div className="mb-4 rounded-md bg-gray-50 p-3">
@@ -823,13 +874,14 @@ export function AppointmentCalendar() {
               </div>
             </div>
 
+            {/* Formulario de confirmación */}
             <div className="space-y-4">
               <MainForm
                 message_button={<>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
                   Confirmar cita
                 </>}
-                actionType={""}
+                actionType=""
                 valueAssign={[
                   "Aclaraciones",
                   "Telefono",
@@ -839,110 +891,19 @@ export function AppointmentCalendar() {
                   "Ciudad",
                   "Direccion"
                 ]}
-                action={
-                  async (values: any) => {
-                    try {
-
-                      const { data: Clientes } = await GetData({
-                        url: "clientes",
-                        filters: {
-                          "Filtros": [
-                            { "Key": "telefono", "Value": values.Telefono }
-                          ],
-                          "Order": [{ "Key": "id", "Direction": "Desc" }]
-                        },
-                        pageSize: 1
-                      });
-                      let clienteResponse: any;
-                      if (!Clientes.data.length) {
-                        const dataCliente: any = {
-                          Cliente: [{
-                            nombre: values.Nombre,
-                            telefono: values.Telefono,
-                            cp: values.CodigoPostal,
-                            estado: values.Estado,
-                            ciudad: values.Ciudad,
-                            direccion: values.Direccion,
-                          }]
-                        }
-                        clienteResponse = await PostData({ url: "clientes", data: dataCliente }).unwrap();
-                      }
-                      const clienteId = Clientes.data[0].id || clienteResponse.data.ids[0];
-
-                      setLocalStorageItem("user", clienteId);
-                      setLocalStorageItem("user-data", Clientes.data[0])
-
-                      const time = format(parseISO(getSlotById(selectedSlot)?.time), "yyyy-MM-dd'T'HH:mm:ss", { locale: es });
-                      const service = getServiceById(selectedService)?.name;
-
-                      if (!time || !service) {
-                        throw new Error('Missing required time or service information');
-                      }
-
-                      // Crear lista
-                      const listaPayload: any = {
-                        Lista: [{
-                          Id_Cliente: clienteId,
-                          Sucursal: 1,
-                          Servicio: service,
-                          Array_Lista: JSON.stringify(cartItems)
-                        }]
-                      };
-
-                      const listaResponse = await PostData({ url: "listas", data: listaPayload });
-                      const listaId = listaResponse.data.ids[0];
-
-                      // Crear cita
-                      const citaPayload: any = {
-                        Citas: [{
-                          Id_Cliente: clienteId,
-                          Id_Usuario_Responsable: 1,
-                          Fecha: time,
-                          Plan: service,
-                          Id_Lista: listaId,
-                          Estado: "nuevo",
-                          Sucursal: precio,
-                        }]
-                      };
-
-                      await PostData({ url: "citas", data: citaPayload }).unwrap();
-                      dispatch(clearCart())
-                      present({
-                        message: `Cita creada correctamente`,
-                        duration: 3500,
-                        cssClass: "custom-tertiary",
-                        position: 'bottom',
-                        buttons: [{
-                          text: "ver",
-                          side: 'end',
-                          handler: () => {
-                            history.replace('/loading');
-                          }
-                        }]
-                      });
-                    } catch (error) {
-                      console.error("Error in appointment creation process:", error);
-                      present({
-                        message: `Error al generar cita`,
-                        duration: 2500,
-                        color: "danger",
-                        position: 'bottom'
-                      });
-                    }
-                  }
-                }
+                action={handleCreateAppointment}
                 dataForm={CitasField()}
               />
             </div>
-            <div className={cn("flex justify-between")}>
+
+            <div className="flex justify-between">
               <button
                 onClick={() => setSelectedService(null)}
-                className={cn("flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200")}
+                className="flex items-center rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Anterior
               </button>
-
             </div>
           </div>
         )}
