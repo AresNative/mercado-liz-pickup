@@ -13,7 +13,14 @@ export const api = createApi({
     baseQuery: fetchBaseQuery({
         baseUrl: apiUrl,
         prepareHeaders: (headers, { }) => {
-            headers.set("Content-Type", "application/json");
+            // Headers para ocultar información
+            headers.set('X-Requested-With', 'XMLHttpRequest');
+            headers.set('X-Application', 'WebApp');
+            headers.set('Pragma', 'no-cache');
+            headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+            headers.set('Expires', '0');
+
+            // Ocultar contenido type
             const token = getLocalStorageItem("token");
             if (token) {
                 headers.set("Authorization", `Bearer ${token}`);

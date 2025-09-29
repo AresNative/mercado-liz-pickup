@@ -20,6 +20,7 @@ import {
   startOfWeek,
   endOfWeek,
   isWithinInterval,
+  formatISO,
 } from "date-fns"
 import { es } from "date-fns/locale"
 import {
@@ -98,7 +99,7 @@ const useCitas = () => {
           Filtros: [
             /* { Key: "sucursal", Value: precio } */
             { Key: "estado", Value: "nuevo", Operator: "Like" },
-            { Key: "tipo_lista", Value: "pickup", Operator: "Like" }
+            { Key: "tipo_lista", Value: "compra", Operator: "Like" }
           ],
           Order: [{ Key: "id", Direction: "Desc" }]
         },
@@ -127,6 +128,8 @@ const useCitas = () => {
 
 // Hook para generar slots de tiempo
 const useTimeSlots = (selectedDate: string | null, citasExistentes: any[]) => {
+  console.log(citasExistentes);
+
   const generateTimeSlots = useCallback((date: string, existingCitas: any[]) => {
     const baseDate = parseISO(date)
     const startHour = 9.5 // 9:30 AM
@@ -136,7 +139,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: any[]) => {
     const isToday = isSameDay(baseDate, now)
 
     const bookedSlots = existingCitas.map(cita => {
-      const start = parseISO(cita.fecha)
+      const start = parseISO(cita.nombre_lista) // Suponiendo que nombre_lista tiene el formato ISO
       const end = addMinutes(start, 5)
       return { start, end }
     })
@@ -423,12 +426,23 @@ export function AppointmentCalendar() {
       setLocalStorageItem("user", clienteId)
       setLocalStorageItem("user-data", clientes.data[0])
 
-      // Crear lista
+      // En la función handleCreateAppointment:
+      const slotTime = getSlotById(selectedSlot)?.time;
+      let nombreLista: string;
+
+      if (slotTime) {
+        const date = parseISO(slotTime);
+        // Construir el formato con la T manualmente
+        nombreLista = format(date, "yyyy-MM-dd") + " " + format(date, "HH:mm:ss.SSS");
+      } else {
+        nombreLista = new Date().toISOString();
+      }
+
       const listaPayload = {
         id_cliente: clienteId,
         usuario_id: clienteId,
         sucursal_id: 1,
-        nombre_lista: `Pickup ${format(new Date(), "yyyy-MM-dd HH:mm:ss")}`,
+        nombre_lista: nombreLista,
         servicio: getServiceById(selectedService)?.name,
         fecha_creacion: new Date().toISOString(),
         estado: "nuevo",
