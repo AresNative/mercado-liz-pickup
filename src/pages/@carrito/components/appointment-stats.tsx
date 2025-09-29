@@ -20,7 +20,7 @@ import {
   IonBadge,
 } from "@ionic/react"
 import { close, barChart, pieChart, calendar, people, time, arrowForward } from "ionicons/icons"
-import { cn } from "@/lib/utils"
+import { cn } from "@/utils/functions/cn"
 
 interface AppointmentStatsProps {
   appointments: any[]
@@ -343,11 +343,11 @@ export function AppointmentStats({ appointments, darkMode, onClose, selectedDate
                     className={cn(
                       "flex items-center justify-between p-3",
                       index !== dailyStats.length - 1 &&
-                        (darkMode ? "border-b border-gray-800" : "border-b border-gray-200"),
+                      (darkMode ? "border-b border-gray-800" : "border-b border-gray-200"),
                       isToday(day.date) && (darkMode ? "bg-blue-900/10" : "bg-blue-50"),
                       selectedDate &&
-                        isSameDay(day.date, selectedDate) &&
-                        (darkMode ? "bg-green-900/10" : "bg-green-50"),
+                      isSameDay(day.date, selectedDate) &&
+                      (darkMode ? "bg-green-900/10" : "bg-green-50"),
                     )}
                   >
                     <div className="flex items-center">
