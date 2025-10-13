@@ -65,7 +65,7 @@ import {
 } from "lucide-react";
 
 const categorias = [
-  { name: "todo", icon: ScrollText },
+  { name: undefined, icon: ScrollText },
   { name: "TORTILLERIA MASA", icon: Wheat },
   { name: "ROSTIZADOS", icon: Drumstick },
   { name: "SHAMPOO", icon: Eraser },

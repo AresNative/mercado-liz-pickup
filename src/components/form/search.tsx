@@ -1,5 +1,5 @@
 
-import { SearchableSelectProps } from "@/utils/constants/interfaces";
+import { SearchableSelectProps } from "@/utils/types/interfaces";
 import { Search, Star, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Badge from "../badge";

@@ -1,17 +1,16 @@
 'use client';
 
-import { DropDowState } from "@/hooks/reducers/drop-down";
-import { useAppSelector } from "@/hooks/selector";
+import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { alertClasses } from "@/utils/constants/colors";
 import { ArchiveRestore, CircleAlert } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useEffect } from "react";
+import { clearAlert } from "@/hooks/reducers/drop-down";
+import { cn } from "@/utils/functions/cn";
 
 export default function Alert() {
-    const selector: DropDowState = useAppSelector((state) => state.dropDownReducer);
-    const { type, icon, title, message, buttonText, action } = selector;
-    const [show, setShow] = useState(false);
-    const dialogRef = useRef<HTMLDialogElement | null>(null);
-
+    const dispatch = useAppDispatch();
+    const alert = useAppSelector((state) => state.dropDownReducer.alert);
+    const { type, icon, title, message, buttonText, action, duration } = alert;
     const styles = alertClasses[type];
 
     const iconsMap = {
@@ -20,84 +19,90 @@ export default function Alert() {
     };
 
     useEffect(() => {
-        if (selector.message) {
-            setShow(true);
-            // Ocultar la alerta automáticamente después de 'duration' milisegundos
+        if (message && duration) {
             const timer = setTimeout(() => {
-                setShow(false);
-            }, selector.duration);
+                dispatch(clearAlert());
+            }, duration);
 
             return () => clearTimeout(timer);
         }
-    }, [selector]);
+    }, [message, duration, dispatch]);
 
     const closeDialog = () => {
-        setShow(false);
-        dialogRef.current?.close();
+        dispatch(clearAlert());
     };
 
     const handleAction = () => {
-        if (action) {
-            action(); // Ejecutar la acción si está definida
-        }
-        setShow(false); // Cerrar la alerta
+        action?.();
+        dispatch(clearAlert());
     };
+
+    // Handle escape key
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
-                setShow(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === "Escape") closeDialog();
+        }
+
+        if (message) {
+            document.addEventListener("keydown", handleEscape);
+            document.body.style.overflow = "hidden";
+        }
+
+        return () => {
+            document.removeEventListener("keydown", handleEscape);
+            document.body.style.overflow = "unset";
+        }
+    }, [message]);
+
+    if (!message) return null;
 
     return (
-        <section
-            className={
-                show
-                    ? "absolute inset-x-0 top-0 z-50 h-screen flex items-center justify-center backdrop-blur-lg bg-black bg-opacity-20"
-                    : "hidden"
-            }
+        <dialog
+            open={!!message}
+            className={cn("inset-0 z-50 bg-transparent max-h-screen w-full")}
         >
-            <dialog
-                id={selector.message}
-                ref={dialogRef}
-                open={show}
-                className="max-w-lg w-full rounded-lg bg-white dark:bg-zinc-800 shadow-xl p-6 z-20 backdrop-blur-lg"
-            >
-                <div className="flex items-start space-x-4">
-                    {/* Icono */}
-                    <div
-                        className={`flex items-center justify-center w-12 h-12 rounded-full ${styles.bg}`}
-                    >
-                        {iconsMap[icon] ?? null}
-                    </div>
-                    <div>
-                        <h3 className={`text-lg font-semibold ${styles.text}`}>{title}</h3>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-200">{message}</p>
-                    </div>
-                </div>
-                {buttonText && (
-                    <div className="mt-6 flex justify-end space-x-4">
-                        {/* Botón de Cancelar */}
-                        <form method="dialog">
-                            <button
-                                onClick={closeDialog}
-                                className="px-4 py-2 text-sm font-semibold text-gray-900 dark:text-white border border-gray-300  dark:border-zinc-700 rounded-md hover:bg-zinc-50"
-                            >
-                                Cancel
-                            </button>
-                            {/* Botón de Deactivar */}
+            {/* Backdrop */}
+            <div
+                className="fixed inset-0 bg-black/50 bg-opacity-75 transition-opacity"
+                onClick={closeDialog}
+            />
+
+            {/* Centered container */}
+            <section className="fixed inset-0 h-fit w-fit mx-auto overflow-auto md:my-4 rounded-lg bg-white dark:bg-zinc-800 text-left shadow-xl transition-all">
+                {/* Alert card */}
+                <article
+                    className="relative transform w-full bg-white overflow-hidden rounded-lg dark:bg-zinc-800 text-left shadow-xl transition-all"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <label className="p-4 flex items-start gap-4">
+                        <span className={`flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full ${styles.bg}`}>
+                            {iconsMap[icon] ?? null}
+                        </span>
+
+                        <div className="flex-1 text-gray-500 dark:text-gray-200">
+                            <h3 className={`text-lg font-semibold ${styles.text}`}>{title}</h3>
+                            <p className="mt-2 text-sm">{message}</p>
+                        </div>
+                    </label>
+
+                    {buttonText && (
+                        <div className="px-4 py-3 bg-gray-50 dark:bg-zinc-700 flex flex-row-reverse gap-3">
                             <button
                                 onClick={handleAction}
-                                className={`px-4 py-2 text-sm font-semibold ${styles.text} ${styles.bg} ring-1 ring-inset ${styles.ring} rounded-md ${styles.hover} transition-all`}
+                                className={`px-4 py-2 text-sm cursor-pointer font-semibold ${styles.text} ${styles.bg} ring-1 ring-inset ${styles.ring} rounded-md ${styles.hover} transition-all`}
                             >
                                 {buttonText}
                             </button>
-                        </form>
-                    </div>)}
-            </dialog>
-        </section>
+                            <button
+                                onClick={closeDialog}
+                                className="px-4 py-2 text-sm cursor-pointer font-semibold text-gray-900 dark:text-white border border-gray-300 dark:border-zinc-700 rounded-md hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+                </article>
+            </section>
+        </dialog>
     );
 }

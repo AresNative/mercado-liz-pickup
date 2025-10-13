@@ -1,4 +1,4 @@
-import { InputFormProps } from "@/utils/constants/interfaces";
+import { InputFormProps } from "@/utils/types/interfaces";
 import { CalendarRange } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 
@@ -92,7 +92,7 @@ export function DateRangeComponent(props: InputFormProps) {
                     placeholder={cuestion.multiple ? "Seleccionar fechas" : "Seleccionar fecha"}
                 />
                 {showInterviewDatePicker && (
-                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 border rounded-md shadow-lg">
+                    <div className="z-10 mt-1 w-full bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-700 border rounded-md shadow-lg">
                         <div className="p-2">
                             {cuestion.multiple ? (
                                 <div className="grid grid-cols-2 gap-4 dark:text-white">

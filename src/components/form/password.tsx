@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { InputFormProps } from "@/utils/constants/interfaces";
+import { InputFormProps } from "@/utils/types/interfaces";
 import { LockKeyhole, Eye, EyeOff } from "lucide-react";
 
 export function PasswordComponent(props: InputFormProps) {
@@ -36,7 +36,7 @@ export function PasswordComponent(props: InputFormProps) {
                     type={showPassword ? "text" : "password"}
                     name={cuestion.name}
                     onChange={handleInputChange}
-                    className="bg-white dark:bg-zinc-800 px-4 py-2 border focus:ring-purple-500 focus:border-purple-900 w-full sm:text-sm border-gray-300  dark:border-zinc-700 rounded-md focus:outline-none text-gray-600 dark:text-white
+                    className="bg-white dark:bg-zinc-800 px-4 py-2 border focus:ring-purple-500 focus:border-purple-900 w-full sm:text-sm border-gray-300  dark:border-zinc-700 rounded-md focus:outline-none text-gray-600 dark:text-gray-100
 [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-600 [&:-webkit-autofill]:dark:bg-zinc-800 [&:-webkit-autofill]:dark:text-white [&:-webkit-autofill]:transition-colors [&:-webkit-autofill]:duration-[999999s]"
                     placeholder={cuestion.placeholder}
                     maxLength={cuestion.maxLength}

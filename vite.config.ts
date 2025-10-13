@@ -12,13 +12,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), legacy()],
     define: {
-      "process.env": {
-        REACT_APP_API_URL: env.REACT_APP_API_URL,
-        REACT_APP_HUB_URL: env.REACT_APP_HUB_URL,
-        REACT_TEST_API_URL: env.REACT_TEST_API_URL,
-        REACT_PUBLIC_MODE: env.REACT_PUBLIC_MODE,
-        REACT_PUBLIC_API_URL_INT: env.REACT_PUBLIC_API_URL_INT,
-      },
+      "process.env": env,
     },
     test: {
       globals: true,
