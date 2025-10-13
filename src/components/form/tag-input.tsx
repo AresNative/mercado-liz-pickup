@@ -1,7 +1,5 @@
-;
-
-import { Plus } from "lucide-react";
-import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface TagInputProps {
     cuestion: {
@@ -9,9 +7,9 @@ interface TagInputProps {
         placeholder?: string;
         label?: string;
         require: boolean;
+        valueDefined?: any;
+        jsonString?: boolean;
     };
-    control: any;
-    register: any;
     watch: any;
     setValue: any;
     errors: any;
@@ -19,28 +17,42 @@ interface TagInputProps {
 
 export const TagInputComponent = ({
     cuestion,
-    control,
-    register,
     watch,
     setValue,
-    errors,
+    errors
 }: TagInputProps) => {
     const [newTag, setNewTag] = useState("");
-    const tags = watch(cuestion.name) || [];
+    const watchedValue = watch(cuestion.name);
+    let tags: string[] = [];
 
-    const addTag = (e: any) => { // Recibir el evento
+    if (cuestion.jsonString) {
+        try {
+            tags = watchedValue ? JSON.parse(watchedValue) : [];
+        } catch (error) {
+            tags = [];
+        }
+    } else {
+        tags = watchedValue || [];
+    }
+    useEffect(() => {
+        if (cuestion.valueDefined) {
+            setValue(cuestion.name, cuestion.valueDefined);
+        }
+    }, [cuestion.valueDefined]);
+    const addTag = (e: React.FormEvent) => {
         e.preventDefault();
         if (newTag.trim() && !tags.includes(newTag.trim())) {
-            setValue(cuestion.name, [...tags, newTag.trim()]);
+            const newTagsArray = [...tags, newTag.trim()];
+            const newValue = cuestion.jsonString ? JSON.stringify(newTagsArray) : newTagsArray;
+            setValue(cuestion.name, newValue);
             setNewTag("");
         }
     };
 
     const removeTag = (tagToRemove: string) => {
-        setValue(
-            cuestion.name,
-            tags.filter((tag: string) => tag !== tagToRemove)
-        );
+        const newTagsArray = tags.filter((tag: string) => tag !== tagToRemove);
+        const newValue = cuestion.jsonString ? JSON.stringify(newTagsArray) : newTagsArray;
+        setValue(cuestion.name, newValue);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -53,7 +65,7 @@ export const TagInputComponent = ({
     return (
         <div className="w-full">
             {cuestion.label && (
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                <label className="flex gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     {cuestion.label}
                     {cuestion.require && <span className="text-red-500">*</span>}
                 </label>
@@ -70,7 +82,7 @@ export const TagInputComponent = ({
                             onClick={() => removeTag(tag)}
                             className="ml-1 text-purple-500 hover:text-purple-700 dark:text-purple-300 dark:hover:text-purple-100"
                         >
-                            ×
+                            <X size={15} />
                         </button>
                     </span>
                 ))}
@@ -82,7 +94,7 @@ export const TagInputComponent = ({
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={cuestion.placeholder || "Añadir etiqueta"}
-                    className="bg-white dark:bg-zinc-800 px-4 py-2 border dark:border-zinc-700 focus:ring-purple-500 focus:border-purple-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600 dark:text-white [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-600 [&:-webkit-autofill]:dark:bg-zinc-800 [&:-webkit-autofill]:dark:text-white [&:-webkit-autofill]:transition-colors [&:-webkit-autofill]:duration-[999999s]"
+                    className="bg-white dark:bg-zinc-800 px-4 py-2 border dark:border-zinc-700 focus:ring-purple-500 focus:border-purple-900 w-full sm:text-sm border-gray-300 rounded-md focus:outline-none text-gray-600 [&:-webkit-autofill]:bg-white [&:-webkit-autofill]:text-gray-600 dark:text-gray-100 [&:-webkit-autofill]:dark:bg-zinc-800 [&:-webkit-autofill]:dark:text-white [&:-webkit-autofill]:transition-colors [&:-webkit-autofill]:duration-[999999s]"
                 />
                 <button
                     onClick={addTag}

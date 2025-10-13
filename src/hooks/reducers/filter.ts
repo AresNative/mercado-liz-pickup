@@ -1,14 +1,14 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface FilterProps {
-  value: string | undefined;
+  value: string;
   key: string;
   type: "form" | "grafic" | "multi";
 }
 interface FilterState {
   [key: string]: {
     type: "form" | "grafic" | "multi";
-    value: string | undefined;
+    value: string;
   };
 }
 const initialState: FilterState = {};

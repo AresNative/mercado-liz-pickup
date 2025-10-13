@@ -3,7 +3,7 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 
 import { api } from "@/hooks/reducers/api";
 import { api_int } from "@/hooks/reducers/api_int";
-import { auth } from "@/hooks/reducers/auth";
+import { authApi } from "@/hooks/reducers/auth";
 import { EnvConfig } from "@/utils/constants/env.config";
 
 import dropDownReducer from "@/hooks/reducers/drop-down";
@@ -21,18 +21,31 @@ export const store = configureStore({
     app: appReducer,
     [api.reducerPath]: api.reducer,
     [api_int.reducerPath]: api_int.reducer,
-    [auth.reducerPath]: auth.reducer,
+    [authApi.reducerPath]: authApi.reducer,
   },
   devTools: config.mode !== "production",
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({}).concat([
-      api.middleware,
-      api_int.middleware,
-      auth.middleware,
-    ]),
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignora estas rutas específicas
+        ignoredPaths: ["dropDownReducer.alert.action"],
+        // Ignora estas acciones específicas
+        ignoredActions: ["dropDown/openAlertReducer"],
+      },
+    }).concat([api.middleware, api_int.middleware, authApi.middleware]),
 });
 
 setupListeners(store.dispatch);
 
-export type RootState = ReturnType<typeof store.getState>;
+export interface Auth {
+  mutations: Array<{
+    data?: {
+      token?: string;
+    };
+  }>;
+}
+
+export type RootState = ReturnType<typeof store.getState> & {
+  auth: Auth;
+};
 export type AppDispatch = typeof store.dispatch;

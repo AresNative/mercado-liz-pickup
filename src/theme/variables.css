@@ -18,12 +18,12 @@
 
     --border: #1f1e1e;
     --shadow: #00000048;
-    /* switsh */
+    
     --switch-btn-bg: #fff;
     --switch-border-color: #3c3c434a;
     --switch-icon-color: #0f0f0f;
     --switch-bg-color: #f6f6f7;
-    /* switsh */
+    
     --menu-border-bg: #e6e6e6;
 
     --ion-color-tertiary: #6822a6;
@@ -32,7 +32,7 @@
     --ion-color-tertiary-contrast-rgb: 255, 255, 255;
     --ion-color-tertiary-shade: #5c1e92;
     --ion-color-tertiary-tint: #7738af;
-    /* Animation timing variables */
+    
     --switch-animation-duration: 0.3s;
     --switch-animation-easing: cubic-bezier(0.45, 0.05, 0.55, 0.95);
 }
@@ -52,7 +52,7 @@
 
     --border: #696969;
     --shadow: #ffffff1b;
-    /* switsh */
+    
     --switch-btn-bg: #000;
     --switch-border-color: #525259ad;
     --switch-icon-color: #f2f2f2;
@@ -64,9 +64,10 @@
     --ion-color-tertiary-contrast-rgb: 255, 255, 255;
     --ion-color-tertiary-shade: #5c1e92;
     --ion-color-tertiary-tint: #7738af;
-    /* switsh */
+    
     --menu-border-bg: #000;
 }
+
 .custom-tertiary {
     /* Estado normal */
     --background: linear-gradient(100deg, #5f05a8 0%, #9338e7 100%);
@@ -93,9 +94,10 @@
     transform: scale(1);
     transition: var(--transition);
 }
+
 .custom-default {
     /* Estado normal */
-    --background:#5f05a8;
+    --background: #5f05a8;
     --color: #ffffff;
     color: #ffffff;
     --border-color: #5c1e92;
@@ -119,16 +121,17 @@
     transform: scale(1);
     transition: var(--transition);
 }
+
 /* Efecto al pasar el mouse (hover) */
-/* .custom-tertiary:hover {
+.custom-tertiary:hover {
     transform: scale(1.05);
 }
- */
+
 /* Efecto al hacer click (active) */
-/* .custom-tertiary:active {
+.custom-tertiary:active {
     transform: scale(0.98);
 }
- */
+
 /* Opcional: Efecto en icono interno */
 .custom-tertiary ion-icon {
     transition: transform 0.2s ease-in-out;
@@ -144,6 +147,7 @@
     --background-hover: #b91c1c;
     --color: white;
 }
+
 /* Estilos para WebKit */
 ::-webkit-scrollbar {
     background: var(--background-card);
@@ -171,19 +175,55 @@ html {
     scrollbar-color: #888 #f1f1f1;
 }
 
+ion-content {
+    --background: transparent;
+}
+
 ion-toolbar {
     --background: var(--background);
     --color: var(--text-primary);
     --border-color: transparent;
     z-index: 0;
     position: relative;
+    font-family: 'Lobster';
     --box-shadow: 0px 0px 0px 1px var(--border-color) inset;
+}
+
+.custom-toolbar ion-toolbar {
+    --background: linear-gradient(100deg, #4d0488 0%, #7a2fc4 100%) !important;
+    --min-height: 64px;
+    --padding-top: 12px;
+    --padding-bottom: 12px;
+    z-index: 100;
+    --z-index: 100;
+    position: relative;
+    font-family: 'Lobster';
+}
+
+.custom-toolbar .header-collapse-condense-inactive {
+    opacity: 0;
+}
+
+/* Estilos para el modal */
+.login-modal {
+    --width: auto;
+    --min-width: 320px;
+    --max-width: 440px;
+    --max-height: 100%;
+    --border-radius: 12px;
+    --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+@media (min-width: 768px) {
+    .login-modal {
+        --max-width: 400px;
+        --max-height: 600px;
+    }
 }
 
 ion-radio {
     --border-radius: 4px;
     --inner-border-radius: 4px;
-
     --color: #ddd;
     --color-checked: #6815ec;
 }
@@ -191,10 +231,10 @@ ion-radio {
 ion-radio.ios::part(container) {
     width: 20px;
     height: 20px;
-
     border: 2px solid #ddd;
     border-radius: 4px;
 }
+
 ion-item {
     --background: transparent;
     --color: var(--text-primary);
@@ -204,9 +244,11 @@ ion-item {
     --padding-top: 0;
     --padding-bottom: 0;
 }
+
 .radio-checked.ios::part(container) {
     border-color: #6815ec;
 }
+
 .container-switch {
     display: flex;
     margin: 0;
@@ -356,69 +398,166 @@ ion-item {
         transform: translateX(0);
     }
 }
-/* 
 
-.driver-popover.driverjs-theme {
-    background-color: #6e47fd;
-    color: #000;
+@keyframes infinite-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
-.driver-popover.driverjs-theme .driver-popover-title {
-    font-size: 20px;
+.animate-infinite-scroll {
+    animation: infinite-scroll 20s linear infinite;
 }
 
-.driver-popover.driverjs-theme .driver-popover-title,
-.driver-popover.driverjs-theme .driver-popover-description,
-.driver-popover.driverjs-theme .driver-popover-progress-text {
-    color: #000;
+/* Estilos para modo escáner */
+@keyframes scanLine {
+    0% {
+        top: 0%;
+        opacity: 0.8;
+    }
+
+    50% {
+        top: 95%;
+        opacity: 1;
+    }
+
+    51% {
+        opacity: 0;
+    }
+
+    100% {
+        top: 0%;
+        opacity: 0;
+    }
 }
 
-.driver-popover.driverjs-theme button {
-    flex: 1;
-    text-align: center;
-    background-color: #ffffff;
-    color: #000;
-    border: 2px solid #ffffff;
-    text-shadow: none;
-    font-size: 14px;
-    padding: 1px 2px;
-    border-radius: 6px;
+.barcode-scanner-active {
+    --background: transparent !important;
+    --ion-background-color: transparent !important;
+    background: transparent !important;
 }
 
-.driver-popover.driverjs-theme button:hover {
-    background-color: #000;
-    color: #ffffff;
+.barcode-scanner-active ion-app,
+.barcode-scanner-active ion-content {
+    --background: transparent !important;
+    background: transparent !important;
 }
 
-.driver-popover.driverjs-theme .driver-popover-navigation-btns {
+.barcode-scanner-active ion-header,
+.barcode-scanner-active ion-footer,
+.barcode-scanner-active ion-toolbar,
+.barcode-scanner-active ion-title,
+.barcode-scanner-active .non-scanner-content {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.barcode-scanner-active .scanner-overlay {
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: all !important;
+}
+
+/* Estilos específicos para el overlay */
+.scanner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    /*  background: rgba(0, 0, 0, 0.9); */
+}
+
+.scanner-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    display: flex;
     justify-content: space-between;
-    gap: 3px;
+    align-items: center;
+    /* background: rgba(0, 0, 0, 0.7); */
+    z-index: 10001;
 }
 
-.driver-popover.driverjs-theme .driver-popover-close-btn {
-    color: #9b9b9b;
+.scan-frame {
+    position: relative;
+    width: 80vw;
+    max-width: 320px;
+    aspect-ratio: 1;
+    margin: 0 auto;
+    border: 2px solid white;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
-.driver-popover.driverjs-theme .driver-popover-close-btn:hover {
-    color: #000;
+.scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.8);
+    animation: scanLine 2.5s infinite;
+    border-radius: 3px;
 }
 
-.driver-popover.driverjs-theme .driver-popover-arrow-side-left.driver-popover-arrow {
-    border-left-color: #6e47fd;
+.scan-corner {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-color: #007bff;
+    border-style: solid;
+    border-width: 3px;
 }
 
-.driver-popover.driverjs-theme .driver-popover-arrow-side-right.driver-popover-arrow {
-    border-right-color: #6e47fd;
+.corner-top-left {
+    top: -3px;
+    left: -3px;
+    border-bottom-width: 0;
+    border-right-width: 0;
+    border-top-left-radius: 8px;
 }
 
-.driver-popover.driverjs-theme .driver-popover-arrow-side-top.driver-popover-arrow {
-    border-top-color: #6e47fd;
+.corner-top-right {
+    top: -3px;
+    right: -3px;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-top-right-radius: 8px;
 }
 
-.driver-popover.driverjs-theme .driver-popover-arrow-side-bottom.driver-popover-arrow {
-    border-bottom-color: #6e47fd; } */
+.corner-bottom-left {
+    bottom: -3px;
+    left: -3px;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-left-radius: 8px;
+}
 
-.products{
-    content-visibility: auto;
-    contain-intrinsic-size: 1000px;
+.corner-bottom-right {
+    bottom: -3px;
+    right: -3px;
+    border-top-width: 0;
+    border-left-width: 0;
+    border-bottom-right-radius: 8px;
+}
+
+.scan-instructions {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 20px;
+    z-index: 10001;
 }

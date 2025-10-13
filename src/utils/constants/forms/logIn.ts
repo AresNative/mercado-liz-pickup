@@ -1,4 +1,4 @@
-import { Field } from "../interfaces";
+import { Field } from "@/utils/types/interfaces";
 
 export function LogInField(): Field[] {
   return [
@@ -19,22 +19,11 @@ export function LogInField(): Field[] {
       require: true,
     },
     {
-      type: "Flex",
+      id: 2,
+      type: "CHECKBOX",
+      name: "remember_me",
+      label: "Recuerdame",
       require: false,
-      elements: [
-        {
-          type: "CHECKBOX",
-          name: "remember_me",
-          label: "Recuerdame",
-          require: false,
-        },
-        {
-          type: "LINK",
-          href: "/mermas",
-          label: "Registrarme",
-          require: false,
-        },
-      ],
     },
   ];
 }

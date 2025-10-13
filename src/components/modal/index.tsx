@@ -1,4 +1,4 @@
-
+"use client"
 
 import * as React from "react"
 import { X } from "lucide-react"
@@ -18,7 +18,7 @@ export function Modal({ modalName, title, children, maxWidth = "2xl" }: ModalPro
     // Handle escape key
     const dialogRef = React.useRef<HTMLDialogElement | null>(null);
     const dispatch = useAppDispatch();
-    const isOpen = useAppSelector((state) => state.dropDownReducer.modals[modalName]);
+    const isOpen = useAppSelector((state: any) => state.dropDownReducer.modals[modalName]);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -64,50 +64,43 @@ export function Modal({ modalName, title, children, maxWidth = "2xl" }: ModalPro
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
     return (
-        <>
-            <dialog
-                id={modalName}
-                ref={dialogRef}
-                open={isOpen}
-                /* closedby="any" */
-                className="fixed inset-0 z-50 max-w-lg w-full bg-transparent"
-                aria-modal="true"
-                aria-labelledby={`modal-${modalName}`}>
+        <dialog
+            id={modalName}
+            ref={dialogRef}
+            open={isOpen}
+            className={cn("inset-0 z-50 bg-transparent max-h-screen w-full")}
+            aria-modal="true"
+            aria-labelledby={`modal-${modalName}`}>
 
-                <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleBackdropClick} />
+            <div className="fixed inset-0 bg-black/20 bg-opacity-85 transition-opacity" onClick={handleBackdropClick} />
 
+            <section
+                className={cn(
+                    "fixed inset-0 h-screen md:h-fit md:max-h-[90dvh] mx-auto overflow-auto md:w-11/12 md:my-4 md:rounded-lg bg-[var(--background)] text-left shadow-xl transition-all",
+                    maxWidthClasses[maxWidth],
+                )}
+            >
+                {/* Close button */}
+                <form method="dialog" className="relative flex items-center justify-between gap-2 m-2 border-b py-2 border-gray-200">
+                    <h3
+                        id="modal-title"
+                        className="absolute left-0 right-0 text-center text-gray-900 dark:text-white pointer-events-none"
+                    >
+                        {title}
+                    </h3>
+                    <button
+                        className="cursor-pointer relative z-10 ml-auto bg-[var(--background)] text-purple-700 hover:text-purple-500 dark:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                        onClick={handleBackdropClick}
+                    >
+                        <span className="sr-only">Close</span>
+                        <X className="h-6 w-6" aria-hidden="true" />
+                    </button>
+                </form>
 
-                <section
-                    className={cn(
-                        "relative transform overflow-hidden overflow-y-auto rounded-lg bg-white dark:bg-zinc-800 text-left shadow-xl transition-all sm:my-8",
-                        maxWidthClasses[maxWidth],
-                    )}
-                >
-                    {/* Close button */}
-                    <form method="dialog" className="absolute right-4 top-4 z-10">
-                        <button
-                            className="rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                            onClick={handleBackdropClick}
-                        >
-                            <span className="sr-only">Close</span>
-                            <X className="h-6 w-6" aria-hidden="true" />
-                        </button>
-                    </form>
-
-                    {/* Content */}
-                    <div className="bg-white dark:bg-zinc-800 px-4 pb-4 pt-5 sm:p-6">
-                        <div className="sm:flex sm:items-start">
-                            <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                                <h3 id="modal-title" className="text-gray-900 dark:text-white mb-4">
-                                    {title}
-                                </h3>
-                                <div className="mt-2">{children}</div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </dialog>
-        </>
+                {/* Content */}
+                <main className="p-4 m-auto">{children}</main>
+            </section>
+        </dialog>
     )
 }
 

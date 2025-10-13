@@ -1,20 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
-import { useAppSelector } from './hooks/selector';
-
-import { getLocalStorageItem } from './utils/functions/local-storage';
-import { RootState } from './hooks/store';
-
-// Importa tus componentes
-import Process from './pages/@proces/layout';
-import Layout from './pages/Layout';
-import NotFound from './pages/NotFound';
-import ProductID from './pages/@landing/[id]/product-id';
-import CarritoPage from './pages/@carrito/page';
-import Page from './pages/@landing/page';
-import LoadingPage from "@/pages/@proces/@loading/page"
-import PagoPage from './pages/@proces/@pay/page';
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
@@ -30,48 +16,31 @@ import '@ionic/react/css/display.css';
 import '@ionic/react/css/palettes/dark.class.css';
 
 import "driver.js/dist/driver.css";
-import Chat from './pages/@proces/@chat/page';
+
+import NotFound from './app/NotFound';
+import Background from './template/background';
+import Layout from './app/layout';
 
 setupIonicReact({
   mode: 'ios',
 });
 const App: React.FC = () => {
-  // Usar useNavigate en lugar de useHistory para react-router v6 (si es posible)
-  const history = useHistory();
-  const location = useLocation();
 
-  // Obtener valores de forma correcta y tipada
-  const localBranch = getLocalStorageItem("sucursal");
-  const reduxBranch = useAppSelector((state: RootState) => state.app.sucursal);
-  const currentBranch = localBranch ?? reduxBranch;
-
-  // Usar useCallback para memoizar la lógica de redirección
-  const checkRedirect = useCallback(() => {
-    const isLayoutPage = location.pathname === '/layout';
-
-    if (!currentBranch && !isLayoutPage) {
-      history.replace('/layout');
-      return;
-    }
-
-    if (currentBranch && isLayoutPage) {
-      history.replace('/products');
-    }
-  }, [currentBranch, location.pathname, history]);
-
-  // Efecto más limpio y eficiente
-  useEffect(() => {
-    checkRedirect();
-  }, [checkRedirect]);
 
   return (
     <IonApp>
       <IonRouterOutlet>
-        <Switch>
-          <Route exact path="/layout">
+
+        <Background>
+          <Switch>
+
+            <Route path="/home">
+              <Layout />
+            </Route>
+
+            {/*  <Route exact path="/layout">
             {currentBranch ? <Redirect to="/products" /> : <Layout />}
           </Route>
-          {/* Rutas protegidas */}
           <Route exact path="/products">
             {currentBranch ? <Page /> : <Redirect to="/layout" />}
           </Route>
@@ -90,18 +59,18 @@ const App: React.FC = () => {
           <Route exact path="/pay">
             {currentBranch ? <PagoPage /> : <Redirect to="/layout" />}
           </Route>
-          {/* Ruta del chat */}
           <Route path="/chat">
             <Chat />
-          </Route>
-          <Route exact path="/">
-            <Redirect to="/products" />
-          </Route>
-          {/* Manejo de rutas no encontradas */}
-          <Route>
-            <NotFound />
-          </Route>
-        </Switch>
+          </Route> */}
+
+            <Route exact path="/">
+              <Redirect to="/home" />
+            </Route>
+            <Route>
+              <NotFound />
+            </Route>
+          </Switch>
+        </Background>
       </IonRouterOutlet>
     </IonApp>
   );

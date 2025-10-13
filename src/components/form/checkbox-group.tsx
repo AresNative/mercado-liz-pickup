@@ -1,4 +1,4 @@
-import { ChecboxFormProps } from "@/utils/constants/interfaces";
+import { ChecboxFormProps } from "@/utils/types/interfaces";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 
