@@ -1,5 +1,5 @@
 import MainForm from "@/components/form/main-form";
-import { useLoginUserMutation } from "@/hooks/reducers/auth";
+import { useLoginUserMutation, useLogoutUserMutation } from "@/hooks/reducers/auth";
 import { LogInField } from "@/utils/constants/forms/logIn";
 import { navigationAdmin, navigationDefault, navigationUser } from "@/utils/constants/router";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
@@ -13,7 +13,6 @@ import {
     IonItem,
     IonLabel,
     IonButton,
-    IonAvatar,
     IonModal,
     IonButtons,
     useIonAlert,
@@ -24,8 +23,7 @@ import { Link } from "react-router-dom";
 
 const AppMenu = () => {
     // Obtener valores de forma correcta y tipada
-    const [LogOutProces] = useLoginUserMutation();
-
+    const [LogOutProces] = useLogoutUserMutation()
     const [presentAlert] = useIonAlert();
 
     const userRole = getLocalStorageItem("user-role");

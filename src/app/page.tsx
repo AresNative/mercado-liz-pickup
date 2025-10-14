@@ -2,7 +2,7 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
 import Footer from "@/template/footer";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar } from "@ionic/react";
+import { IonContent, IonHeader, IonTitle, IonToolbar } from "@ionic/react";
 import {
     Lock,
     Zap,
@@ -40,12 +40,12 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         Selecciona tus productos favoritos, elige tu horario de recogida y recoge tu pedido sin esperas.
                     </p>
                     <ul className="flex flex-col sm:flex-row relative gap-4 z-10 items-center text-center ">
-                        <button className="bg-white border-2 border-purple-400 cursor-pointer text-purple-500 hover:bg-purple-200 px-4 py-3 rounded-md font-semibold transition-all duration-300 transform hover:scale-105">
+                        <button className="bg-white cursor-pointer text-purple-500 hover:bg-purple-200 px-4 py-3 rounded-md font-semibold transition-all duration-300 transform hover:scale-105">
                             Explorar Productos
                         </button>
-                        <button className="bg-purple-500 cursor-pointer border-2 border-purple-800 text-white hover:bg-purple-200 hover:text-purple-500 px-4 py-3 rounded-md font-semibold transition-all duration-300">
+                        <a href="https://mercadosliz.com" className="bg-purple-500 cursor-pointer text-white hover:bg-purple-200 hover:text-purple-500 px-4 py-2 rounded-md font-semibold transition-all duration-300">
                             Conocer más
-                        </button>
+                        </a>
                     </ul>
                 </section>
             </header>
