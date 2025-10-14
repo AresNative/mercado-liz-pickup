@@ -18,14 +18,18 @@ import '@ionic/react/css/palettes/dark.class.css';
 import "driver.js/dist/driver.css";
 
 import NotFound from './app/NotFound';
+
 import Background from './template/background';
+
 import Layout from './app/layout';
+import LayoutProductos from './app/productos/layout';
+import LayoutPedido from './app/pedido/layout';
+import LayoutCheckout from './app/checkout/layout';
 
 setupIonicReact({
   mode: 'ios',
 });
 const App: React.FC = () => {
-
 
   return (
     <IonApp>
@@ -37,31 +41,15 @@ const App: React.FC = () => {
             <Route path="/home">
               <Layout />
             </Route>
-
-            {/*  <Route exact path="/layout">
-            {currentBranch ? <Redirect to="/products" /> : <Layout />}
-          </Route>
-          <Route exact path="/products">
-            {currentBranch ? <Page /> : <Redirect to="/layout" />}
-          </Route>
-          <Route exact path="/process">
-            {currentBranch ? <Process /> : <Redirect to="/layout" />}
-          </Route>
-          <Route exact path="/carrito">
-            {currentBranch ? <CarritoPage /> : <Redirect to="/layout" />}
-          </Route>
-          <Route exact path="/loading">
-            {currentBranch ? <LoadingPage /> : <Redirect to="/layout" />}
-          </Route>
-          <Route exact path="/products/:id">
-            {currentBranch ? <ProductID /> : <Redirect to="/layout" />}
-          </Route>
-          <Route exact path="/pay">
-            {currentBranch ? <PagoPage /> : <Redirect to="/layout" />}
-          </Route>
-          <Route path="/chat">
-            <Chat />
-          </Route> */}
+            <Route path="/productos">
+              <LayoutProductos />
+            </Route>
+            <Route path="/checkout">
+              <LayoutCheckout />
+            </Route>
+            <Route path="/pedido">
+              <LayoutPedido />
+            </Route>
 
             <Route exact path="/">
               <Redirect to="/home" />
