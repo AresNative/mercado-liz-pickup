@@ -23,7 +23,7 @@ export const store = configureStore({
     [api_int.reducerPath]: api_int.reducer,
     [authApi.reducerPath]: authApi.reducer,
   },
-  devTools: config.mode !== "production",
+  devTools: /* config.mode !== "production" */ true,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {

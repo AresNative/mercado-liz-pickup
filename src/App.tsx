@@ -23,8 +23,10 @@ import Background from './template/background';
 
 import Layout from './app/layout';
 import LayoutProductos from './app/productos/layout';
-import LayoutPedido from './app/pedido/layout';
+import LayoutPedidos from './app/pedido/layout';
+import LayoutCarrito from './app/carrito/layout';
 import LayoutCheckout from './app/checkout/layout';
+import LayoutSeguimiento from './app/seguimiento/layout';
 
 setupIonicReact({
   mode: 'ios',
@@ -44,11 +46,17 @@ const App: React.FC = () => {
             <Route path="/productos">
               <LayoutProductos />
             </Route>
+            <Route path="/carrito">
+              <LayoutCarrito />
+            </Route>
             <Route path="/checkout">
               <LayoutCheckout />
             </Route>
-            <Route path="/pedido">
-              <LayoutPedido />
+            <Route path="/pedidos">
+              <LayoutPedidos />
+            </Route>
+            <Route path="/seguimiento">
+              <LayoutSeguimiento />
             </Route>
 
             <Route exact path="/">

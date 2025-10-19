@@ -8,7 +8,13 @@ import {
     Zap,
     Clock,
     DollarSign,
+    ArrowRightIcon,
+    Milk,
+    Apple,
+    Croissant,
+    Wheat,
 } from "lucide-react";
+import Card from "./productos/components/card";
 
 const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     return (
@@ -49,7 +55,59 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </ul>
                 </section>
             </header>
-
+            <article className="py-16 px-4 max-w-6xl mx-auto">
+                <label className="text-center mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">Productos más vendidos</h2>
+                    <p className="text-gray-600 dark:text-gray-100 max-w-2xl mx-auto">
+                        Explora nuestra selección de productos más populares, cuidadosamente elegidos por nuestros clientes.
+                    </p>
+                </label>
+                <BentoGrid cols={2}>
+                    <BentoItem
+                        title="Frutas frescas"
+                        description="Disfruta de una variedad de frutas frescas y jugosas, perfectas para cualquier ocasión."
+                        icon={<Apple className="size-6 text-red-600" />}
+                        className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                    />
+                    <BentoItem
+                        title="Verduras orgánicas"
+                        description="Nuestras verduras orgánicas son cultivadas sin pesticidas, garantizando frescura y sabor."
+                        icon={<Wheat className="size-6 text-green-600" />}
+                        className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                    />
+                    <BentoItem
+                        title="Lácteos naturales"
+                        description="Encuentra una selección de productos lácteos naturales, desde leche hasta yogures y quesos."
+                        icon={<Milk className="size-6 text-blue-600" />}
+                        className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+                    />
+                    <BentoItem
+                        title="Panadería artesanal"
+                        description="Deléitate con nuestro pan artesanal, horneado diariamente para garantizar frescura."
+                        icon={<Croissant className="size-6 text-yellow-600" />}
+                        className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800"
+                    />
+                </BentoGrid>
+            </article>
+            <ul className="py-16 px-4 max-w-6xl mx-auto relative">
+                {/* Listado de porductos mas vendidos */}
+                <li className="flex gap-3 overflow-x-scroll scrollbar-hide max-w-6xl mx-auto md:px-0 lg:px-0 px-6 pb-4">
+                    {Array.from({ length: 23 }).map((_, index) => (
+                        <Card
+                            key={index}
+                            producto={{
+                                id: 'string',
+                                nombre: "test",
+                                categoria: "test",
+                                unidad: "test",
+                                precio: 1.50,
+                                cantidad: 20,
+                                descuento: 10,
+                            }} />
+                    ))}
+                </li>
+                <a className="flex items-center underline absolute right-0 mt-5 text-purple-800 cursor-pointer hover:text-purple-950"> Explorar <ArrowRightIcon className="ml-1 h-4 w-4" /></a>
+            </ul>
             {/* Benefits Section */}
             <section className="py-16 px-4 max-w-6xl mx-auto mb-36">
                 <label className="text-center mb-16">

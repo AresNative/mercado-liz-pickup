@@ -1,7 +1,7 @@
 import MainForm from "@/components/form/main-form";
-import { useLoginUserMutation, useLogoutUserMutation } from "@/hooks/reducers/auth";
+import { useLogoutUserMutation } from "@/hooks/reducers/auth";
 import { LogInField } from "@/utils/constants/forms/logIn";
-import { navigationAdmin, navigationDefault, navigationUser } from "@/utils/constants/router";
+import { navigationAdmin, navigationDefault } from "@/utils/constants/router";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import {
     IonMenu,
@@ -50,7 +50,7 @@ const AppMenu = () => {
             admin: navigationAdmin,
             // ... otros roles
         };
-        return navigationMap[userRole] || navigationUser;
+        return navigationMap[userRole];
     };
 
     return (

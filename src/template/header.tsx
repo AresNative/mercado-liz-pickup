@@ -1,4 +1,6 @@
 // components/Header.tsx
+import { useAppSelector } from '@/hooks/selector';
+import { RootState } from '@/hooks/store';
 import { cn } from '@/utils/functions/cn';
 import {
     IonHeader,
@@ -6,8 +8,12 @@ import {
     IonTitle,
     IonButtons,
     IonMenuButton,
-    IonBackButton
+    IonBackButton,
+    IonBadge,
+    IonItem,
+    IonLabel
 } from '@ionic/react';
+import { ShoppingCart } from 'lucide-react';
 
 interface HeaderProps {
     title: string;
@@ -29,6 +35,8 @@ const Header: React.FC<HeaderProps> = ({
     defaultBack
 }) => {
 
+    const cart = useAppSelector((state: RootState) => state.cart);
+    const { items } = cart || []; // Si cart es undefined/null, usamos array vacío
     return (
         <IonHeader
             className={cn(
@@ -54,7 +62,25 @@ const Header: React.FC<HeaderProps> = ({
                 >
                     {title}
                 </IonTitle>
-
+                <IonButtons slot="end">
+                    {showMenuButton && (<IonItem
+                        lines="none"
+                        routerLink="/carrito"
+                        detail={false}  // <- Esta prop elimina el ícono de flecha
+                        className="flex items-center text-purple-800 hover:text-purple-700 relative"
+                    >
+                        <IonLabel>
+                            <ShoppingCart className={cn(showBackButton || isScrolled ? 'text-purple-700' : 'text-white', 'size-5')} />
+                        </IonLabel>
+                        {items.length > 0 && (
+                            <IonBadge
+                                color="success"
+                                className="absolute text-white -top-0 right-2 text-xs"
+                            >
+                                {items.length}
+                            </IonBadge>)}
+                    </IonItem>)}
+                </IonButtons>
                 {showMenuButton && (
                     <IonButtons slot="end">
                         <IonMenuButton className={cn(showBackButton || isScrolled ? 'text-purple-700' : 'text-white')} />
