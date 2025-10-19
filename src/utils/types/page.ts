@@ -6,7 +6,7 @@ export interface PageProps {
   onClick?: () => void;
   onScroll?: (isScrolled: boolean) => void;
 }
-export interface Product {
+export interface Producto {
   id: string;
   image?: string;
   nombre: string;
@@ -14,6 +14,11 @@ export interface Product {
   categoria: string;
   unidad: string;
   precio: number;
+  cantidad: number;
   precioRegular?: number;
   factor?: number;
+  oferta?: {
+    precio: number;
+    fechaHasta: string;
+  };
 }

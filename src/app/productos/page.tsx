@@ -1,28 +1,258 @@
+import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonTitle } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonTitle, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
+import { Apple } from "lucide-react";
+import Card from "./components/card";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+
+// Definir el tipo para los productos
+interface Producto {
+    id: string;
+    nombre: string;
+    categoria: string;
+    unidad: string;
+    precio: number;
+    cantidad: number;
+    descuento: number;
+}
+
+// Tipo para la respuesta de la API
+interface ApiResponse {
+    totalRecords: number;
+    totalPages: number;
+    pageSize: number;
+    page: number;
+    data: any[];
+}
 
 const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
-    return <IonContent fullscreen
-        scrollEvents
-        onIonScroll={(e) => {
-            const isScrolled = e.detail.scrollTop > 20;
-            onScroll?.(isScrolled);
-        }}
-    >
-        <IonHeader
-            collapse="condense"
-            className="custom-toolbar z-50 -top-16"
+    const [getData, { isLoading }] = useGetWithFiltersGeneralMutation();
+
+    const [items, setItems] = useState<Producto[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+
+    const initialLoad = useRef(true);
+    const isFetching = useRef(false);
+
+    const generateItems = useCallback(async (currentPage: number) => {
+        // Prevenir múltiples llamadas simultáneas
+        if (isFetching.current) {
+            console.log('Ya se está fetching, ignorando...');
+            return;
+        }
+
+        try {
+            isFetching.current = true;
+            console.log(`Iniciando fetch para página ${currentPage}`);
+
+            const result = await getData({
+                table: `
+                [TC032841E].[dbo].[CB] AS cb
+                    INNER JOIN [TC032841E].[dbo].[Art] AS art
+                        ON cb.Cuenta = art.Articulo
+                    INNER JOIN [TC032841E].[dbo].[ListaPreciosDUnidad] AS lpu
+                        ON art.Articulo = lpu.Articulo
+                        AND cb.Unidad = lpu.Unidad
+                        AND lpu.Lista = '(Precio Lista)'
+                    INNER JOIN [TC032841E].[dbo].[ArtUnidad] AS au
+                        ON art.Articulo = au.Articulo
+                        AND lpu.Unidad = au.Unidad
+                    INNER JOIN [TC032841E].[dbo].[ArtDisponible] AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                `,
+                pageSize: 10,
+                page: currentPage,
+                filtros: {
+                    "Filtros": [],
+                    "Selects": [
+                        { "key": "cb.Codigo" },
+                        { "key": "cb.Cuenta" },
+                        { "key": "art.Grupo" },
+                        { "key": "art.Descripcion1" },
+                        { "key": "lpu.Unidad" },
+                        { "key": "lpu.Precio" },
+                        { "key": "au.Unidad", "alias": "UnidadFactor" },
+                        { "key": "au.Factor" },
+                        { "key": "ad.DispMenosApartado" }
+                    ],
+                    "Agregaciones": [
+                        {
+                            "Key": "ad.DispMenosApartado",
+                            "Operation": "SUM",
+                            "Alias": "cantidad"
+                        }
+                    ],
+                    "Order": [
+                        {
+                            "Key": "cb.Codigo",
+                            "Direction": "DESC"
+                        }
+                    ]
+                },
+                signal: undefined,
+            });
+
+            // Verificar si la respuesta tiene datos
+            if ('data' in result && result.data) {
+                const apiData: ApiResponse = result.data;
+
+                console.log(`✅ Página ${currentPage} cargada, total páginas: ${apiData.totalPages}, datos: ${apiData.data.length}`);
+
+                // Actualizar totalPages con la información de la API
+                if (initialLoad.current) {
+                    initialLoad.current = false;
+                }
+
+                if (apiData.data && apiData.data.length > 0) {
+                    // Mapear los datos de la API al formato de Producto
+                    const mappedItems: Producto[] = apiData.data.map((item: any) => ({
+                        id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                        nombre: item.Descripcion1 || "Sin nombre",
+                        categoria: item.Grupo || "Sin categoría",
+                        unidad: item.Unidad || "Unidad",
+                        precio: item.Precio || 0,
+                        cantidad: item.Factor || 1,
+                        descuento: 10,
+                    }));
+
+                    setItems(prevItems => {
+                        const newItems = currentPage === 1 ? mappedItems : [...prevItems, ...mappedItems];
+                        console.log(`📦 Items actualizados: ${newItems.length} total`);
+                        return newItems;
+                    });
+
+                    // Verificar si hay más páginas disponibles
+                    const hasMoreData = currentPage < apiData.totalPages;
+                    setHasMore(hasMoreData);
+
+                    console.log(`🔍 ¿Hay más páginas? ${hasMoreData} (${currentPage} < ${apiData.totalPages})`);
+                } else {
+                    // No hay datos en esta página
+                    setHasMore(false);
+                    console.log('🚫 No hay más datos');
+                }
+            }
+        } catch (error) {
+            console.error("❌ Error fetching data:", error);
+            setHasMore(false);
+        } finally {
+            isFetching.current = false;
+            console.log('🏁 Fetch completado');
+        }
+    }, [getData]);
+
+    // Efecto para carga inicial
+    useEffect(() => {
+        if (initialLoad.current) {
+            console.log('🚀 Carga inicial');
+            generateItems(1);
+        }
+    }, []);
+
+    // Efecto para cuando cambia la página
+    useEffect(() => {
+        if (page > 1 && !initialLoad.current) {
+            console.log(`🔄 Cambio de página a: ${page}`);
+            generateItems(page);
+        }
+    }, [page]);
+
+    const handleInfiniteScroll = useCallback(async (event: any) => {
+        console.log('🎯 Infinite scroll activado');
+        console.log('📊 Estado - hasMore:', hasMore, 'isLoading:', isLoading, 'isFetching:', isFetching.current);
+
+        if (!hasMore) {
+            console.log('⏹️  No hay más datos, deshabilitando scroll');
+            event.target.complete();
+            event.target.disabled = true;
+            return;
+        }
+
+        if (isLoading || isFetching.current) {
+            console.log('⏳ Ya está cargando, completando sin acción');
+            event.target.complete();
+            return;
+        }
+
+        console.log('⬆️  Incrementando página...');
+        setPage(prevPage => {
+            const nextPage = prevPage + 1;
+            console.log(`📈 Nueva página: ${nextPage}`);
+            return nextPage;
+        });
+        event.target.complete();
+        console.log('✅ Scroll completado');
+
+    }, [hasMore, isLoading]);
+
+    return (
+        <IonContent
+            fullscreen
+            scrollEvents
+            onIonScroll={(e) => {
+                const isScrolled = e.detail.scrollTop > 20;
+                onScroll?.(isScrolled);
+            }}
         >
-            <IonToolbar>
-                <IonTitle
-                    size="large"
-                    className="text-white text-5xl p-2 font-medium h-full">
-                    Liz
-                </IonTitle>
-            </IonToolbar>
-        </IonHeader>
-        <section>Hola desde page.tsx</section>
-    </IonContent>;
+            <IonHeader
+                collapse="condense"
+                className="custom-toolbar z-50 -top-16"
+            >
+                <IonToolbar>
+                    <IonTitle
+                        size="large"
+                        className="text-white text-5xl p-2 font-medium h-full"
+                    >
+                        Liz
+                    </IonTitle>
+                </IonToolbar>
+            </IonHeader>
+            <section className="px-4 max-w-6xl mx-auto">
+                <ul className="flex gap-3 overflow-x-scroll scrollbar-hide w-full mx-auto md:px-0 lg:px-0 px-6 pb-4">
+                    {Array.from({ length: 23 }).map((_, index) => (
+                        <li className="flex flex-col items-center min-w-fit" key={index}>
+                            <Apple className="size-5 text-red-500" />
+                            <p className="text-red-500 text-xs">Frutas</p>
+                        </li>
+                    ))}
+                </ul>
+
+                <IonList>
+                    <BentoGrid cols={6}>
+                        {items.map((producto, index) => (
+                            <Card
+                                key={`${producto.id}-${index}`}
+                                producto={producto}
+                            />
+                        ))}
+                    </BentoGrid>
+                </IonList>
+
+                {isLoading && (
+                    <div className="text-center py-4">
+                        <p>Cargando más productos...</p>
+                    </div>
+                )}
+
+                {items.length === 0 && !isLoading && (
+                    <div className="text-center py-8">
+                        <p>No se encontraron productos</p>
+                    </div>
+                )}
+
+                <IonInfiniteScroll
+                    onIonInfinite={handleInfiniteScroll}
+                    threshold="100px"
+                    disabled={!hasMore || isLoading}
+                >
+                    <IonInfiniteScrollContent
+                        loadingText={hasMore ? "Cargando más productos..." : "No hay más productos"}
+                    ></IonInfiniteScrollContent>
+                </IonInfiniteScroll>
+            </section>
+        </IonContent>
+    );
 }
 
 export default Productos;
