@@ -15,6 +15,7 @@ import {
     Wheat,
 } from "lucide-react";
 import Card from "./productos/components/card";
+import { IconLiz } from "./productos/components/ionc-liz";
 
 const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     return (
@@ -31,11 +32,8 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar z-50 -top-16"
             >
                 <IonToolbar>
-                    <IonTitle
-                        size="large"
-                        className="text-white text-5xl p-2 font-medium h-full">
-                        Liz
-                    </IonTitle>
+
+                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
             {/* Hero Section */}

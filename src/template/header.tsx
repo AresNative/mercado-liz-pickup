@@ -1,24 +1,23 @@
 // components/Header.tsx
+import { IconLiz } from '@/app/productos/components/ionc-liz';
 import { useAppSelector } from '@/hooks/selector';
 import { RootState } from '@/hooks/store';
 import { cn } from '@/utils/functions/cn';
 import {
     IonHeader,
     IonToolbar,
-    IonTitle,
     IonButtons,
     IonMenuButton,
     IonBackButton,
     IonBadge,
     IonItem,
-    IonLabel
+    IonLabel,
+    isPlatform
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 
 interface HeaderProps {
-    title: string;
     showMenuButton?: boolean;
-    showSearchButton?: boolean;
     showBackButton?: boolean;
     className?: string;
     isScrolled?: boolean;
@@ -26,14 +25,13 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
-    title,
     isScrolled = false,
     showMenuButton = true,
-    showSearchButton = false,
     showBackButton = false,
     className = '',
     defaultBack
 }) => {
+    const mobile = isPlatform('mobile');
 
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items } = cart || []; // Si cart es undefined/null, usamos array vacío
@@ -53,15 +51,9 @@ const Header: React.FC<HeaderProps> = ({
                         <IonBackButton defaultHref={defaultBack ?? "/"} className={'text-purple-700'} text="Atras" />
                     </IonButtons>)}
 
-                <IonTitle
-                    className={cn(
-                        "text-xl font-light tracking-tight",
-                        showBackButton || isScrolled ? "text-purple-700" : "text-white",
-                        showSearchButton ? "text-left" : "",
-                    )}
-                >
-                    {title}
-                </IonTitle>
+                <section className='flex flex-1 justify-center items-center mt-2'>
+                    {isScrolled && (<IconLiz className='mx-auto' fill={"#7927F5"} width={35} />)}
+                </section>
                 <IonButtons slot="end">
                     {showMenuButton && (<IonItem
                         lines="none"
@@ -81,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({
                             </IonBadge>)}
                     </IonItem>)}
                 </IonButtons>
-                {showMenuButton && (
+                {!mobile && showMenuButton && (
                     <IonButtons slot="end">
                         <IonMenuButton className={cn(showBackButton || isScrolled ? 'text-purple-700' : 'text-white')} />
                     </IonButtons>

@@ -1,5 +1,6 @@
 import { PageProps } from "@/utils/types/page";
 import { IonContent, IonHeader, IonToolbar, IonTitle } from "@ionic/react";
+import { IconLiz } from "../productos/components/ionc-liz";
 
 const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     return <IonContent fullscreen
@@ -14,11 +15,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             className="custom-toolbar z-50 -top-16"
         >
             <IonToolbar>
-                <IonTitle
-                    size="large"
-                    className="text-white text-5xl p-2 font-medium h-full">
-                    Liz
-                </IonTitle>
+                <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
             </IonToolbar>
         </IonHeader>
         <section>Hola desde page.tsx</section>

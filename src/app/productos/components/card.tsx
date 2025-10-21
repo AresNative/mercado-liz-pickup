@@ -8,6 +8,7 @@ import { cn } from "@/utils/functions/cn";
 import { useIonModal } from "@ionic/react";
 
 import ModalProd from "./modal-product";
+import { IconLiz } from "./ionc-liz";
 
 interface ProductCardProps {
     producto: Producto;
@@ -20,11 +21,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     const isOutOfStock = producto.cantidad <= 0;
 
     // Price calculations
-    const { hasDiscount, discountPercentage } = useMemo(() => {
-        const hasDiscount = producto.descuento && producto.descuento > 0;
-        const discountPercentage = producto.descuento || 0;
+    const { discountPercentage } = useMemo(() => {
+        const discountPercentage = producto.descuento && producto.descuento / producto.precio || 0;
 
-        return { hasDiscount, discountPercentage };
+        return { discountPercentage };
     }, [producto.precio, producto.precioRegular, producto.descuento]);
 
     const handleFavoriteToggle = useCallback((e: React.MouseEvent) => {
@@ -73,15 +73,17 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative m-2 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden h-full w-full  flex flex-col cursor-pointer">
+            className="group relative min-w-40 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden h-full w-full flex flex-col cursor-pointer">
 
             <section
                 className="relative border-b border-gray-200 overflow-hidden">
-                <img
-                    src="/logo.jpg"
-                    alt="Product Image"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
+                {producto.image ?
+                    (<img
+                        src="/logo.jpg"
+                        alt="Product Image"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />) :
+                    (<IconLiz fill="#DBDBDB" />)}
             </section>
 
             <section className="p-4 min-h-24 bg-white">
@@ -89,7 +91,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
                 <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                     <li className="flex flex-col gap-1">
-                        {hasDiscount && (
+                        {discountPercentage > 0 && (
                             <div className="w-full text-center bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
                                 -{discountPercentage}%
                             </div>
@@ -142,7 +144,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     </li>
                 </ul>
             </footer>
-        </motion.article>
+        </motion.article >
     );
 }
 

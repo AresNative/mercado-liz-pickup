@@ -4,7 +4,8 @@ import { IonContent, IonHeader, IonToolbar, IonTitle, IonList, IonInfiniteScroll
 import { Apple } from "lucide-react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
+import { IconLiz } from "./components/ionc-liz";
 
 // Definir el tipo para los productos
 interface Producto {
@@ -27,7 +28,7 @@ interface ApiResponse {
 }
 
 const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
-    const [getData, { isLoading }] = useGetWithFiltersGeneralMutation();
+    const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
 
     const [items, setItems] = useState<Producto[]>([]);
     const [page, setPage] = useState(1);
@@ -49,17 +50,20 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             const result = await getData({
                 table: `
-                [TC032841E].[dbo].[CB] AS cb
-                    INNER JOIN [TC032841E].[dbo].[Art] AS art
+                CB AS cb
+                    INNER JOIN Art AS art
                         ON cb.Cuenta = art.Articulo
-                    INNER JOIN [TC032841E].[dbo].[ListaPreciosDUnidad] AS lpu
+                    INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
-                    INNER JOIN [TC032841E].[dbo].[ArtUnidad] AS au
+                    INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN [TC032841E].[dbo].[ArtDisponible] AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE()
+                    and ofr.FechaA > GETDATE()
+                    LEFT JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo 
                 `,
                 pageSize: 10,
                 page: currentPage,
@@ -72,15 +76,15 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         { "key": "art.Descripcion1" },
                         { "key": "lpu.Unidad" },
                         { "key": "lpu.Precio" },
-                        { "key": "au.Unidad", "alias": "UnidadFactor" },
-                        { "key": "au.Factor" },
-                        { "key": "ad.DispMenosApartado" }
+                        /* { "key": "ofrd.Precio", "alias": "Descuento" }, */
+                        /* { "key": "au.Unidad", "alias": "UnidadFactor" }, */
+                        { "key": "au.Factor" }
                     ],
                     "Agregaciones": [
                         {
                             "Key": "ad.DispMenosApartado",
                             "Operation": "SUM",
-                            "Alias": "cantidad"
+                            "Alias": "Cantidad"
                         }
                     ],
                     "Order": [
@@ -113,7 +117,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         unidad: item.Unidad || "Unidad",
                         precio: item.Precio || 0,
                         cantidad: item.Factor || 1,
-                        descuento: 10,
+                        descuento: item.Descuento || 0,
                     }));
 
                     setItems(prevItems => {
@@ -199,13 +203,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 collapse="condense"
                 className="custom-toolbar z-50 -top-16"
             >
-                <IonToolbar>
-                    <IonTitle
-                        size="large"
-                        className="text-white text-5xl p-2 font-medium h-full"
-                    >
-                        Liz
-                    </IonTitle>
+                <IonToolbar className="pt-10">
+                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
             <section className="px-4 max-w-6xl mx-auto">
@@ -219,7 +218,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </ul>
 
                 <IonList>
-                    <BentoGrid cols={6}>
+                    <BentoGrid cols={5}>
                         {items.map((producto, index) => (
                             <Card
                                 key={`${producto.id}-${index}`}

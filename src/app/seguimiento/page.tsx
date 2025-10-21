@@ -1,6 +1,7 @@
 import Footer from "@/template/footer";
 import { PageProps } from "@/utils/types/page";
 import { IonContent, IonHeader, IonTitle, IonToolbar } from "@ionic/react";
+import { IconLiz } from "../productos/components/ionc-liz";
 
 const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     return (
@@ -16,11 +17,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar z-50 -top-16"
             >
                 <IonToolbar>
-                    <IonTitle
-                        size="large"
-                        className="text-white text-5xl p-2 font-medium h-full">
-                        Liz
-                    </IonTitle>
+                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
             <section className="py-16 px-4 max-w-6xl min-h-screen mx-auto">
