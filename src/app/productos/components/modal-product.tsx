@@ -23,6 +23,7 @@ import { heart, barcode, close, cart, star, starHalf, starOutline, arrowBack } f
 import { Hash, Heart, MessageCircle, ThumbsUp } from "lucide-react";
 import AddToCartButton from "./product-add-cart";
 import { cn } from "@/utils/functions/cn";
+import { IconLiz } from "./ionc-liz";
 
 interface ProductModalProps {
     producto: Producto;
@@ -98,11 +99,6 @@ const recommendedProducts: Producto[] = [
 const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle, isFavorite }) => {
     const router = useIonRouter();
 
-    const handleAddToCart = () => {
-        console.log('Añadir al carrito:', producto.id);
-        // Lógica para añadir al carrito
-    }
-
     const handleBack = () => {
         router.goBack();
     }
@@ -144,11 +140,13 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                 <article className="flex flex-col gap-4">
                     {/* Imagen del producto */}
                     <header className="relative rounded-lg overflow-hidde flex justify-center">
-                        <IonImg
-                            src="/logo.jpg"
-                            alt={producto.nombre}
-                            className="object-cover"
-                        />
+                        {producto.image ?
+                            (<img
+                                src="/logo.jpg"
+                                alt="Product Image"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />) :
+                            (<IconLiz fill="#DBDBDB" />)}
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
                                 {hasDiscount && (
@@ -191,9 +189,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
 
                         {/* Precio */}
                         <div className="flex items-center gap-2">
-                            <IonText color="primary">
-                                <span className="text-2xl font-bold">${producto.precio.toFixed(2)}</span>
-                            </IonText>
+                            <span className="text-2xl font-bold text-purple-800">${producto.precio.toFixed(2)}</span>
                             {hasDiscount && producto.precioRegular && (
                                 <IonText color="medium">
                                     <span className="text-lg line-through">${producto.precioRegular.toFixed(2)}</span>
@@ -213,7 +209,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                             <div className="flex items-center gap-2 text-sm">
                                 <Hash className="size-4 text-purple-600" />
                                 <IonText color="medium">
-                                    <span>Stock: {producto.cantidad} {producto.unidad}</span>
+                                    <span>Stock: {producto.cantidad} <label className="text-green-600">{producto.unidad}(s)</label></span>
                                 </IonText>
                             </div>
 
@@ -308,9 +304,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                                             <IonText>
                                                 <p className="text-xs font-medium mb-1 line-clamp-2">{recommended.nombre}</p>
                                             </IonText>
-                                            <IonText color="primary">
-                                                <span className="text-sm font-bold">${recommended.precio.toFixed(2)}</span>
-                                            </IonText>
+                                            <span className="text-sm font-bold text-purple-800">${recommended.precio.toFixed(2)}</span>
                                         </div>
                                     </IonCol>
                                 ))}
