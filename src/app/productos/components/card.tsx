@@ -73,7 +73,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-40 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden h-full w-full flex flex-col cursor-pointer">
+            className="group relative md:min-w-40 md:min-h-40 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
 
             <section
                 className="relative border-b border-gray-200 overflow-hidden">

@@ -24,6 +24,7 @@ import { Hash, Heart, MessageCircle, ThumbsUp } from "lucide-react";
 import AddToCartButton from "./product-add-cart";
 import { cn } from "@/utils/functions/cn";
 import { IconLiz } from "./ionc-liz";
+import { useMemo } from "react";
 
 interface ProductModalProps {
     producto: Producto;
@@ -105,7 +106,13 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
 
     const isLowStock = producto.cantidad > 0 && producto.cantidad <= 10;
     const isOutOfStock = producto.cantidad <= 0;
-    const hasDiscount = producto.descuento && producto.descuento > 0;
+
+    // Price calculations
+    const { discountPercentage } = useMemo(() => {
+        const discountPercentage = producto.descuento && producto.descuento / producto.precio || 0;
+
+        return { discountPercentage };
+    }, [producto.precio, producto.precioRegular, producto.descuento]);
 
     // Calcular rating promedio
     const averageRating = sampleComments.reduce((acc, comment) => acc + comment.rating, 0) / sampleComments.length;
@@ -149,7 +156,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                             (<IconLiz fill="#DBDBDB" />)}
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
-                                {hasDiscount && (
+                                {discountPercentage > 0 && (
                                     <div className="w-full text-center bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
                                         -{producto.descuento}%
                                     </div>
@@ -190,7 +197,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                         {/* Precio */}
                         <div className="flex items-center gap-2">
                             <span className="text-2xl font-bold text-purple-800">${producto.precio.toFixed(2)}</span>
-                            {hasDiscount && producto.precioRegular && (
+                            {discountPercentage > 0 && producto.precioRegular && (
                                 <IonText color="medium">
                                     <span className="text-lg line-through">${producto.precioRegular.toFixed(2)}</span>
                                 </IonText>
