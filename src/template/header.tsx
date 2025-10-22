@@ -11,17 +11,17 @@ import {
     IonBackButton,
     IonBadge,
     IonItem,
-    IonLabel,
-    isPlatform
+    IonLabel
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 
 interface HeaderProps {
+    isScrolled?: boolean;
     showMenuButton?: boolean;
     showBackButton?: boolean;
     className?: string;
-    isScrolled?: boolean;
     defaultBack?: string;
+    mobileScreen?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -29,9 +29,10 @@ const Header: React.FC<HeaderProps> = ({
     showMenuButton = true,
     showBackButton = false,
     className = '',
-    defaultBack
+    defaultBack,
+    mobileScreen
 }) => {
-    const mobile = isPlatform('mobile');
+    const mobile = mobileScreen;
 
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items } = cart || []; // Si cart es undefined/null, usamos array vacío

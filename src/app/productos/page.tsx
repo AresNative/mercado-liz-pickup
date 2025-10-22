@@ -1,6 +1,6 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonTitle, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
 import { Apple } from "lucide-react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
@@ -40,13 +40,11 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const generateItems = useCallback(async (currentPage: number) => {
         // Prevenir múltiples llamadas simultáneas
         if (isFetching.current) {
-            console.log('Ya se está fetching, ignorando...');
             return;
         }
 
         try {
             isFetching.current = true;
-            console.log(`Iniciando fetch para página ${currentPage}`);
 
             const result = await getData({
                 table: `
@@ -101,8 +99,6 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             if ('data' in result && result.data) {
                 const apiData: ApiResponse = result.data;
 
-                console.log(`✅ Página ${currentPage} cargada, total páginas: ${apiData.totalPages}, datos: ${apiData.data.length}`);
-
                 // Actualizar totalPages con la información de la API
                 if (initialLoad.current) {
                     initialLoad.current = false;
@@ -122,19 +118,15 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                     setItems(prevItems => {
                         const newItems = currentPage === 1 ? mappedItems : [...prevItems, ...mappedItems];
-                        console.log(`📦 Items actualizados: ${newItems.length} total`);
                         return newItems;
                     });
 
                     // Verificar si hay más páginas disponibles
                     const hasMoreData = currentPage < apiData.totalPages;
                     setHasMore(hasMoreData);
-
-                    console.log(`🔍 ¿Hay más páginas? ${hasMoreData} (${currentPage} < ${apiData.totalPages})`);
                 } else {
                     // No hay datos en esta página
                     setHasMore(false);
-                    console.log('🚫 No hay más datos');
                 }
             }
         } catch (error) {
