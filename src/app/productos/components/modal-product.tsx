@@ -99,19 +99,16 @@ const recommendedProducts: Producto[] = [
 
 const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle, isFavorite }) => {
     const router = useIonRouter();
-
-    const handleBack = () => {
-        router.goBack();
-    }
-
     const isLowStock = producto.cantidad > 0 && producto.cantidad <= 10;
     const isOutOfStock = producto.cantidad <= 0;
 
     // Price calculations
     const { discountPercentage } = useMemo(() => {
-        const discountPercentage = producto.descuento && producto.descuento / producto.precio || 0;
-
-        return { discountPercentage };
+        const percentage = producto.descuento
+            ? ((producto.precio - producto.descuento) / producto.precio) * 100
+            : 0;
+        let roundedDiscount = Math.round(percentage);
+        return { discountPercentage: roundedDiscount };
     }, [producto.precio, producto.precioRegular, producto.descuento]);
 
     // Calcular rating promedio
@@ -134,13 +131,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
     return (
         <IonPage>
             <IonHeader>
-                <IonToolbar className="bg-purple-600 text-white">
-                    <IonButtons slot="start">
-                        <IonButton onClick={handleBack}>
-                            <IonIcon icon={arrowBack} className="text-white" />
-                        </IonButton>
-                    </IonButtons>
-                </IonToolbar>
+                <IonToolbar className="bg-purple-600 text-white" />
             </IonHeader>
 
             <IonContent className="ion-padding">
@@ -157,17 +148,17 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
                                 {discountPercentage > 0 && (
-                                    <div className="w-full text-center bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
-                                        -{producto.descuento}%
+                                    <div className="w-full text-center border-2 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                                        -{discountPercentage}%
                                     </div>
                                 )}
                                 {isLowStock && (
-                                    <div className="w-full text-center bg-yellow-400 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
-                                        Últimas {producto.cantidad}
+                                    <div className="w-full text-center border-2 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
+                                        Última(s) {producto.cantidad}
                                     </div>
                                 )}
                                 {isOutOfStock && (
-                                    <div className="w-full text-center bg-gray-400 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md">
+                                    <div className="w-full text-center border-2 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
                                         Agotado
                                     </div>
                                 )}
@@ -190,17 +181,22 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                     </header>
                     {/* Información básica del producto */}
                     <section className="space-y-3">
-                        <IonText>
-                            <h1 className="text-xl font-bold">{producto.nombre}</h1>
-                        </IonText>
-
+                        <label className="font-bold">{producto.nombre}</label>
                         {/* Precio */}
                         <div className="flex items-center gap-2">
-                            <span className="text-2xl font-bold text-purple-800">${producto.precio.toFixed(2)}</span>
-                            {discountPercentage > 0 && producto.precioRegular && (
-                                <IonText color="medium">
-                                    <span className="text-lg line-through">${producto.precioRegular.toFixed(2)}</span>
-                                </IonText>
+                            {producto.descuento ? (
+                                <>
+                                    <span className="text-lg font-semibold text-purple-600">
+                                        ${producto.descuento.toFixed(2)}
+                                    </span>
+                                    <span className="text-xs text-gray-500 line-through">
+                                        ${producto.precio.toFixed(2)}
+                                    </span>
+                                </>
+                            ) : (
+                                <span className="text-lg font-semibold text-purple-600">
+                                    ${producto.precio.toFixed(2)}
+                                </span>
                             )}
                         </div>
 
@@ -324,7 +320,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
             {/* Footer con botón de añadir al carrito */}
             <IonFooter className="bg-white border-t border-gray-200">
                 <IonToolbar>
-                    <div className="flex items-center justify-between px-4 pt-2 pb-10">
+                    <div className="flex items-center justify-between px-4 pt-2 pb-10 md:pb-16">
                         <strong className="text-gray-500">Agregar a carrito</strong>
                         <AddToCartButton id={producto.id} cantidad={producto.cantidad} producto={producto} />
                     </div>

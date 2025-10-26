@@ -38,7 +38,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </IonHeader>
             {/* Hero Section */}
             <header className="text-purple-800 dark:text-purple-200 bg-no-repeat bg-center relative">
-                <section className="max-w-6xl py-16 px-4 mx-auto flex flex-col gap-6">
+                <section className="max-w-6xl py-5 md:py-10 px-4 mx-auto flex flex-col gap-6">
                     <h1 className="text-4xl md:text-6xl font-bold mb-4">Compra tus productos frescos online</h1>
                     <p className="text-xl text-gray-400 md:text-2xl mb-8 max-w-3xl">
                         Selecciona tus productos favoritos, elige tu horario de recogida y recoge tu pedido sin esperas.
@@ -98,9 +98,9 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 nombre: "test",
                                 categoria: "test",
                                 unidad: "test",
-                                precio: 1.50,
+                                precio: 150,
                                 cantidad: 20,
-                                descuento: 10,
+                                descuento: 5,
                             }} />
                     ))}
                 </li>

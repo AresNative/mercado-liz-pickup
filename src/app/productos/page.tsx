@@ -1,11 +1,14 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
-import { Apple } from "lucide-react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, IonFab, IonFabButton } from "@ionic/react";
+import { Apple, Search } from "lucide-react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { IconLiz } from "./components/ionc-liz";
+import CategorySlider from "./components/categories";
+import PromoBanner from "./components/banner-offers";
+import { promoItems } from "./data/promos";
 
 // Definir el tipo para los productos
 interface Producto {
@@ -195,19 +198,14 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 collapse="condense"
                 className="custom-toolbar z-50 -top-16"
             >
-                <IonToolbar className="pt-10">
+                <IonToolbar>
                     <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
+
             <section className="px-4 max-w-6xl mx-auto">
-                <ul className="flex gap-3 overflow-x-scroll scrollbar-hide w-full mx-auto md:px-0 lg:px-0 px-6 pb-4">
-                    {Array.from({ length: 23 }).map((_, index) => (
-                        <li className="flex flex-col items-center min-w-fit" key={index}>
-                            <Apple className="size-5 text-red-500" />
-                            <p className="text-red-500 text-xs">Frutas</p>
-                        </li>
-                    ))}
-                </ul>
+                <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
+                <CategorySlider />
 
                 <IonList>
                     <BentoGrid cols={5}>

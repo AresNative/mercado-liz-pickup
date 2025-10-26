@@ -3,35 +3,41 @@ import {
   Clock,
   ClipboardList,
   ChartArea,
-  Banknote,
-  ListCheck,
   Receipt,
   Truck,
-  Info,
   ChartColumnStacked,
   Clock10,
-  UserRound,
   UsersRound,
   FileDigit,
   ShoppingBasket,
   ShoppingBag,
+  UserCircle,
 } from "lucide-react";
 
 export const navigationDefault = [
   {
     name: "Pantalla Inicial",
+    tab: "home",
     href: "/",
     icon: House,
   },
   {
+    name: "Productos",
+    tab: "productos",
+    href: "/productos",
+    icon: ShoppingBag,
+  },
+  {
     name: "Pedidos",
+    tab: "pedidos",
     href: "/pedidos",
     icon: Clock,
   },
   {
-    name: "Productos",
-    href: "/productos",
-    icon: ShoppingBag,
+    name: "Cuentas",
+    tab: "cuentas",
+    href: "/cuentas",
+    icon: UserCircle,
   },
 ];
 
