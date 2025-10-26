@@ -1,62 +1,69 @@
 // components/Tabs.tsx
 import { navigationAdmin, navigationDefault } from '@/utils/constants/router';
-import { cn } from '@/utils/functions/cn';
 import { getLocalStorageItem } from '@/utils/functions/local-storage';
 import {
-    IonTabs,
     IonLabel,
-    IonFooter,
-    IonTab,
-    IonToolbar,
     IonTabBar,
-    IonTabButton
+    IonTabButton,
+    isPlatform,
+    IonFabButton
 } from '@ionic/react';
+import { Search } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
-interface TabsProps {
-    isScrolled?: boolean;
-    showBackButton?: boolean;
-    className?: string;
-    mobileScreen?: boolean;
-}
-
-const Tabs: React.FC<TabsProps> = ({
-    isScrolled = false,
-    showBackButton = false,
-    className = '',
-    mobileScreen
-}) => {
-    const mobile = mobileScreen;
+const Tabs: React.FC = () => {
+    const mobile = isPlatform('mobile');
     const userRole = getLocalStorageItem("user-role");
+    const location = useLocation();
+
     const getNavigation = () => {
         if (!userRole) return navigationDefault;
         const navigationMap: any = {
             admin: navigationAdmin,
             // ... otros roles
         };
-        return navigationMap[userRole];
+        return navigationMap[userRole] || navigationDefault;
     };
 
     if (!mobile) return null;
 
+    const navigation = getNavigation();
+
     return (
-        <IonFooter className={cn('bg-white/70 border-b backdrop-blur-sm', className)}>
-            <IonTabBar slot="bottom" className="flex justify-around">
-                {getNavigation().map((item: any, key: any) => {
+        <section className='absolute w-full bottom-0'>
+            <IonTabBar className='bg-white/70 backdrop-blur-sm z-1 border border-t' slot="bottom">
+                {navigation.map((item: any, key: any) => {
                     const Icon = item.icon;
-                    if (!Icon) return
+                    if (!Icon) return null;
+
+                    // Determinar si esta pestaña está activa
+                    const isActive = location.pathname === item.href ||
+                        (item.href === '/' && location.pathname === '/home')
+
                     return (
                         <IonTabButton
                             key={key}
+                            tab={item.tab}
                             href={item.href}
-                            className="hover:text-purple-500"
+                            selected={isActive}
                         >
-                            <Icon size={20} className="mx-3" />
-                            <label className="text-xs">{item.name}</label>
+                            <Icon
+                                size={20}
+                                className="mx-3"
+                            />
+                            <IonLabel className="text-xs">{item.name}</IonLabel>
                         </IonTabButton>
                     );
                 })}
             </IonTabBar>
-        </IonFooter>
+            {location.pathname === "/productos" && (
+                <div className="z-10 grid h-full w-10 bottom-7 mx-auto relative">
+                    <IonFabButton className='absolute bottom-1 size-10 p-1 bg-white rounded-full border custom-tertiary'>
+                        <Search className='size-6' />
+                    </IonFabButton>
+                </div>
+            )}
+        </section>
     );
 };
 

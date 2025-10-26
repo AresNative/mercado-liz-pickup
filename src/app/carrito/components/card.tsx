@@ -1,15 +1,16 @@
 import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
-import AddToCartButton from "./product-add-cart";
 import { Barcode, Hash, Heart, Minus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
 import { useIonModal } from "@ionic/react";
 
-import ModalProd from "./modal-product";
-import { IconLiz } from "./ionc-liz";
 import { formatValue } from "@/utils/constants/format-values";
+import { IconLiz } from "@/app/productos/components/ionc-liz";
+
+import ModalProd from "@/app/productos/components/modal-product";
+import AddToCartButton from "@/app/productos/components/product-add-cart";
 
 interface ProductCardProps {
     producto: Producto;
@@ -76,37 +77,25 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-40 md:min-w-52 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
+            className="flex group relative w-full min-h-60 md:min-w-52 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer">
 
             <section
-                className="relative border-b border-gray-200 overflow-hidden">
-                {producto.image ?
-                    (<img
-                        src="/logo.jpg"
-                        alt="Product Image"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />) :
-                    (<IconLiz fill="#DBDBDB" />)}
-            </section>
-
-            <section className="p-4 min-h-24 bg-white">
-                <label className="font-semibold text-sm">{producto.nombre}</label>
-
-                <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
+                className="relative border-r border-gray-200 my-auto overflow-hidden size-64 h-full">
+                <ul className="p-1 flex justify-between items-center">
                     <li className="flex flex-col gap-1">
                         {discountPercentage > 0 && (
-                            <div className="w-full text-center border-2 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 border-red-600 text-red-600 text-xs font-semibold px-2 py-1 rounded-md">
                                 -{discountPercentage}%
                             </div>
                         )}
                         {isLowStock && (
                             <div className="w-full text-center border-2 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
-                                Última(s) {producto.cantidad}
+                                última(s) {producto.cantidad}
                             </div>
                         )}
                         {isOutOfStock && (
                             <div className="w-full text-center border-2 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
-                                Agotado
+                                agotado
                             </div>
                         )}
                     </li>
@@ -126,40 +115,58 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     </button>
                 </ul>
 
-                <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
-                <p className="text-xs text-gray-500 flex items-center gap-1">
-                    <Barcode className="size-3 text-purple-800" />
-                    CB: {producto.id}
-                </p>
-                <p className="text-xs text-gray-500 flex items-center">
-                    <Hash className="size-3 text-purple-800" />
-                    STOCK: {producto.cantidad}
-                </p>
-            </section>
 
-            <footer className="mt-auto">
-                <ul className="w-full px-4 pb-2 mt-auto bg-white flex items-center justify-between">
-                    <li className="flex flex-col">
-                        {producto.descuento ? (
-                            <>
+                {producto.image ?
+                    (<img
+                        src="/logo.jpg"
+                        alt="Product Image"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />) :
+                    (<IconLiz
+                        fill="#DBDBDB"
+                    />)
+                }
+            </section>
+            <div className="w-full h-56 flex flex-col justify-between">
+                <section className="flex justify-between w-full p-4 min-h-24 bg-white">
+                    <article>
+                        <label className="font-semibold text-sm">{producto.nombre}</label>
+                        <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
+                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                            <Barcode className="size-3 text-purple-800" />
+                            CB: {producto.id}
+                        </p>
+                        <p className="text-xs text-gray-500 flex items-center">
+                            <Hash className="size-3 text-purple-800" />
+                            STOCK: {producto.cantidad}
+                        </p>
+                    </article>
+                </section>
+
+                <footer className="mt-auto">
+                    <ul className="w-full px-4 pb-2 mt-auto bg-white flex items-center justify-between">
+                        <li className="flex flex-col">
+                            {producto.descuento ? (
+                                <>
+                                    <span className="text-lg font-semibold text-purple-600">
+                                        {formatValue(producto.descuento, "currency")}
+                                    </span>
+                                    <span className="text-xs text-gray-500 line-through">
+                                        {formatValue(producto.precio, "currency")}
+                                    </span>
+                                </>
+                            ) : (
                                 <span className="text-lg font-semibold text-purple-600">
-                                    {formatValue(producto.descuento, "currency")}
-                                </span>
-                                <span className="text-xs text-gray-500 line-through">
                                     {formatValue(producto.precio, "currency")}
                                 </span>
-                            </>
-                        ) : (
-                            <span className="text-lg font-semibold text-purple-600">
-                                {formatValue(producto.precio, "currency")}
-                            </span>
-                        )}
-                    </li>
-                    <li>
-                        <AddToCartButton id={producto.id} cantidad={producto.cantidad} producto={producto} />
-                    </li>
-                </ul>
-            </footer>
+                            )}
+                        </li>
+                        <li>
+                            <AddToCartButton id={producto.id} cantidad={producto.cantidad} producto={producto} />
+                        </li>
+                    </ul>
+                </footer>
+            </div>
         </motion.article >
     );
 }

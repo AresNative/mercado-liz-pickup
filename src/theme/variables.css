@@ -152,7 +152,6 @@
 ::-webkit-scrollbar {
     background: var(--background-card);
     width: 10px;
-    z-index: 9999;
 }
 
 ::-webkit-scrollbar-track {
@@ -186,6 +185,17 @@ ion-toolbar {
     z-index: 0;
     position: relative;
     --box-shadow: 0px 0px 0px 1px var(--border-color) inset;
+}
+ion-tab-bar,
+ion-tab-button {
+    --background: var(--background);
+    --z-index: 10 !important;
+    z-index: 10 !important;
+    position: relative;
+}
+ion-tab-button {
+    --color-selected: var(--ion-color-tertiary);
+    --color: var(--text-secondary);
 }
 
 .custom-toolbar ion-toolbar {

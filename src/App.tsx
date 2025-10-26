@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import { IonApp, IonRouterOutlet, IonTabs, setupIonicReact } from '@ionic/react';
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
@@ -27,6 +27,8 @@ import LayoutPedidos from './app/pedido/layout';
 import LayoutCarrito from './app/carrito/layout';
 import LayoutCheckout from './app/checkout/layout';
 import LayoutSeguimiento from './app/seguimiento/layout';
+import Tabs from './template/tabs';
+import { IonReactRouter } from '@ionic/react-router';
 
 setupIonicReact({
   mode: 'ios',
@@ -35,39 +37,32 @@ const App: React.FC = () => {
 
   return (
     <IonApp>
-      <IonRouterOutlet>
+      <IonReactRouter>
+        <IonTabs>
+          <IonRouterOutlet>
 
-        <Background>
-          <Switch>
+            <Background>
+              <Switch>
 
-            <Route path="/home">
-              <Layout />
-            </Route>
-            <Route path="/productos">
-              <LayoutProductos />
-            </Route>
-            <Route path="/carrito">
-              <LayoutCarrito />
-            </Route>
-            <Route path="/checkout">
-              <LayoutCheckout />
-            </Route>
-            <Route path="/pedidos">
-              <LayoutPedidos />
-            </Route>
-            <Route path="/seguimiento">
-              <LayoutSeguimiento />
-            </Route>
+                <Route path="/home" render={() => <Layout />} exact />
+                <Route path="/productos" render={() => <LayoutProductos />} exact />
+                <Route path="/carrito" render={() => <LayoutCarrito />} exact />
+                <Route path="/checkout" render={() => <LayoutCheckout />} exact />
+                <Route path="/pedidos" render={() => <LayoutPedidos />} exact />
+                <Route path="/seguimiento" render={() => <LayoutSeguimiento />} exact />
 
-            <Route exact path="/">
-              <Redirect to="/home" />
-            </Route>
-            <Route>
-              <NotFound />
-            </Route>
-          </Switch>
-        </Background>
-      </IonRouterOutlet>
+                <Redirect exact path="/" to="/home" />
+
+                <Route>
+                  <NotFound />
+                </Route>
+
+              </Switch>
+            </Background>
+          </IonRouterOutlet>
+          <Tabs />
+        </IonTabs>
+      </IonReactRouter>
     </IonApp>
   );
 };
