@@ -12,13 +12,13 @@ const Pedido: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     >
         <IonHeader
             collapse="condense"
-            className="custom-toolbar z-50 -top-16"
+            className="custom-toolbar h-fit absolute -top-0"
         >
             <IonToolbar>
                 <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
             </IonToolbar>
         </IonHeader>
-        <section>Hola desde page.tsx</section>
+        <section className=" my-10 mx-4">Hola desde page.tsx</section>
     </IonContent>;
 }
 

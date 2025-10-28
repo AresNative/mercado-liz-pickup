@@ -1,5 +1,6 @@
 // components/Header.tsx
 import { IconLiz } from '@/app/productos/components/ionc-liz';
+import SearchSection from '@/app/productos/components/search-section';
 import { useAppSelector } from '@/hooks/selector';
 import { RootState } from '@/hooks/store';
 import { formatValue } from '@/utils/constants/format-values';
@@ -95,7 +96,18 @@ const Header: React.FC<HeaderProps> = ({
 
             {!mobile && showScrollBarr && isScrolled && (
                 <IonToolbar>
-                    <IonSearchbar className='custom-search-barr md:w-[80%] mx-auto' />
+                    <SearchSection
+                        mobileScreen={mobileScreen}
+                        isScrolled={isScrolled}
+                        onSearchSelect={(producto) => {
+                            // Manejar selección de producto
+                            console.log('Producto seleccionado:', producto);
+                        }}
+                        onSearchChange={(searchTerm) => {
+                            // Manejar cambio de búsqueda
+                            console.log('Búsqueda cambiada:', searchTerm);
+                        }}
+                    />
                 </IonToolbar>)}
         </IonHeader>
     );

@@ -122,15 +122,14 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         >
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar z-50 -top-16"
+                className="custom-toolbar h-fit absolute -top-0"
             >
                 <IonToolbar>
-
                     <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
             {/* Hero Section */}
-            <header className="text-purple-800 dark:text-purple-200 bg-no-repeat bg-center relative">
+            <header className="text-purple-800 dark:text-purple-200 bg-no-repeat bg-center relative my-12">
                 <section className="max-w-6xl py-5 md:py-10 px-4 mx-auto flex flex-col gap-6">
                     <h1 className="text-4xl md:text-6xl font-bold mb-4">Compra tus productos frescos online</h1>
                     <p className="text-xl text-gray-400 md:text-2xl mb-8 max-w-3xl">

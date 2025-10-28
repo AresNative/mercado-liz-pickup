@@ -11,6 +11,8 @@ import { promoItems } from "./data/promos";
 import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import SerarchSection from "./components/search-section";
+import SearchSection from "./components/search-section";
 
 // Definir el tipo para los productos
 interface Producto {
@@ -35,10 +37,15 @@ interface ApiResponse {
 const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) => {
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
 
+    //gestion de data
     const [items, setItems] = useState<Producto[]>([]);
+    const [hasMore, setHasMore] = useState(true);
+
+    //Conteo de articulos y pantallas
     const [totalRecords, setTotalRecords] = useState(1);
     const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
+
+    //Secciones de pantalla, favoritos | todos | promociones | combos
     const [activeSection, setActiveSection] = useState<string | null>(null);
     const [favoriteCount, setFavoriteCount] = useState(0);
 
@@ -88,8 +95,8 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
                     INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                    INNER JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad
                     LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
-                    LEFT JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad
                 `,
                 pageSize: 10,
                 page: currentPage,
@@ -182,6 +189,7 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
         }
     }, [page]);
 
+
     const handleInfiniteScroll = useCallback(async (event: any) => {
         console.log('🎯 Infinite scroll activado');
         console.log('📊 Estado - hasMore:', hasMore, 'isLoading:', isLoading, 'isFetching:', isFetching.current);
@@ -236,16 +244,27 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
         >
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar z-50 -top-16"
+                className="custom-toolbar h-fit absolute -top-0"
             >
                 <IonToolbar>
-                    <div className="flex items-center">
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                        {!mobileScreen && onScroll && (<IonSearchbar className="w-[80%] mt-4 mx-auto -left-8" color={"light"} />)}
-                    </div>
+                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
-            <section className="px-4 max-w-6xl mx-auto">
+
+            <SearchSection
+                mobileScreen={mobileScreen}
+                onScroll={onScroll}
+                onSearchSelect={(producto) => {
+                    // Manejar selección de producto
+                    console.log('Producto seleccionado:', producto);
+                }}
+                onSearchChange={(searchTerm) => {
+                    // Manejar cambio de búsqueda
+                    console.log('Búsqueda cambiada:', searchTerm);
+                }}
+            />
+
+            <section className="px-4 py-4 max-w-6xl mx-auto">
                 <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
                 <CategorySlider />
 
@@ -300,7 +319,7 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
                     ></IonInfiniteScrollContent>
                 </IonInfiniteScroll>
             </section>
-        </IonContent>
+        </IonContent >
     );
 }
 
