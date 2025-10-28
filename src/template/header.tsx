@@ -12,13 +12,15 @@ import {
     IonBackButton,
     IonBadge,
     IonItem,
-    IonLabel
+    IonLabel,
+    IonSearchbar
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 
 interface HeaderProps {
     isScrolled?: boolean;
     showMenuButton?: boolean;
+    showScrollBarr?: boolean;
     showBackButton?: boolean;
     className?: string;
     defaultBack?: string;
@@ -28,6 +30,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
     isScrolled = false,
     showMenuButton = true,
+    showScrollBarr = false,
     showBackButton = false,
     className = '',
     defaultBack,
@@ -89,6 +92,11 @@ const Header: React.FC<HeaderProps> = ({
                     </IonButtons>
                 )}
             </IonToolbar>
+
+            {!mobile && showScrollBarr && isScrolled && (
+                <IonToolbar>
+                    <IonSearchbar className='custom-search-barr md:w-[80%] mx-auto' />
+                </IonToolbar>)}
         </IonHeader>
     );
 };

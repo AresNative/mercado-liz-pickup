@@ -3,6 +3,7 @@ export interface PageProps {
   icon?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
+  mobileScreen?: boolean;
   onClick?: () => void;
   onScroll?: (isScrolled: boolean) => void;
 }
