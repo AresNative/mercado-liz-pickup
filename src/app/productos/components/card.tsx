@@ -1,7 +1,7 @@
 import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
 import AddToCartButton from "./product-add-cart";
-import { Barcode, Hash, Heart, Minus } from "lucide-react";
+import { Barcode, Hash, Heart } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
@@ -38,15 +38,14 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
         let updatedFavorites;
 
         if (isFavorite) {
-            updatedFavorites = JSONfavorites.filter((fav: any) => fav !== producto.id);
+            updatedFavorites = JSONfavorites.filter((fav: any) => fav.id !== producto.id);
         } else {
-            updatedFavorites = [...JSONfavorites, producto.id];
+            updatedFavorites = [...JSONfavorites, producto];
         }
 
-        console.log("Favoritos actualizados:", updatedFavorites);
         setLocalStorageItem("favoritos", JSON.stringify(updatedFavorites));
         setIsFavorite(!isFavorite);
-    }, [isFavorite, producto.id]);
+    }, [isFavorite, producto]);
 
     // Corrección: pasar las opciones del modal al presentarlo
     const [present] = useIonModal(ModalProd, {
@@ -66,7 +65,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     useEffect(() => {
         const favorites = getLocalStorageItem("favoritos") || [];
         const JSONfavorites = typeof favorites === "string" ? JSON.parse(favorites) : favorites;
-        setIsFavorite(JSONfavorites.some((fav: any) => fav === producto.id));
+        setIsFavorite(JSONfavorites.some((fav: any) => fav.id === producto.id));
     }, [producto.id]);
 
     return (
@@ -76,7 +75,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-40 md:min-w-52 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
+            className="group relative min-w-52 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
 
             <section
                 className="relative border-b border-gray-200 overflow-hidden">
@@ -101,12 +100,12 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                         )}
                         {isLowStock && (
                             <div className="w-full text-center border-2 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
-                                Última(s) {producto.cantidad}
+                                última(s) {producto.cantidad}
                             </div>
                         )}
                         {isOutOfStock && (
                             <div className="w-full text-center border-2 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
-                                Agotado
+                                agotado
                             </div>
                         )}
                     </li>

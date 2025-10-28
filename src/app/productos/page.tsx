@@ -1,7 +1,6 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, IonFab, IonFabButton } from "@ionic/react";
-import { Apple, Search } from "lucide-react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, IonSearchbar } from "@ionic/react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
@@ -9,6 +8,9 @@ import { IconLiz } from "./components/ionc-liz";
 import CategorySlider from "./components/categories";
 import PromoBanner from "./components/banner-offers";
 import { promoItems } from "./data/promos";
+import Badge from "@/components/badge";
+import { formatValue } from "@/utils/constants/format-values";
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 // Definir el tipo para los productos
 interface Producto {
@@ -30,15 +32,39 @@ interface ApiResponse {
     data: any[];
 }
 
-const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) => {
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
 
     const [items, setItems] = useState<Producto[]>([]);
+    const [totalRecords, setTotalRecords] = useState(1);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const [activeSection, setActiveSection] = useState<string | null>(null);
+    const [favoriteCount, setFavoriteCount] = useState(0);
 
     const initialLoad = useRef(true);
     const isFetching = useRef(false);
+
+    const isFavoritesSection = activeSection === 'favoritos';
+
+    // Get favorite products
+    const getFavoriteProducts = useCallback((): Producto[] => {
+        try {
+            const favorites = getLocalStorageItem("favoritos");
+            const parsedFavorites = favorites ? JSON.parse(favorites) : [];
+
+            setFavoriteCount(parsedFavorites.length);
+            return parsedFavorites;
+        } catch (e) {
+            console.error('Error al leer favoritos del localStorage', e);
+            setFavoriteCount(0);
+            return [];
+        }
+    }, []);
+    // Update favorite count when storage changes
+    useEffect(() => {
+        setFavoriteCount(getFavoriteProducts().length);
+    }, [isFavoritesSection, getFavoriteProducts]);
 
     const generateItems = useCallback(async (currentPage: number) => {
         // Prevenir múltiples llamadas simultáneas
@@ -62,9 +88,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
                     INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE()
-                    and ofr.FechaA > GETDATE()
-                    LEFT JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo 
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
+                    LEFT JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad
                 `,
                 pageSize: 10,
                 page: currentPage,
@@ -77,8 +102,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         { "key": "art.Descripcion1" },
                         { "key": "lpu.Unidad" },
                         { "key": "lpu.Precio" },
-                        /* { "key": "ofrd.Precio", "alias": "Descuento" }, */
-                        /* { "key": "au.Unidad", "alias": "UnidadFactor" }, */
+                        { "key": "ofrd.Precio", "alias": "Descuento" },
+                        { "key": "au.Unidad", "alias": "UnidadFactor" },
                         { "key": "au.Factor" }
                     ],
                     "Agregaciones": [
@@ -90,8 +115,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     ],
                     "Order": [
                         {
-                            "Key": "cb.Codigo",
-                            "Direction": "DESC"
+                            "Key": "art.Descripcion1",
+                            "Direction": "ASC"
                         }
                     ]
                 },
@@ -118,7 +143,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         cantidad: item.Factor || 1,
                         descuento: item.Descuento || 0,
                     }));
-
+                    setTotalRecords(apiData.totalRecords)
                     setItems(prevItems => {
                         const newItems = currentPage === 1 ? mappedItems : [...prevItems, ...mappedItems];
                         return newItems;
@@ -185,6 +210,21 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     }, [hasMore, isLoading]);
 
+    const handleSectionChange = useCallback((section: string) => {
+        const newSection = activeSection === section ? null : section;
+        setActiveSection(newSection);
+
+        if (newSection === 'Favoritos') {
+            setItems(getFavoriteProducts());
+        } else {
+            // Resetear para cargar desde el inicio
+            setPage(1);
+            setItems([]);
+            setHasMore(true);
+            generateItems(1);
+        }
+    }, [activeSection, getFavoriteProducts, generateItems]);
+
     return (
         <IonContent
             fullscreen
@@ -199,15 +239,35 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar z-50 -top-16"
             >
                 <IonToolbar>
-                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    <div className="flex items-center">
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                        {!mobileScreen && onScroll && (<IonSearchbar className="w-[80%] mt-4 mx-auto -left-8" color={"light"} />)}
+                    </div>
                 </IonToolbar>
             </IonHeader>
-
             <section className="px-4 max-w-6xl mx-auto">
                 <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
                 <CategorySlider />
 
-                <IonList>
+                <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
+                    {[
+                        { key: null, label: "Todos", count: totalRecords },
+                        { key: 'Favoritos', label: "Favoritos", count: favoriteCount }
+                    ].map((section) => (
+                        <button
+                            key={section.key || 'all'}
+                            onClick={() => handleSectionChange(section.key!)}
+                            className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none"
+                        >
+                            <Badge
+                                color={activeSection === section.key ? "purple" : "gray"}
+                                text={`${section.label} ${section.count > 0 ? `(${formatValue(section.count, "number")})` : ''}`}
+                            />
+                        </button>
+                    ))}
+                </section>
+
+                <IonList className="bg-transparent">
                     <BentoGrid cols={5}>
                         {items.map((producto, index) => (
                             <Card
@@ -233,7 +293,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 <IonInfiniteScroll
                     onIonInfinite={handleInfiniteScroll}
                     threshold="100px"
-                    disabled={!hasMore || isLoading}
+                    disabled={!hasMore || isLoading || activeSection === "Favoritos"}
                 >
                     <IonInfiniteScrollContent
                         loadingText={hasMore ? "Cargando más productos..." : "No hay más productos"}
