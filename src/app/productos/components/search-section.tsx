@@ -192,25 +192,21 @@ const SearchSection: React.FC<SearchSectionProps> = ({
 
     return (
         <>
-            <section className="search-section relative z-50 w-full">
-                <div className="w-[70%] mt-4 mx-auto relative">
-                    <IonSearchbar
-                        className={cn("w-full", isScrolled && "custom-search-barr ")}
-                        color={"light"}
-                        value={searchTerm}
-                        onIonInput={(e) => handleSearchChange(e.detail.value!)}
-                        onIonClear={handleClearSearch}
-                        onIonFocus={handleSearchFocus}
-                        placeholder="Buscar productos..."
-                        enterkeyhint="search"
-                    />
-
-
-                </div>
+            <section className="relative w-[76%] mx-auto">
+                <IonSearchbar
+                    className={cn("w-full", isScrolled && "custom-search-barr ")}
+                    color={"light"}
+                    value={searchTerm}
+                    onIonInput={(e) => handleSearchChange(e.detail.value!)}
+                    onIonClear={handleClearSearch}
+                    onIonFocus={handleSearchFocus}
+                    placeholder="Buscar productos..."
+                    enterkeyhint="search"
+                />
             </section>
             {/* Panel de sugerencias */}
             {showSuggestions && (
-                <div className="sticky inset-0 top-2 w-[70%]  mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                <div className="relative w-[70%] mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                     {isSearching ? (
                         <IonItem>
                             <IonLabel>

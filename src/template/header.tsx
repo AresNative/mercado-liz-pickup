@@ -66,6 +66,18 @@ const Header: React.FC<HeaderProps> = ({
                 <section className='flex flex-1 justify-center items-center mt-2 absolute left-0 right-0 top-0'>
                     {isScrolled && (<IconLiz className='mx-auto' fill={"#7927F5"} width={35} />)}
                 </section>
+                {!mobile && showScrollBarr && !isScrolled && (<SearchSection
+                    mobileScreen={mobileScreen}
+                    isScrolled={isScrolled}
+                    onSearchSelect={(producto) => {
+                        // Manejar selección de producto
+                        console.log('Producto seleccionado:', producto);
+                    }}
+                    onSearchChange={(searchTerm) => {
+                        // Manejar cambio de búsqueda
+                        console.log('Búsqueda cambiada:', searchTerm);
+                    }}
+                />)}
                 <IonButtons slot="end" className='flex items-center gap-2 cursor-pointer'>
                     {showMenuButton && (
                         <IonItem

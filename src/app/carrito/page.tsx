@@ -6,7 +6,13 @@ import { RootState } from "@/hooks/store";
 import Card from "./components/card";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/utils/functions/cn";
-
+/* 
+ @example: https://v0.app/chat/supermarket-app-design-vZOCJkxnwdg
+ * Al dar click en "Agendar" redireccionar a 'checkout'
+ * En 'checkout' maquetar calendario, formulario y "metodo de pago"
+ ! si "metodo de pago" es nulo se tomara como "cobro en efectivo"
+ * aun asi añadir opcion "cobro en efectivo"
+*/
 const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items = [] } = cart || {}; // Mejor manejo del estado inicial

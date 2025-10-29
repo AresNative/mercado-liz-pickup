@@ -11,8 +11,6 @@ import { promoItems } from "./data/promos";
 import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
-import SerarchSection from "./components/search-section";
-import SearchSection from "./components/search-section";
 
 // Definir el tipo para los productos
 interface Producto {
@@ -250,19 +248,6 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
                     <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
-
-            <SearchSection
-                mobileScreen={mobileScreen}
-                onScroll={onScroll}
-                onSearchSelect={(producto) => {
-                    // Manejar selección de producto
-                    console.log('Producto seleccionado:', producto);
-                }}
-                onSearchChange={(searchTerm) => {
-                    // Manejar cambio de búsqueda
-                    console.log('Búsqueda cambiada:', searchTerm);
-                }}
-            />
 
             <section className="px-4 py-4 max-w-6xl mx-auto">
                 <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
