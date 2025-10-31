@@ -101,8 +101,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({
                             ON art.Articulo = au.Articulo
                             AND lpu.Unidad = au.Unidad
                         INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
-                        LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
-                        LEFT JOIN OfertaD AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad
+                        INNER JOIN (
+                                    SELECT *,
+                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
+                                    FROM OfertaD
+                                ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                        LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
                     `,
                     pageSize: 5,
                     page: 1,
