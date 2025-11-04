@@ -129,6 +129,7 @@ export interface SearchableSelectProps {
     placeholder?: string;
     label?: string;
     require?: boolean;
+    Search?: boolean;
     options: string[];
     multi?: boolean;
     valueDefined?: string;
