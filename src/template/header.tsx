@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({
 
     // Calcular el total correctamente
     const total = items.reduce((sum, item) => {
-        return sum + (item.precio * item.quantity);
+        return sum + ((item.descuento ? item.descuento : item.precio) * item.quantity);
     }, 0);
 
     return (
@@ -93,7 +93,7 @@ const Header: React.FC<HeaderProps> = ({
                             {items.length > 0 && (
                                 <IonBadge
                                     color="success"
-                                    className="absolute text-white text-center -top-0 right-0 cursor-pointer"
+                                    className="absolute text-purple-700 text-center -top-0 right-0 cursor-pointer"
                                 >
                                     {items.length}
                                 </IonBadge>)}
