@@ -15,7 +15,9 @@ export const EnvConfig = (): EnvConfigType => {
       : process.env.REACT_TEST_API_URL;
 
   const api_int =
-    process.env.REACT_PUBLIC_API_URL_INT || process.env.REACT_TEST_API_URL;
+    mode === "production"
+      ? process.env.REACT_PUBLIC_API_URL_INT ?? process.env.REACT_TEST_API_URL
+      : process.env.REACT_TEST_API_URL;
 
   const hubs =
     mode === "production"
