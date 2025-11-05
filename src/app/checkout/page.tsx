@@ -42,7 +42,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             >
                 <IonToolbar>
                     <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                   {/*  <IonTitle>Agendar</IonTitle> */}
+                    {/*  <IonTitle>Agendar</IonTitle> */}
                 </IonToolbar>
             </IonHeader>
 
@@ -60,10 +60,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </article>
 
                 {/*  Secciones principales */}
-                <section className="flex flex-col  w-full md:w-2/3">
+                <section className="flex flex-col w-full md:w-2/3">
                     <CalendarioYHora />
                     <div className="ion-padding ">
-                        <div className="border-2 border-pink-400 rounded-lg p-4 mb-6">
+                        <div className="border-2 rounded-lg p-4">
                             <h2 className="font-bold text-lg mb-2">Información</h2>
                             <MainForm
                                 actionType="post"
@@ -79,7 +79,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 }}
                             />
                         </div>
-                        <div className="border-2 border-purple-400 rounded-lg p-4 mb-6">
+                        <div className="border-2 rounded-lg p-4">
                             <h2 className="font-bold text-lg mb-1">Forma de pago</h2>
                             <h3 className="text-sm mb-1">Ingresa los detalles de tu forma de pago para completar la compra.</h3>
                             <MainForm
