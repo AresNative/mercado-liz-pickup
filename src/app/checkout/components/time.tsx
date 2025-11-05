@@ -134,7 +134,7 @@ const CalendarWithTimeSlots: React.FC = () => {
     return (
         <div className="ion-padding">
             {/* 🗓️ CALENDARIO */}
-            <div className="border-2 border-yellow-400 rounded-lg p-4 mb-6">
+            <div className="border-2 rounded-lg p-4 mb-6">
                 <h2 className="text-lg font-bold mb-3">Selecciona fecha</h2>
 
                 <div className="flex justify-between items-center mb-4">
@@ -197,7 +197,7 @@ const CalendarWithTimeSlots: React.FC = () => {
             </div>
 
             {/* 🕒 HORARIOS */}
-            <div className="border-2 border-green-400 rounded-lg p-4 mb-6">
+            <div className="border-2 rounded-lg p-4">
                 <h2 className="text-lg font-bold mb-3">Selecciona hora</h2>
 
                 {!selectedDate ? (
@@ -221,10 +221,10 @@ const CalendarWithTimeSlots: React.FC = () => {
                                                     disabled={!slot.isAvailable}
                                                     onClick={() => setSelectedTime(slot.time)}
                                                     className={`p-2 rounded-md border text-sm flex items-center justify-center ${selectedTime === slot.time
-                                                            ? "bg-purple-600 text-white border-purple-700"
-                                                            : slot.isAvailable
-                                                                ? "border-purple-200 hover:bg-purple-100 text-purple-700"
-                                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        ? "bg-purple-600 text-white border-purple-700"
+                                                        : slot.isAvailable
+                                                            ? "border-purple-200 hover:bg-purple-100 text-purple-700"
+                                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                                         }`}
                                                 >
                                                     <IonIcon icon={timeOutline} className="mr-1" />
@@ -246,10 +246,10 @@ const CalendarWithTimeSlots: React.FC = () => {
                                                     disabled={!slot.isAvailable}
                                                     onClick={() => setSelectedTime(slot.time)}
                                                     className={`p-2 rounded-md border text-sm flex items-center justify-center ${selectedTime === slot.time
-                                                            ? "bg-purple-600 text-white border-purple-700"
-                                                            : slot.isAvailable
-                                                                ? "border-purple-200 hover:bg-purple-100 text-purple-700"
-                                                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        ? "bg-purple-600 text-white border-purple-700"
+                                                        : slot.isAvailable
+                                                            ? "border-purple-200 hover:bg-purple-100 text-purple-700"
+                                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
                                                         }`}
                                                 >
                                                     <IonIcon icon={timeOutline} className="mr-1" />
