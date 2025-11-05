@@ -4,6 +4,7 @@ interface CartItem {
   id: string | number; // Puedes ajustar el tipo según tus necesidades
   quantity: number;
   precio: number;
+  descuento?: number; // Opcional, si es necesario
   factor?: number; // Opcional, si es necesario
 }
 

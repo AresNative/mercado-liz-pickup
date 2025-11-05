@@ -6,6 +6,9 @@ import { RootState } from "@/hooks/store";
 import Card from "./components/card";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/utils/functions/cn";
+import { useHistory } from "react-router";
+import { formatValue } from '@/utils/constants/format-values';
+
 /* 
  @example: https://v0.app/chat/supermarket-app-design-vZOCJkxnwdg
  * Al dar click en "Agendar" redireccionar a 'checkout'
@@ -16,6 +19,12 @@ import { cn } from "@/utils/functions/cn";
 const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items = [] } = cart || {}; // Mejor manejo del estado inicial
+    const history = useHistory();
+    const total = items.reduce((sum, item) => {
+        return sum + ((item.descuento ? item.descuento : item.precio) * item.quantity);
+    }, 0)
+    const serv = total * 0.05; //->calculo del 5% de servicio
+    const totalConServicio = total + serv; //-> total mas servicio
     return (
         <IonContent
             role="feed"
@@ -37,12 +46,20 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 <article className={cn(onScroll ? "backdrop-blur-sm bg-white/70" : " bg-white", "sticky top-2 mb-5 z-50 h-fit w-full md:w-2/3 border border-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md justify-between")}>
                     <label className="text-lg font-bold">Resumen del pedido</label>
                     <div className="mt-10">
-                        <p className="flex justify-between"><span className="text-gray-500">Subtotal</span> $00.0</p>
-                        <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span> $00.0</p>
+                        <p className="flex justify-between"><span className="text-gray-500">Subtotal</span> {total > 0 && (<p>{formatValue(total, "currency")}</p>)}</p>
+                        <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span>{serv.toFixed(2)}</p>
                         <section className="mx-auto border-t border-gray-200">
-                            <p className="flex mt-5 justify-between font-semibold"><span>Total</span> $00.0</p>
+                            <p className="flex mt-5 justify-between font-semibold"><span>Total</span> {totalConServicio.toFixed(2)}</p>
                         </section>
-                        <IonButton expand="block" shape="round" size="default" className="custom-tertiary mt-5">Agendar</IonButton>
+                        <IonButton
+                            expand="block"
+                            shape="round"
+                            size="default"
+                            className="custom-tertiary mt-5"
+                            onClick={() => history.push("/checkout")}
+                        >
+                            Agendar
+                        </IonButton>
                     </div>
                 </article>
 
