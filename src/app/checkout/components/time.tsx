@@ -1,273 +1,214 @@
 import React, { useState, useMemo, useCallback } from "react";
 import {
-    addMonths,
-    subMonths,
-    startOfMonth,
-    endOfMonth,
-    startOfWeek,
-    endOfWeek,
-    eachDayOfInterval,
-    format,
-    isSameMonth,
-    isSameDay,
-    isToday,
-    startOfDay,
-    parseISO,
-    isBefore,
     addMinutes,
-    isWithinInterval,
+    parseISO,
+    isSameDay,
+    isBefore,
+    startOfDay,
+    format,
+    areIntervalsOverlapping,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { chevronBackOutline, chevronForwardOutline, timeOutline } from "ionicons/icons";
+import { timeOutline } from "ionicons/icons";
 import { IonIcon } from "@ionic/react";
 
-/* --------------------------
-   HOOK: Generador de horarios dinámicos
--------------------------- */
-const useTimeSlots = (selectedDate: string | null, citasExistentes: any[]) => {
-    const generateTimeSlots = useCallback((date: string, existingCitas: any[]) => {
-        const baseDate = parseISO(date);
-        const startHour = 9.5; // 9:30 AM
-        const endHour = 16; // 4:00 PM
-        const slotDuration = 30; // minutos
+type Cita = { nombre_lista: string };
+
+const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
+    return useMemo(() => {
+        if (!selectedDate) return { morningSlots: [], afternoonSlots: [] };
+
+        const SLOT_MINUTES = 30;
+        const day = startOfDay(parseISO(selectedDate));
         const now = new Date();
-        const isToday = isSameDay(baseDate, now);
+        const isToday = isSameDay(day, now);
 
-        // 🔹 Bloques de citas ya reservadas
-        const bookedSlots = existingCitas.map((cita) => {
-            const start = parseISO(cita.nombre_lista); // fecha en formato ISO
-            const end = addMinutes(start, 5);
-            return { start, end };
-        });
+        // rango fijo: 09:30 -> 16:00
+        const startHour = 9;
+        const startMinute = 30;
+        const endHour = 16;
+        const endMinute = 0;
 
-        const isSlotAvailable = (slotTime: Date) => {
-            return !bookedSlots.some(({ start, end }) =>
-                isWithinInterval(slotTime, { start, end })
-            );
-        };
+        const startDate = new Date(day);
+        startDate.setHours(startHour, startMinute, 0, 0);
+        const endDate = new Date(day);
+        endDate.setHours(endHour, endMinute, 0, 0);
 
-        const isValidSlot = (slotTime: Date) => {
-            if (isToday && slotTime <= now) return false;
-            return true;
-        };
-
-        const generateSlotsForPeriod = (startHour: number, endHour: number) => {
-            const slots = [];
-            for (let hour = Math.floor(startHour); hour < endHour; hour++) {
-                const startMinute = hour === 9 ? 30 : 0;
-                const endMinute = hour === 16 ? 30 : 60;
-
-                for (let minute = startMinute; minute < endMinute; minute += slotDuration) {
-                    const slotTime = new Date(baseDate);
-                    slotTime.setHours(hour, minute, 0, 0);
-
-                    if (!isValidSlot(slotTime)) continue;
-
-                    const isAvailable = isSlotAvailable(slotTime);
-                    slots.push({
-                        id: `${hour}-${minute}`,
-                        time: slotTime.toISOString(),
-                        isAvailable,
-                    });
+        // transformar citas reservadas a intervalos
+        const bookedIntervals = citasExistentes
+            .map((c) => {
+                try {
+                    const start = parseISO(c.nombre_lista);
+                    const end = addMinutes(start, SLOT_MINUTES);
+                    return { start, end };
+                } catch {
+                    return null;
                 }
-            }
-            return slots;
-        };
+            })
+            .filter(Boolean) as { start: Date; end: Date }[];
 
-        const morningSlots = generateSlotsForPeriod(startHour, 13);
-        const afternoonSlots = generateSlotsForPeriod(14, endHour + 0.5);
+        const slots: { id: string; time: string; isAvailable: boolean }[] = [];
+        for (
+            let t = startDate.getTime();
+            t <= endDate.getTime();
+            t += SLOT_MINUTES * 60_000
+        ) {
+            const slotStart = new Date(t);
+            const slotEnd = addMinutes(slotStart, SLOT_MINUTES);
+
+            // no mostrar si el slot ya terminó en el día actual
+            if (isToday && isBefore(slotEnd, now)) continue;
+
+            // comprobar solapamiento con reservas
+            const available = !bookedIntervals.some((b) =>
+                areIntervalsOverlapping({ start: slotStart, end: slotEnd }, b)
+            );
+
+            slots.push({
+                id: slotStart.toISOString(),
+                time: slotStart.toISOString(),
+                isAvailable: available,
+            });
+        }
+
+        // separar mañana/tarde por 13:00
+        const midday = new Date(day);
+        midday.setHours(13, 0, 0, 0);
+
+        const morningSlots = slots.filter((s) => parseISO(s.time) < midday);
+        const afternoonSlots = slots.filter((s) => parseISO(s.time) >= midday);
 
         return { morningSlots, afternoonSlots };
-    }, []);
-
-    const timeSlots = useMemo(() => {
-        if (!selectedDate) return { morningSlots: [], afternoonSlots: [] };
-        return generateTimeSlots(selectedDate, citasExistentes);
-    }, [selectedDate, citasExistentes, generateTimeSlots]);
-
-    return timeSlots;
+    }, [selectedDate, citasExistentes]);
 };
 
-/* ---------------------------- COMPONENTE: Calendario + Horas---------------------------- */
-const CalendarWithTimeSlots: React.FC = () => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+interface TimeRanges {
+    selectedDate: string | null;
+}
+
+const CalendarWithTimeSlots: React.FC<TimeRanges> = ({ selectedDate }) => {
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-    // 🔹 Citas existentes (simuladas, normalmente vienen del backend)
+    // ejemplo de citas existentes
     const citasExistentes = [
         { nombre_lista: "2025-11-01T10:00:00.000Z" },
         { nombre_lista: "2025-11-01T11:30:00.000Z" },
     ];
 
-    // 🔹 Hook de horarios disponibles
-    const { morningSlots, afternoonSlots } = useTimeSlots(selectedDate, citasExistentes);
+    const { morningSlots, afternoonSlots } = useTimeSlots(
+        selectedDate,
+        citasExistentes
+    );
 
-    // 🔹 Navegación del calendario
-    const handlePreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
-    const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
-
-    // 🔹 Selección de fecha
-    const handleDateClick = (date: Date) => {
-        setSelectedDate(startOfDay(date).toISOString());
-        setSelectedTime(null);
-    };
-
-    // 🔹 Reglas visuales de calendario
-    const isPastDate = (date: Date) => isBefore(date, startOfDay(new Date()));
-    const isDateBlocked = (date: Date) => date.getDay() === 0; // Domingos
-    const isDateAvailable = (date: Date) => !isDateBlocked(date) && !isPastDate(date);
-
-    // 🔹 Rango de días del mes
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    const daysInCalendar = eachDayOfInterval({
-        start: calendarStart,
-        end: calendarEnd,
-    });
-
-    // 🔹 Formateo
-    const formatHour = (iso: string) => format(parseISO(iso), "hh:mm a");
+    const formatHour = useCallback((iso: string) => {
+        return format(parseISO(iso), "hh:mm a", { locale: es });
+    }, []);
 
     return (
-        <div className="ion-padding">
-            {/* 🗓️ CALENDARIO */}
-            <div className="border-2 rounded-lg p-4 mb-6">
-                <h2 className="text-lg font-bold mb-3">Selecciona fecha</h2>
+        <section
+            aria-labelledby="choose-time-heading"
+            className="border-2 rounded-lg p-4 bg-white shadow-sm"
+        >
+            <header className="mb-3">
+                <h2 id="choose-time-heading" className="text-lg font-semibold">
+                    Selecciona hora
+                </h2>
+                <p className="text-sm text-gray-500">Elige un bloque disponible</p>
+            </header>
 
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-center capitalize">
-                        {format(currentMonth, "MMMM yyyy", { locale: es })}
-                    </h2>
-                    <div className="flex gap-2">
-                        <IonIcon
-                            icon={chevronBackOutline}
-                            onClick={handlePreviousMonth}
-                            className="text-gray-600 text-2xl cursor-pointer"
-                        />
-                        <IonIcon
-                            icon={chevronForwardOutline}
-                            onClick={handleNextMonth}
-                            className="text-gray-600 text-2xl cursor-pointer"
-                        />
-                    </div>
-                </div>
+            {!selectedDate ? (
+                <p className="text-gray-500 text-sm" role="status">
+                    Selecciona una fecha primero
+                </p>
+            ) : (
+                <>
+                    {morningSlots.length === 0 && afternoonSlots.length === 0 ? (
+                        <p className="text-gray-500 text-sm" role="status">
+                            No hay horarios disponibles para esta fecha
+                        </p>
+                    ) : (
+                        <>
+                            {morningSlots.length > 0 && (
+                                <div className="mb-4" aria-labelledby="morning-label">
+                                    <h3 id="morning-label" className="text-sm mb-2 text-gray-600">
+                                        Mañana
+                                    </h3>
+                                    <ul className="grid grid-cols-3 gap-2" role="list">
+                                        {morningSlots.map((slot) => {
+                                            const disabled = !slot.isAvailable;
+                                            const selected = selectedTime === slot.time;
+                                            return (
+                                                <li key={slot.id}>
+                                                    <button
+                                                        type="button"
+                                                        aria-pressed={selected}
+                                                        aria-label={`Hora ${formatHour(slot.time)} ${disabled ? "no disponible" : selected ? "seleccionada" : ""
+                                                            }`}
+                                                        disabled={disabled}
+                                                        onClick={() => setSelectedTime(slot.time)}
+                                                        className={`w-full p-2 rounded-md border text-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-400
+                                                            ${selected ? "bg-purple-600 text-white border-purple-700" : ""}
+                                                            ${!selected && !disabled ? "border-purple-200 hover:bg-purple-50" : ""}
+                                                            ${disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent" : ""}
+                                                        `}
+                                                    >
+                                                        <IonIcon icon={timeOutline} />
+                                                        <span>{formatHour(slot.time)}</span>
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            )}
 
-                {/* Días de la semana */}
-                <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-500 mb-1">
-                    {["D", "L", "M", "", "J", "V", "S"].map((day) => (
-                        <div key={day}>{day}</div>
-                    ))}
-                </div>
+                            {afternoonSlots.length > 0 && (
+                                <div aria-labelledby="afternoon-label">
+                                    <h3 id="afternoon-label" className="text-sm mb-2 text-gray-600">
+                                        Tarde
+                                    </h3>
+                                    <ul className="grid grid-cols-3 gap-2" role="list">
+                                        {afternoonSlots.map((slot) => {
+                                            const disabled = !slot.isAvailable;
+                                            const selected = selectedTime === slot.time;
+                                            return (
+                                                <li key={slot.id}>
+                                                    <button
+                                                        type="button"
+                                                        aria-pressed={selected}
+                                                        aria-label={`Hora ${formatHour(slot.time)} ${disabled ? "no disponible" : selected ? "seleccionada" : ""
+                                                            }`}
+                                                        disabled={disabled}
+                                                        onClick={() => setSelectedTime(slot.time)}
+                                                        className={`w-full p-2 rounded-md border text-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-400
+                                                            ${selected ? "bg-purple-600 text-white border-purple-700" : ""}
+                                                            ${!selected && !disabled ? "border-purple-200 hover:bg-purple-50" : ""}
+                                                            ${disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed border-transparent" : ""}
+                                                        `}
+                                                    >
+                                                        <IonIcon icon={timeOutline} />
+                                                        <span>{formatHour(slot.time)}</span>
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </>
+            )}
 
-                {/* Celdas de días */}
-                <div className="grid grid-cols-7 gap-1 text-center">
-                    {daysInCalendar.map((day, idx) => {
-                        const isCurrentMonth = isSameMonth(day, currentMonth);
-                        const isAvailable = isDateAvailable(day);
-                        const isBlocked = isDateBlocked(day);
-                        const isPast = isPastDate(day);
-                        const isSelected = selectedDate
-                            ? isSameDay(parseISO(selectedDate), day)
-                            : false;
-                        const isDayToday = isToday(day);
-
-                        let classes = "py-2 rounded-md transition-all ";
-                        if (!isCurrentMonth) classes += " text-gray-300";
-                        else if (isPast) classes += " bg-red-100 text-red-400";
-                        else if (isSelected) classes += " bg-purple-600 text-white";
-                        else if (isDayToday) classes += " ring-2 ring-purple-500";
-                        else if (isBlocked) classes += " bg-gray-200 text-gray-600";
-                        else if (isAvailable) classes += " bg-purple-100 hover:bg-purple-200";
-
-                        return (
-                            <button
-                                key={idx}
-                                disabled={!isAvailable}
-                                onClick={() => isAvailable && handleDateClick(day)}
-                                className={classes}
-                            >
-                                {format(day, "d")}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* 🕒 HORARIOS */}
-            <div className="border-2 rounded-lg p-4">
-                <h2 className="text-lg font-bold mb-3">Selecciona hora</h2>
-
-                {!selectedDate ? (
-                    <p className="text-gray-500 text-sm">Selecciona una fecha primero</p>
-                ) : (
-                    <>
-                        {morningSlots.length === 0 && afternoonSlots.length === 0 ? (
-                            <p className="text-gray-500 text-sm">
-                                No hay horarios disponibles para esta fecha
-                            </p>
-                        ) : (
-                            <>
-                                {/* Mañana */}
-                                {morningSlots.length > 0 && (
-                                    <>
-                                        <p className="text-sm font-medium mb-2 text-purple-700">Mañana</p>
-                                        <div className="grid grid-cols-3 gap-2 mb-4">
-                                            {morningSlots.map((slot) => (
-                                                <button
-                                                    key={slot.id}
-                                                    disabled={!slot.isAvailable}
-                                                    onClick={() => setSelectedTime(slot.time)}
-                                                    className={`p-2 rounded-md border text-sm flex items-center justify-center ${selectedTime === slot.time
-                                                        ? "bg-purple-600 text-white border-purple-700"
-                                                        : slot.isAvailable
-                                                            ? "border-purple-200 hover:bg-purple-100 text-purple-700"
-                                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                                        }`}
-                                                >
-                                                    <IonIcon icon={timeOutline} className="mr-1" />
-                                                    {formatHour(slot.time)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-
-                                {/* Tarde */}
-                                {afternoonSlots.length > 0 && (
-                                    <>
-                                        <p className="text-sm font-medium mb-2 text-purple-700">Tarde</p>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            {afternoonSlots.map((slot) => (
-                                                <button
-                                                    key={slot.id}
-                                                    disabled={!slot.isAvailable}
-                                                    onClick={() => setSelectedTime(slot.time)}
-                                                    className={`p-2 rounded-md border text-sm flex items-center justify-center ${selectedTime === slot.time
-                                                        ? "bg-purple-600 text-white border-purple-700"
-                                                        : slot.isAvailable
-                                                            ? "border-purple-200 hover:bg-purple-100 text-purple-700"
-                                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                                        }`}
-                                                >
-                                                    <IonIcon icon={timeOutline} className="mr-1" />
-                                                    {formatHour(slot.time)}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
-        </div>
+            <footer className="mt-4">
+                <p className="text-xs text-gray-500" aria-live="polite">
+                    {selectedTime
+                        ? `Hora seleccionada: ${formatHour(selectedTime)}`
+                        : "Ninguna hora seleccionada"}
+                </p>
+            </footer>
+        </section>
     );
 };
 
 export default CalendarWithTimeSlots;
-
-
