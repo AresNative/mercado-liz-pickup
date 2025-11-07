@@ -23,7 +23,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
         const now = new Date();
         const isToday = isSameDay(day, now);
 
-        // rango fijo: 09:30 -> 16:00
+        // Horario: 09:30 -> 16:00
         const startHour = 9;
         const startMinute = 30;
         const endHour = 16;
@@ -34,7 +34,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
         const endDate = new Date(day);
         endDate.setHours(endHour, endMinute, 0, 0);
 
-        // transformar citas reservadas a intervalos
+        // Transformar citas reservadas a intervalos
         const bookedIntervals = citasExistentes
             .map((c) => {
                 try {
@@ -48,6 +48,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             .filter(Boolean) as { start: Date; end: Date }[];
 
         const slots: { id: string; time: string; isAvailable: boolean }[] = [];
+
         for (
             let t = startDate.getTime();
             t <= endDate.getTime();
@@ -56,10 +57,10 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             const slotStart = new Date(t);
             const slotEnd = addMinutes(slotStart, SLOT_MINUTES);
 
-            // no mostrar si el slot ya terminó en el día actual
-            if (isToday && isBefore(slotEnd, now)) continue;
+            // No mostrar slots que ya pasaron (solo para hoy)
+            if (isToday && isBefore(slotStart, now)) continue;
 
-            // comprobar solapamiento con reservas
+            // Comprobar solapamiento con reservas
             const available = !bookedIntervals.some((b) =>
                 areIntervalsOverlapping({ start: slotStart, end: slotEnd }, b)
             );
@@ -71,7 +72,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             });
         }
 
-        // separar mañana/tarde por 13:00
+        // Separar mañana/tarde por 13:00
         const midday = new Date(day);
         midday.setHours(13, 0, 0, 0);
 
@@ -84,10 +85,11 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
 
 interface TimeRanges {
     selectedDate: string | null;
+    selectedTime: string | null;
+    setSelectedTime: (time: string | null) => void;
 }
 
-const CalendarWithTimeSlots: React.FC<TimeRanges> = ({ selectedDate }) => {
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+const TimeSlots: React.FC<TimeRanges> = ({ selectedDate, setSelectedTime, selectedTime }) => {
 
     // ejemplo de citas existentes
     const citasExistentes = [
@@ -211,4 +213,4 @@ const CalendarWithTimeSlots: React.FC<TimeRanges> = ({ selectedDate }) => {
     );
 };
 
-export default CalendarWithTimeSlots;
+export default TimeSlots;

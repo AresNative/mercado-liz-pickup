@@ -38,6 +38,7 @@ export function CheckOutTarjetaField(): Field[] {
                         name: "vencimiento",
                         label: "Fecha de vencimiento",
                         placeholder: "MM/AA",
+                        maxLength: 5,
                         require: false,
                         icon: <CalendarDays />,
                     },
@@ -47,6 +48,7 @@ export function CheckOutTarjetaField(): Field[] {
                         name: "CVC",
                         label: "CVC",
                         placeholder: "123",
+                        maxLength: 3,
                         require: false,
                         icon: <CreditCard />,
                     }

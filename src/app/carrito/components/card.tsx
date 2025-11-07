@@ -11,13 +11,18 @@ import { IconLiz } from "@/app/productos/components/ionc-liz";
 
 import ModalProd from "@/app/productos/components/modal-product";
 import AddToCartButton from "@/app/productos/components/product-add-cart";
+import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+import { EnvConfig } from "@/utils/constants/env.config";
 
 interface ProductCardProps {
     producto: Producto;
 }
 
+const { hubs: apiUrl } = EnvConfig();
 const Card: React.FC<ProductCardProps> = ({ producto }) => {
     const [isFavorite, setIsFavorite] = useState(false);
+    const [image, setImage] = useState("");
+    const [getWithFilter] = useGetWithFiltersGeneralMutation();
 
     const isLowStock = producto.cantidad > 0 && producto.cantidad <= 10;
     const isOutOfStock = producto.cantidad <= 0;
@@ -52,6 +57,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     // Corrección: pasar las opciones del modal al presentarlo
     const [present] = useIonModal(ModalProd, {
         producto,
+        image,
         handleFavoriteToggle,
         isFavorite,
         onDismiss: (data: string, role: string) => console.log('Modal dismissed:', data, role),
@@ -63,11 +69,47 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             breakpoints: [0, 0.5, 0.95],
         });
     };
+    async function LoadImage() {
+        const response = await getWithFilter({
+            table: `imagenes
+                    left join articulos on articulos.id = imagenes.id_ref`,
+            pageSize: 10,
+            page: 1,
+            tag: 'Productos',
+            filtros: {
+                "Filtros": [
+                    {
+                        "Key": "nombre",
+                        "Value": producto.nombre,
+                        "Operator": "="
+                    },
+                    {
+                        "Key": "tabla",
+                        "Value": "articulos",
+                        "Operator": "="
+                    }
+                ],
+                "Selects": [
+                    { key: "articulos.id" },
+                    { key: "articulos.nombre" },
+                    { key: "articulos.descripcion" },
+                    { key: "articulos.precio" },
+                    { key: "imagenes.url" }
+                ]
+            }
+        }).unwrap();
 
+        if (response && response.data) {
+            response.data.map((item: any) => {
+                setImage(apiUrl.slice(0, -1) + item.url);
+            });
+        }
+    }
     useEffect(() => {
         const favorites = getLocalStorageItem("favoritos") || [];
         const JSONfavorites = typeof favorites === "string" ? JSON.parse(favorites) : favorites;
         setIsFavorite(JSONfavorites.some((fav: any) => fav === producto.id));
+        LoadImage();
     }, [producto.id]);
 
     return (
@@ -116,9 +158,9 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 </ul>
 
 
-                {producto.image ?
+                {image ?
                     (<img
-                        src="/logo.jpg"
+                        src={image ? image : "/logo.jpg"}
                         alt="Product Image"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />) :
