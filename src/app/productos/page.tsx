@@ -15,6 +15,7 @@ import { getLocalStorageItem } from "@/utils/functions/local-storage";
 // Definir el tipo para los productos
 interface Producto {
     id: string;
+    articulo: string;
     nombre: string;
     categoria: string;
     unidad: string;
@@ -32,7 +33,7 @@ interface ApiResponse {
     data: any[];
 }
 
-const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) => {
+const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
 
     //gestion de data
@@ -145,6 +146,7 @@ const Productos: React.FC<PageProps> = ({ onScroll, mobileScreen }: PageProps) =
                     // Mapear los datos de la API al formato de Producto
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
                         id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                        articulo: item.Cuenta || "Cuenta",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",
                         unidad: item.Unidad || "Unidad",

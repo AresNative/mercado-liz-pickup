@@ -18,12 +18,15 @@ import {
 import { es } from "date-fns/locale";
 import { chevronBackOutline, chevronForwardOutline } from "ionicons/icons";
 import { IonIcon } from "@ionic/react";
-import CalendarWithTimeSlots from "./time";
 
-const Calendar: React.FC = () => {
+interface Calendar {
+    selectedDate: string | null;
+    setSelectedDate: (date: string | null) => void;
+}
+
+
+const Calendar: React.FC<Calendar> = ({ selectedDate, setSelectedDate }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
     // Funciones de navegación
     const handlePreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
     const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -111,6 +114,10 @@ const Calendar: React.FC = () => {
 
                 {/* Leyenda */}
                 <div className="flex justify-around mt-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                        <div className="h-4 w-4 rounded-full bg-white ring-2 ring-purple-500"></div>
+                        <span className="text-sm text-gray-600">Hoy</span>
+                    </div>
                     <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-purple-100 rounded-full" />
                         <span>Disponible</span>
@@ -125,7 +132,6 @@ const Calendar: React.FC = () => {
                     </div>
                 </div>
             </section>
-            <CalendarWithTimeSlots selectedDate={selectedDate} />
         </>
     );
 };

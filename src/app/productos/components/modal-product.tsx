@@ -28,6 +28,7 @@ import { useMemo } from "react";
 
 interface ProductModalProps {
     producto: Producto;
+    image: string;
     handleFavoriteToggle: (e: React.MouseEvent) => void;
     isFavorite: boolean;
 }
@@ -97,7 +98,7 @@ const recommendedProducts: Producto[] = [
     }
 ];
 
-const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle, isFavorite }) => {
+const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavoriteToggle, isFavorite }) => {
     const router = useIonRouter();
     const isLowStock = producto.cantidad > 0 && producto.cantidad <= 10;
     const isOutOfStock = producto.cantidad <= 0;
@@ -138,9 +139,9 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, handleFavoriteToggle
                 <article className="flex flex-col gap-4">
                     {/* Imagen del producto */}
                     <header className="relative rounded-lg overflow-hidde flex justify-center">
-                        {producto.image ?
+                        {image ?
                             (<img
-                                src="/logo.jpg"
+                                src={image ? image : "/logo.jpg"}
                                 alt="Product Image"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />) :

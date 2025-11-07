@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CircleCheckBig } from "lucide-react";
 
@@ -34,7 +34,19 @@ import { useAppDispatch } from "@/hooks/selector";
 import { openAlertReducer } from "@/hooks/reducers/drop-down";
 import { usePostImgMutation, usePostMutation } from "@/hooks/reducers/api";
 
-export const MainForm = ({ message_button, dataForm, actionType, aditionalData, action, valueAssign, onSuccess, formName, modelName, iconButton }: MainFormProps) => {
+export const MainForm = React.forwardRef(({
+  message_button,
+  dataForm,
+  actionType,
+  aditionalData,
+  showButton = true,
+  action,
+  valueAssign,
+  onSuccess,
+  formName,
+  modelName,
+  iconButton
+}: MainFormProps, ref: React.Ref<HTMLFormElement>) => {
   const dispatch = useAppDispatch()
   const [page, setPage] = useState(0);
   const [formData, setFormData] = useState<any>({}); // Estado para guardar datos
@@ -63,13 +75,14 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
     switch (actionType) {
       case "post-login":
         return await postUserLogin(data).unwrap();
-      default:
-        const functionFetch = post;
-        return await functionFetch({
+      case "post":
+        return await post({
           url: actionType,
           data: payload,
           signal: new AbortController().signal,
         }).unwrap();
+      default:
+        return data;
     }
   }
 
@@ -251,7 +264,9 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="relative w-full space-y-2 my-2 m-auto">
+    <form
+      ref={ref}
+      onSubmit={handleSubmit(onSubmit)} className="relative w-full space-y-2 my-2 m-auto">
       {pages[page].map((field: any, key: any) => (
         <SwitchTypeInputRender
           key={key}
@@ -267,7 +282,7 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
         />
       ))}
 
-      <div className="flex justify-between mt-4">
+      {showButton && (<div className="flex justify-between mt-4">
         {page > 0 && (
           <Button color="indigo" type="button" label="Anterior" onClick={() => handlePageChange(page - 1)} />
         )}
@@ -281,10 +296,10 @@ export const MainForm = ({ message_button, dataForm, actionType, aditionalData, 
             disabled={loading}
           >{iconButton ? iconButton : <CircleCheckBig className="size-4" />}{loading ? "Loading..." : message_button}</button>
         )}
-      </div>
+      </div>)}
     </form>
   );
-};
+});
 
 export function SwitchTypeInputRender(props: any) {
   const { type } = props.cuestion;

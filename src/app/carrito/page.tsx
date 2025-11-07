@@ -46,12 +46,13 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 <article className={cn(onScroll ? "backdrop-blur-sm bg-white/70" : " bg-white", "sticky top-2 mb-5 z-50 h-fit w-full md:w-2/3 border border-gray-100 p-4 rounded-lg shadow-sm hover:shadow-md justify-between")}>
                     <label className="text-lg font-bold">Resumen del pedido</label>
                     <div className="mt-10">
-                        <p className="flex justify-between"><span className="text-gray-500">Subtotal</span> {total > 0 && (<p>{formatValue(total, "currency")}</p>)}</p>
-                        <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span>{serv.toFixed(2)}</p>
+                        <p className="flex justify-between"><span className="text-gray-500">Subtotal</span> {total > 0 && (formatValue(total, "currency"))}</p>
+                        <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span>{formatValue(serv, "currency")}</p>
                         <section className="mx-auto border-t border-gray-200">
-                            <p className="flex mt-5 justify-between font-semibold"><span>Total</span> {totalConServicio.toFixed(2)}</p>
+                            <p className="flex mt-5 justify-between font-semibold"><span>Total</span> {formatValue(totalConServicio, "currency")}</p>
                         </section>
                         <IonButton
+                            disabled={items.length === 0}
                             expand="block"
                             shape="round"
                             size="default"

@@ -35,11 +35,15 @@ export const api_int = createApi({
       }),
       extraOptions: { maxRetries: 2 },
     }),
-    post: builder.mutation({
-      query: ({ url, data, signal }) => ({
-        url: `v2/insert/${url}`,
+    postIntelisis: builder.mutation({
+      query: ({ table, data, signal }) => ({
+        url: `v1/register`,
         method: "POST",
+        params: { table },
         body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
         signal,
       }),
       transformErrorResponse: (response: any) => ({
@@ -89,7 +93,7 @@ export const api_int = createApi({
 
 export const {
   useGetMutation,
-  usePostMutation,
+  usePostIntelisisMutation,
   useGetArticulosQuery,
   useGetWithFiltersGeneralInIntelisisMutation,
 } = api_int;
