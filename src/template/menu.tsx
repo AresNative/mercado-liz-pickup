@@ -58,15 +58,9 @@ const AppMenu = () => {
             <IonMenu contentId="main-content" side="end" className="">
                 <IonHeader className="custom-toolbar">
                     <IonToolbar>
-                        {user ? (
+                        {userRole ? (
                             <div className="p-4 text-center">
-                                {/* <IonAvatar className="mx-auto mb-3">
-                                    <img
-                                        src={user.avatar || "/default-avatar.png"}
-                                        alt="Avatar"
-                                    />
-                                </IonAvatar>
-                                <IonTitle>{user.name}</IonTitle> */}
+                                <IonTitle>{userRole}</IonTitle>
                                 <IonButton
                                     expand="block"
                                     fill="solid"

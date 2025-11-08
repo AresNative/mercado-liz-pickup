@@ -91,8 +91,8 @@ export const api = createApi({
         params: {
           page,
           pageSize,
-          filtros,
         },
+        body: filtros,
         signal,
       }),
       transformErrorResponse: (response: any) => ({

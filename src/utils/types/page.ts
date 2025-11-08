@@ -17,6 +17,10 @@ export interface Producto {
   unidad: string;
   precio: number;
   cantidad: number;
+  impuesto1?: number;
+  impuesto2?: number;
+  tipoImpuesto1?: number;
+  tipoImpuesto2?: number;
   precioRegular?: number;
   factor?: number;
   oferta?: {

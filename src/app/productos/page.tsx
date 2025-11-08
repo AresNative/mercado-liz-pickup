@@ -11,18 +11,7 @@ import { promoItems } from "./data/promos";
 import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
-
-// Definir el tipo para los productos
-interface Producto {
-    id: string;
-    articulo: string;
-    nombre: string;
-    categoria: string;
-    unidad: string;
-    precio: number;
-    cantidad: number;
-    descuento: number;
-}
+import { Producto } from "@/utils/types/page";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {
@@ -110,6 +99,10 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         { "key": "cb.Cuenta" },
                         { "key": "art.Grupo" },
                         { "key": "art.Descripcion1" },
+                        { "key": "art.Impuesto1" },
+                        { "key": "art.Impuesto2" },
+                        { "key": "art.TipoImpuesto1" },
+                        { "key": "art.TipoImpuesto2" },
                         { "key": "lpu.Unidad" },
                         { "key": "lpu.Precio" },
                         { "key": "ofrd.Precio", "alias": "Descuento" },
@@ -152,6 +145,10 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         unidad: item.Unidad || "Unidad",
                         precio: item.Precio || 0,
                         cantidad: item.Factor || 1,
+                        impuesto1: item.Impuesto1 || 0,
+                        impuesto2: item.Impuesto2 || 0,
+                        tipoImpuesto1: item.TipoImpuesto1 || 0,
+                        tipoImpuesto2: item.TipoImpuesto2 || 0,
                         descuento: item.Descuento || 0,
                     }));
                     setTotalRecords(apiData.totalRecords)

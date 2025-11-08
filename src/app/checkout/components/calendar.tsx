@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
     addMonths,
     subMonths,
@@ -18,6 +18,7 @@ import {
 import { es } from "date-fns/locale";
 import { chevronBackOutline, chevronForwardOutline } from "ionicons/icons";
 import { IonIcon } from "@ionic/react";
+import { useGetWithFiltersMutation } from "@/hooks/reducers/api";
 
 interface Calendar {
     selectedDate: string | null;
@@ -26,14 +27,16 @@ interface Calendar {
 
 
 const Calendar: React.FC<Calendar> = ({ selectedDate, setSelectedDate }) => {
+    const [GetData] = useGetWithFiltersMutation()
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [citasExistentes, setCitasExistentes] = useState<any[]>([])
     // Funciones de navegación
     const handlePreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
     const handleNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
     // Reglas de días
     const handleDateClick = (date: Date) =>
-        setSelectedDate(startOfDay(date).toISOString());
+        setSelectedDate(format(date, "yyyy-MM-dd")); // <-- solo año-mes-día
     const isPastDate = (date: Date) => isBefore(date, startOfDay(new Date()));
     const isDateBlocked = (date: Date) => date.getDay() === 0; // bloquea domingos
     const isDateAvailable = (date: Date) =>
@@ -48,6 +51,31 @@ const Calendar: React.FC<Calendar> = ({ selectedDate, setSelectedDate }) => {
         start: calendarStart,
         end: calendarEnd,
     });
+    const cargarCitasExistentes = useCallback(async () => {
+        try {
+            const response = await GetData({
+                url: "v1/pickup/listas",
+                filtros: {
+                    Filtros: [
+                        /* { Key: "sucursal", Value: precio } */
+                        { Key: "estado", Value: "nuevo", Operator: "Like" },
+                        { Key: "tipo_lista", Value: "compra", Operator: "Like" }
+                    ],
+                    Order: [{ Key: "id", Direction: "Desc" }]
+                },
+                pageSize: 5
+            }).unwrap()
+            setCitasExistentes(response.data || [])
+        } catch (error) {
+            console.error("Error cargando citas:", error)
+
+        }
+    }, [GetData]);
+
+    useEffect(() => {
+        cargarCitasExistentes();
+    }, [cargarCitasExistentes]);
+
 
     return (
         <>
