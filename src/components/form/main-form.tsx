@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useImperativeHandle, useState } from "react";
 import { useForm } from "react-hook-form";
 import { CircleCheckBig } from "lucide-react";
 
@@ -46,7 +46,7 @@ export const MainForm = React.forwardRef(({
   formName,
   modelName,
   iconButton
-}: MainFormProps, ref: React.Ref<HTMLFormElement>) => {
+}: MainFormProps, ref: any) => {
   const dispatch = useAppDispatch()
   const [page, setPage] = useState(0);
   const [formData, setFormData] = useState<any>({}); // Estado para guardar datos
@@ -62,8 +62,39 @@ export const MainForm = React.forwardRef(({
     control,
     getValues,
     reset,
+    trigger,
     formState: { errors },
   } = useForm();
+
+  useImperativeHandle(ref, () => ({
+    getFormData: () => {
+      try {
+        return getValues(); // retorna todos los valores actuales del formulario
+      } catch (e) {
+        console.error("Error en getFormData:", e);
+        return {};
+      }
+    },
+
+    submitForm: async () => {
+      try {
+        const valid = await trigger(); // valida todos los campos
+
+        if (!valid) return null;
+
+        const values = getValues();
+
+        // dispara el callback original
+        if (onSuccess) onSuccess(values, values);
+
+        return values;
+      } catch (e) {
+        console.error("Error en submitForm:", e);
+        return null;
+      }
+    }
+  }));
+
 
   const [postUserLogin] = useLoginUserMutation();
   const [post] = usePostMutation();

@@ -48,6 +48,7 @@ const AppMenu = () => {
         if (!userRole) return navigationDefault;
         const navigationMap: any = {
             admin: navigationAdmin,
+            cliente: navigationDefault,
             // ... otros roles
         };
         return navigationMap[userRole];
