@@ -180,7 +180,9 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                         </p>
                         <p className="text-xs text-gray-500 flex items-center">
                             <Hash className="size-3 text-purple-800" />
-                            STOCK: {producto.cantidad}
+                            STOCK: {(/kilo|kg/i).test(producto.unidad)
+                                ? (producto.unidad !== 'Pieza' ? (producto.factor ? (producto.cantidad / producto.factor) : producto.cantidad) : producto.cantidad)
+                                : (producto.unidad !== 'Pieza' ? (producto.factor ? Math.trunc(producto.cantidad / producto.factor) : Math.trunc(producto.cantidad)) : Math.trunc(producto.cantidad))}
                         </p>
                     </article>
                 </section>

@@ -20,7 +20,7 @@ import {
 } from "@ionic/react";
 import { useIonRouter } from "@ionic/react";
 import { heart, barcode, close, cart, star, starHalf, starOutline, arrowBack } from "ionicons/icons";
-import { Hash, Heart, MessageCircle, ThumbsUp } from "lucide-react";
+import { Barcode, ChartColumnStackedIcon, Hash, Heart, MessageCircle, ThumbsUp } from "lucide-react";
 import AddToCartButton from "./product-add-cart";
 import { cn } from "@/utils/functions/cn";
 import { IconLiz } from "./ionc-liz";
@@ -204,7 +204,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavorit
                         {/* Detalles */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
-                                <IonIcon icon={barcode} className="text-purple-600" />
+                                <Barcode className="size-4 text-purple-600" />
                                 <IonText color="medium">
                                     <span>Código: {producto.id}</span>
                                 </IonText>
@@ -213,12 +213,16 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavorit
                             <div className="flex items-center gap-2 text-sm">
                                 <Hash className="size-4 text-purple-600" />
                                 <IonText color="medium">
-                                    <span>Stock: {producto.cantidad} <label className="text-green-600">{producto.unidad}(s)</label></span>
+                                    <span>Stock: {(/kilo|kg/i).test(producto.unidad)
+                                        ? (producto.unidad !== 'Pieza' ? (producto.factor ? (producto.cantidad / producto.factor) : producto.cantidad) : producto.cantidad)
+                                        : (producto.unidad !== 'Pieza' ? (producto.factor ? Math.trunc(producto.cantidad / producto.factor) : Math.trunc(producto.cantidad)) : Math.trunc(producto.cantidad))}
+                                        <label className="text-green-600 ml-2">{producto.unidad}(s)</label>
+                                    </span>
                                 </IonText>
                             </div>
 
                             <div className="flex items-center gap-2 text-sm">
-                                <IonIcon icon={heart} className="text-purple-600" />
+                                <ChartColumnStackedIcon className="size-4 text-purple-600" />
                                 <IonText color="medium">
                                     <span>Categoría: {producto.categoria}</span>
                                 </IonText>

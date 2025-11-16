@@ -97,6 +97,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     "Selects": [
                         { "key": "cb.Codigo" },
                         { "key": "cb.Cuenta" },
+                        { "key": "art.Articulo" },
                         { "key": "art.Grupo" },
                         { "key": "art.Descripcion1" },
                         { "key": "art.Impuesto1" },
@@ -144,7 +145,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         categoria: item.Grupo || "Sin categoría",
                         unidad: item.Unidad || "Unidad",
                         precio: item.Precio || 0,
-                        cantidad: item.Factor || 1,
+                        cantidad: item.Cantidad || 1,
+                        factor: item.Factor || 1,
                         impuesto1: item.Impuesto1 || 0,
                         impuesto2: item.Impuesto2 || 0,
                         tipoImpuesto1: item.TipoImpuesto1 || 0,

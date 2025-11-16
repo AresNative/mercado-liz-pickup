@@ -1,7 +1,7 @@
 import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
 import AddToCartButton from "./product-add-cart";
-import { Barcode, Hash, Heart } from "lucide-react";
+import { Barcode, Hash, Heart, ReceiptText } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
@@ -60,8 +60,8 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             filtros: {
                 "Filtros": [
                     {
-                        "Key": "nombre",
-                        "Value": producto.nombre,
+                        "Key": "articulo",
+                        "Value": producto.articulo,
                         "Operator": "="
                     },
                     {
@@ -173,8 +173,16 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 </p>
                 <p className="text-xs text-gray-500 flex items-center">
                     <Hash className="size-3 text-purple-800" />
-                    STOCK: {producto.cantidad}
+                    STOK: {(/kilo|kg/i).test(producto.unidad)
+                        ? (producto.unidad !== 'Pieza' ? (producto.factor ? (producto.cantidad / producto.factor) : producto.cantidad) : producto.cantidad)
+                        : (producto.unidad !== 'Pieza' ? (producto.factor ? Math.trunc(producto.cantidad / producto.factor) : Math.trunc(producto.cantidad)) : Math.trunc(producto.cantidad))}
                 </p>
+                {producto.unidad !== 'Pieza' && producto.unidad !== 'Kilogramo' && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <ReceiptText className="size-3 text-purple-800" />
+                        FACTOR: {producto.factor} (Piezas)
+                    </p>
+                )}
             </section>
 
             <footer className="mt-auto">
