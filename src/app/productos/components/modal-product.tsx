@@ -164,20 +164,21 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavorit
                                     </div>
                                 )}
                             </li>
-                            <button
-                                onClick={handleFavoriteToggle}
-                                className="top-2 right-10 p-1.5 bg-white/80 rounded-full backdrop-blur-sm hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-                            >
-                                <Heart
-                                    className={cn(
-                                        "w-6 h-6 transition-colors",
-                                        isFavorite
-                                            ? "fill-red-400 text-red-500"
-                                            : "text-gray-400 hover:text-red-400"
-                                    )}
-                                />
-                            </button>
+                            {handleFavoriteToggle && (
+                                <button
+                                    onClick={handleFavoriteToggle}
+                                    className="top-2 right-10 p-1.5 bg-white/80 rounded-full backdrop-blur-sm hover:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}>
+                                    <Heart
+                                        className={cn(
+                                            "w-6 h-6 transition-colors",
+                                            isFavorite
+                                                ? "fill-red-400 text-red-500"
+                                                : "text-gray-400 hover:text-red-400"
+                                        )}
+                                    />
+                                </button>
+                            )}
                         </ul>
                     </header>
                     {/* Información básica del producto */}

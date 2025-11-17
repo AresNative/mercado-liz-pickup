@@ -27,7 +27,8 @@ import {
 
 import {
     useLoginUserMutation,
-    useRegisterUserMutation
+    useRegisterUserMutation,
+    useLogoutUserMutation
 } from "@/hooks/reducers/auth";
 
 import { usePedidosSignalR } from "./utils/signalr-pedidos";
@@ -36,11 +37,11 @@ import {
     getLocalStorageItem
 } from "@/utils/functions/local-storage";
 
-// --- INTERFACES ---
 interface InfoUser {
     telefono?: string;
     nombre?: string;
     email?: string;
+    correo?: string;
     [key: string]: any;
 }
 
@@ -53,12 +54,8 @@ interface InfoPago {
 
 type Citas = (args: { user: any; pago: any }) => Promise<void>;
 
-// --- COMPONENTE PRINCIPAL ---
 const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
-    // --------------------------
-    // SIGNALR
-    // --------------------------
     const {
         connection,
         isConnected,
@@ -70,9 +67,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         () => console.log("Refrescar")
     );
 
-    // --------------------------
-    // ESTADOS
-    // --------------------------
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -86,9 +80,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const infoFormRef = useRef<any>(null);
     const pagoFormRef = useRef<any>(null);
 
-    // --------------------------
-    // CART
-    // --------------------------
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items = [] } = cart || {};
 
@@ -100,9 +91,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const serv = total * 0.05;
     const totalConServicio = total + serv;
 
-    // --------------------------
-    // MUTATIONS
-    // --------------------------
     const [PostData] = usePostMutation();
     const [GetData] = useGetWithFiltersMutation();
     const [PutData] = usePutMutation();
@@ -112,12 +100,66 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const [loginUser] = useLoginUserMutation();
     const [registerUser] = useRegisterUserMutation();
+    const [logoutUser] = useLogoutUserMutation();
 
     let newMovId: string = "";
 
-    // --------------------------
-    // AUTH AUTO
-    // --------------------------
+    const reiniciarAutenticacion = async () => {
+        try {
+            console.log("🔄 Reiniciando autenticación...");
+            const userId = getLocalStorageItem("user-id");
+            await logoutUser(userId).unwrap();
+            setIsAuthenticated(false);
+
+            console.log("✅ Sesión cerrada correctamente");
+        } catch (error) {
+            console.error("❌ Error al cerrar sesión:", error);
+            setIsAuthenticated(false);
+        }
+    };
+
+    const actualizarDatosUsuario = async (userData: InfoUser): Promise<boolean> => {
+        try {
+            if (!userData.correo || !userData.telefono) {
+                console.error("❌ Datos insuficientes para actualizar usuario:", userData);
+                return false;
+            }
+
+            console.log("📝 Actualizando datos del usuario:", userData);
+
+            // Buscar si el usuario ya existe
+            const usuarioExistente = await GetData({
+                url: "v1/users",
+                filtros: {
+                    Filtros: [{ Key: "email", Value: userData.correo }],
+                    Order: [{ Key: "id", Direction: "Desc" }]
+                },
+                pageSize: 1
+            });
+
+            const usuarios = usuarioExistente?.data?.data ?? [];
+
+            if (usuarios.length > 0 && userData.correo !== usuarios[0].email) {
+                // Actualizar usuario existente
+                const usuarioId = usuarios[0].id;
+                await PutData({
+                    url: "v1/users",
+                    id: usuarioId,
+                    data: {
+                        email: userData.correo,
+                        // Agregar más campos según sea necesario
+                    }
+                });
+                console.log("✅ Usuario actualizado correctamente");
+            }
+
+            return true;
+        } catch (error) {
+            console.error("❌ Error al actualizar datos del usuario:", error);
+            return false;
+        }
+    };
+
     const authenticateUser = async (userData: InfoUser): Promise<boolean> => {
         setAuthLoading(true);
 
@@ -139,6 +181,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const r = await loginUser(loginPayload).unwrap();
                 console.log("✅ Login ok:", r);
                 setIsAuthenticated(true);
+
+                // Actualizar datos del usuario después del login exitoso
+                await actualizarDatosUsuario(userData);
+
                 return true;
             } catch {
                 console.log("⚠ Login falló, intentando registro...");
@@ -156,6 +202,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 console.log("✅ Login posterior al registro OK");
 
                 setIsAuthenticated(true);
+
+                // Actualizar datos del usuario después del registro exitoso
+                await actualizarDatosUsuario(userData);
+
                 return true;
             }
         } catch (err) {
@@ -174,10 +224,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     }, []);
 
-    // --------------------------
-    // OBTENER FORM DATA CORRECTAMENTE
-    // (CON SUBMIT INTERNO)
-    // --------------------------
     const getFormData = async (): Promise<{ user: InfoUser; pago: InfoPago }> => {
         let userData: InfoUser = {};
         let pagoData: InfoPago = {};
@@ -200,14 +246,48 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
     };
 
-    // --------------------------
-    // VALIDAR
-    // --------------------------
     const isConfirmButtonEnabled = () => !!selectedDate && !!selectedTime;
 
-    // --------------------------
-    // BOTÓN PRINCIPAL
-    // --------------------------
+    const ejecutarConReintentoAuth = async (operacion: () => Promise<void>, maxReintentos: number = 2) => {
+        let reintentos = 0;
+
+        while (reintentos <= maxReintentos) {
+            try {
+                await operacion();
+                return; // Éxito, salir del bucle
+            } catch (error: any) {
+                reintentos++;
+                console.error(`❌ Error en operación (intento ${reintentos}/${maxReintentos}):`, error);
+
+                if (reintentos > maxReintentos) {
+                    throw error; // Lanzar error después de max reintentos
+                }
+
+                // Si el error parece ser de autenticación, reiniciar sesión
+                if (error.message?.includes('autenticación') ||
+                    error.message?.includes('token') ||
+                    error.message?.includes('autorización') ||
+                    error.status === 401) {
+
+                    console.log("🔄 Error de autenticación detectado, reiniciando sesión...");
+                    await reiniciarAutenticacion();
+
+                    // Reautenticar con los datos actuales
+                    const { user: currentUser } = await getFormData();
+                    const authSuccess = await authenticateUser(currentUser);
+
+                    if (!authSuccess) {
+                        throw new Error("No se pudo reautenticar después del error");
+                    }
+
+                    console.log("✅ Reautenticación exitosa, reintentando operación...");
+                } else {
+                    // Para otros tipos de error, esperar un momento antes de reintentar
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        }
+    };
     const handleConfirmarCitaCompleta = async () => {
         setIsProcessing(true);
         try {
@@ -221,23 +301,26 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 if (!ok) throw new Error("No se pudo autenticar.");
             }
 
-            await handleConfirmarCitaIntelisis();
+            // Ejecutar operaciones de Intelisis con manejo de errores y reintentos
+            await ejecutarConReintentoAuth(async () => {
+                await handleConfirmarCitaIntelisis();
+            });
+
             await cargarCitasExistentes({ user: currentUser, pago: currentPago });
 
-            alert("Cita creada.");
+            alert("Cita creada exitosamente.");
 
         } catch (e: any) {
-            alert("Error: " + e.message);
+            console.error("❌ Error en confirmación de cita:", e);
+            alert("Error: " + (e.message || "No se pudo crear la cita"));
         } finally {
             setIsProcessing(false);
         }
     };
-
-    // --------------------------
-    // INSERTS INTELISIS
-    // --------------------------
     const handleConfirmarCitaIntelisis = async () => {
         try {
+            console.log("🚀 Iniciando proceso Intelisis...");
+
             const result = await GetInt({
                 table: `[TC032841E_Pruebas].dbo.venta`,
                 pageSize: 1,
@@ -290,7 +373,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                     console.log("🆕 Nuevo MovID generado:", newMovId);
 
-                    // 3. Realizar los inserts en Intelisis
+                    // 3. Realizar los inserts en Intelisis con manejo individual de errores
                     console.log("💾 Realizando inserts en Intelisis...");
 
                     // Insert 1: Venta
@@ -316,11 +399,15 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         Sucursal: 1
                     };
 
-                    await PostInt({
+                    const ventaResult = await PostInt({
                         table: "[TC032841E_Pruebas].dbo.Venta",
                         data: ventaData,
                         signal: undefined
                     });
+
+                    if ('error' in ventaResult) {
+                        throw new Error(`Error en insert Venta: ${JSON.stringify(ventaResult.error)}`);
+                    }
 
                     // Insert 2: Mov
                     const movData = {
@@ -340,11 +427,15 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         Sucursal: 1
                     };
 
-                    await PostInt({
+                    const movResult = await PostInt({
                         table: "[TC032841E_Pruebas].dbo.Mov",
                         data: movData,
                         signal: undefined
                     });
+
+                    if ('error' in movResult) {
+                        throw new Error(`Error en insert Mov: ${JSON.stringify(movResult.error)}`);
+                    }
 
                     // Insert 3: Movimientos
                     const movimientosData = {
@@ -362,15 +453,18 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         Retencion: 0
                     };
 
-                    await PostInt({
+                    const movimientosResult = await PostInt({
                         table: "[TC032841E_Pruebas].dbo.Movimientos",
                         data: movimientosData,
                         signal: undefined
                     });
 
+                    if ('error' in movimientosResult) {
+                        throw new Error(`Error en insert Movimientos: ${JSON.stringify(movimientosResult.error)}`);
+                    }
+
                     // Insert 4: VentaD (Detalle de venta)
                     console.log("📦 Insertando detalles de venta...");
-                    // Preparar base y IDs consistentes
                     const ventaDId = parseInt(ventaId.toString()) + 1;
                     const baseRenglon = 2048;
 
@@ -398,11 +492,15 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         TipoImpuesto1: 'IVA8',
                     };
 
-                    await PostInt({
+                    const servicioResult = await PostInt({
                         table: "[TC032841E_Pruebas].dbo.VentaD",
                         data: servicioVentaD,
                         signal: undefined
                     });
+
+                    if ('error' in servicioResult) {
+                        throw new Error(`Error en insert Servicio VentaD: ${JSON.stringify(servicioResult.error)}`);
+                    }
 
                     // Insertar los items de la venta después del servicio
                     const ventaDList = items.map((item, idx) => {
@@ -410,10 +508,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         const cantidad = item.quantity ?? 1;
                         return {
                             ID: ventaDId,
-                            // Renglon continúa consecutivamente después del servicio
                             Renglon: baseRenglon + (idx + 1),
                             RenglonSub: 0,
-                            // RenglonID también es consecutivo: servicio = 1, items = 2,3,...
                             RenglonID: idx + 2,
                             RenglonTipo: "N",
                             Cantidad: cantidad,
@@ -438,11 +534,15 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     });
 
                     for (const ventaDData of ventaDList) {
-                        await PostInt({
+                        const itemResult = await PostInt({
                             table: "[TC032841E_Pruebas].dbo.VentaD",
                             data: ventaDData,
                             signal: undefined
                         });
+
+                        if ('error' in itemResult) {
+                            throw new Error(`Error en insert Item VentaD: ${JSON.stringify(itemResult.error)}`);
+                        }
                     }
 
                     console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
@@ -460,9 +560,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
-    // --------------------------
-    // CREAR LISTA EN SISTEMA
-    // --------------------------
     const cargarCitasExistentes: Citas = useCallback(async ({ user, pago }) => {
 
         if (!user || items.length === 0) throw new Error("Sin datos.");
@@ -530,10 +627,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     }, [GetData, PostData, items, selectedDate, selectedTime, isConnected, connection, notificarCambioLista]);
 
-
-    // --------------------------
-    // UI
-    // --------------------------
     return (
         <IonContent
             fullscreen
@@ -568,7 +661,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             shape="round"
                             className="custom-tertiary mt-5"
                             onClick={handleConfirmarCitaCompleta}
-                            disabled={!isConfirmButtonEnabled()}
+                            disabled={!isConfirmButtonEnabled() || isProcessing || authLoading}
                         >
                             {isProcessing ? "Procesando..." : authLoading ? "Autenticando..." : "Confirmar cita"}
                         </IonButton>

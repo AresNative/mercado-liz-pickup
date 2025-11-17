@@ -12,6 +12,8 @@ import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import { Producto } from "@/utils/types/page";
+import { useAppSelector } from "@/hooks/selector";
+import { RootState } from "@/hooks/store";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {
@@ -23,6 +25,9 @@ interface ApiResponse {
 }
 
 const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+    const cat = useAppSelector((state: RootState) => state.filterData);
+    const categoria = cat?.key?.value || '';
+
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
 
     //gestion de data
@@ -39,6 +44,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const initialLoad = useRef(true);
     const isFetching = useRef(false);
+    const previousCategoria = useRef(categoria); // Ref para trackear cambios de categoría
 
     const isFavoritesSection = activeSection === 'favoritos';
 
@@ -61,7 +67,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         setFavoriteCount(getFavoriteProducts().length);
     }, [isFavoritesSection, getFavoriteProducts]);
 
-    const generateItems = useCallback(async (currentPage: number) => {
+    const generateItems = useCallback(async (currentPage: number, isNewCategory: boolean = false) => {
         // Prevenir múltiples llamadas simultáneas
         if (isFetching.current) {
             return;
@@ -75,6 +81,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 CB AS cb
                     INNER JOIN Art AS art
                         ON cb.Cuenta = art.Articulo
+                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
@@ -154,8 +161,9 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         descuento: item.Descuento || 0,
                     }));
                     setTotalRecords(apiData.totalRecords)
+
                     setItems(prevItems => {
-                        const newItems = currentPage === 1 ? mappedItems : [...prevItems, ...mappedItems];
+                        const newItems = currentPage === 1 || isNewCategory ? mappedItems : [...prevItems, ...mappedItems];
                         return newItems;
                     });
 
@@ -172,52 +180,72 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             setHasMore(false);
         } finally {
             isFetching.current = false;
-            console.log('🏁 Fetch completado');
+            //console.log('🏁 Fetch completado');
         }
-    }, [getData]);
+    }, [categoria, getData]);
+
+    // Efecto para detectar cambios de categoría y resetear datos
+    useEffect(() => {
+        if (previousCategoria.current !== categoria && !initialLoad.current) {
+            //console.log('🔄 Cambio de categoría detectado:', previousCategoria.current, '->', categoria);
+
+            // Resetear estado
+            setItems([]);
+            setPage(1);
+            setHasMore(true);
+            initialLoad.current = true;
+
+            // Hacer nueva consulta con la categoría actual
+            generateItems(1, true);
+
+            // Actualizar la referencia
+            previousCategoria.current = categoria;
+        }
+    }, [categoria, generateItems]);
 
     // Efecto para carga inicial
     useEffect(() => {
         if (initialLoad.current) {
-            console.log('🚀 Carga inicial');
+            //console.log('🚀 Carga inicial');
             generateItems(1);
+            previousCategoria.current = categoria; // Inicializar la referencia
         }
     }, []);
 
     // Efecto para cuando cambia la página
     useEffect(() => {
         if (page > 1 && !initialLoad.current) {
-            console.log(`🔄 Cambio de página a: ${page}`);
+            //console.log(`🔄 Cambio de página a: ${page}`);
             generateItems(page);
         }
     }, [page]);
 
 
     const handleInfiniteScroll = useCallback(async (event: any) => {
-        console.log('🎯 Infinite scroll activado');
-        console.log('📊 Estado - hasMore:', hasMore, 'isLoading:', isLoading, 'isFetching:', isFetching.current);
+        //console.log('🎯 Infinite scroll activado');
+        //console.log('📊 Estado - hasMore:', hasMore, 'isLoading:', isLoading, 'isFetching:', isFetching.current);
 
         if (!hasMore) {
-            console.log('⏹️  No hay más datos, deshabilitando scroll');
+            //console.log('⏹️  No hay más datos, deshabilitando scroll');
             event.target.complete();
             event.target.disabled = true;
             return;
         }
 
         if (isLoading || isFetching.current) {
-            console.log('⏳ Ya está cargando, completando sin acción');
+            //console.log('⏳ Ya está cargando, completando sin acción');
             event.target.complete();
             return;
         }
 
-        console.log('⬆️  Incrementando página...');
+        //console.log('⬆️  Incrementando página...');
         setPage(prevPage => {
             const nextPage = prevPage + 1;
-            console.log(`📈 Nueva página: ${nextPage}`);
+            //console.log(`📈 Nueva página: ${nextPage}`);
             return nextPage;
         });
         event.target.complete();
-        console.log('✅ Scroll completado');
+        //console.log('✅ Scroll completado');
 
     }, [hasMore, isLoading]);
 
@@ -232,7 +260,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             setPage(1);
             setItems([]);
             setHasMore(true);
-            generateItems(1);
+            generateItems(1, true);
         }
     }, [activeSection, getFavoriteProducts, generateItems]);
 

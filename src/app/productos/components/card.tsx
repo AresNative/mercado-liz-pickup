@@ -1,13 +1,12 @@
 import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
 import AddToCartButton from "./product-add-cart";
+import ModalProd from "./modal-product";
 import { Barcode, Hash, Heart, ReceiptText } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
 import { useIonModal } from "@ionic/react";
-
-import ModalProd from "./modal-product";
 import { IconLiz } from "./ionc-liz";
 import { formatValue } from "@/utils/constants/format-values";
 import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
@@ -17,6 +16,7 @@ interface ProductCardProps {
     producto: Producto;
 }
 const { hubs: apiUrl } = EnvConfig();
+
 const Card: React.FC<ProductCardProps> = ({ producto }) => {
     const [isFavorite, setIsFavorite] = useState(false);
     const [image, setImage] = useState("");
