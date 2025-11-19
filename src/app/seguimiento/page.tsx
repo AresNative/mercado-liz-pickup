@@ -5,13 +5,14 @@ import {
     IonCardTitle, IonText, IonChip, IonBadge, IonButton, IonIcon,
 } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
-import { motion } from "framer-motion";
 import { cn } from "@/utils/functions/cn";
 import {
     location, time, storefront,
     receipt, call, navigate, chevronForward,
 } from "ionicons/icons";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 interface OrderStatus {
     status: string;
@@ -31,8 +32,66 @@ interface OrderItem {
     image?: string;
 }
 
+interface ListaItem {
+    id: string;
+    articulo: string;
+    categoria: string;
+    nombre: string;
+    precio: number;
+    precioRegular: number;
+    unidad: string;
+    cantidad: number;
+    factor: number;
+    quantity: number;
+    recolectado?: boolean;
+    noEncontrado?: boolean;
+    impuesto1?: number;
+    impuesto2?: number;
+    tipoImpuesto1?: string;
+    tipoImpuesto2?: string | number;
+    descuento?: number;
+}
+
+interface Cliente {
+    id: number;
+    nombre: string;
+    telefono: string;
+    email: string;
+    direccion?: string;
+    ciudad?: string;
+    estado?: string;
+}
+
+interface Pedido {
+    id: number;
+    id_lista: number;
+    id_cliente: number;
+    usuario_id: number;
+    sucursal_id: number;
+    nombre_lista: string;
+    tipo_lista: string;
+    servicio: string;
+    array_lista: string;
+    fecha_creacion: string;
+    fecha_actualizacion: string;
+    estado: 'nuevo' | 'proceso' | 'listo' | 'entregado' | 'cancelado' | 'incompleto';
+    es_publica: number;
+    items: ListaItem[];
+    cliente?: Cliente;
+    nombre?: string;
+    cliente_telefono?: string;
+    cliente_email?: string;
+    total: number;
+    urgencia?: 'alta' | 'media' | 'baja';
+    tiempo_restante?: number;
+}
+
 const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+
+    const [getWithFilter] = useGetWithFiltersGeneralMutation();
     const [currentStep] = useState(2);
+    const [pedido, setPedido] = useState<Pedido | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const orderStatus: OrderStatus[] = [
         {
@@ -64,11 +123,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         },
     ];
 
-    const orderItems: OrderItem[] = [
-        { id: "1", name: "Plátanos", quantity: "1", price: 1.49, unit: "kg" },
-        { id: "2", name: "Manzanas Rojas", quantity: "4", price: 11.96, unit: "kg" },
-    ];
-
     const orderSummary = { subtotal: 13.45, serviceFee: 2.5, total: 15.95 };
     const pickupDetails = {
         store: "FreshMarket Centro",
@@ -81,29 +135,253 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const getProgressValue = () => orderStatus.filter(s => s.completed).length / orderStatus.length;
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
+    // Función para parsear array_lista y calcular total
+    const parseListaData = (lista: any): Pedido => {
+        let items: ListaItem[] = [];
+        let total = 0;
+
+        try {
+            if (lista.array_lista) {
+                items = JSON.parse(lista.array_lista);
+                total = items.reduce((sum, item) => sum + (item.precio * item.quantity), 0);
+            }
+        } catch (error) {
+            console.error('Error parsing array_lista:', error);
+            items = [];
+        }
+
+        const calcularUrgencia = (fechaCita: string, estado: string): { urgencia: 'alta' | 'media' | 'baja', tiempo_restante: number } => {
+            if (estado !== 'nuevo' && estado !== 'proceso') {
+                return { urgencia: 'baja', tiempo_restante: 0 };
+            }
+
+            if (!fechaCita) return { urgencia: 'baja', tiempo_restante: 0 };
+
+            const ahora = new Date();
+            const cita = new Date(fechaCita);
+            const diferenciaMs = cita.getTime() - ahora.getTime();
+            const minutosRestantes = Math.floor(diferenciaMs / (1000 * 60));
+
+            let urgencia: 'alta' | 'media' | 'baja' = 'baja';
+            if (minutosRestantes <= 30) urgencia = 'alta';
+            else if (minutosRestantes <= 120) urgencia = 'media';
+
+            return { urgencia, tiempo_restante: minutosRestantes };
+        };
+
+        const { urgencia, tiempo_restante } = calcularUrgencia(lista.nombre_lista, lista.estado);
+
+        return {
+            id: lista.id,
+            id_lista: lista.id,
+            id_cliente: lista.id_cliente,
+            usuario_id: lista.usuario_id,
+            sucursal_id: lista.sucursal_id,
+            nombre_lista: lista.nombre_lista,
+            tipo_lista: lista.tipo_lista,
+            servicio: lista.servicio,
+            array_lista: lista.array_lista,
+            fecha_creacion: lista.fecha_creacion,
+            fecha_actualizacion: lista.fecha_actualizacion,
+            estado: lista.estado,
+            es_publica: lista.es_publica,
+            items: items,
+            cliente: lista.nombre ? {
+                id: lista.id_cliente,
+                nombre: lista.nombre,
+                telefono: lista.telefono,
+                email: lista.email,
+                direccion: lista.direccion,
+                ciudad: lista.ciudad,
+                estado: lista.estado
+            } : undefined,
+            nombre: lista.nombre || `Cliente ${lista.id_cliente}`,
+            cliente_telefono: lista.telefono || 'N/A',
+            cliente_email: lista.email || 'N/A',
+            total: total,
+            urgencia,
+            tiempo_restante
+        };
+    }
+
+    const fetchPedidos = useCallback(async () => {
+        try {
+            setLoading(true);
+
+            const userId = getLocalStorageItem("user-id");
+            if (!userId) {
+                console.error("User ID not found in local storage");
+                setLoading(false);
+                return;
+            }
+
+            const filtros: any = {
+                Selects: [
+                    { key: "listas.id" },
+                    { key: "listas.id_cliente" },
+                    { key: "listas.nombre_lista" },
+                    { key: "listas.tipo_lista" },
+                    { key: "listas.servicio" },
+                    { key: "listas.array_lista" },
+                    { key: "listas.fecha_creacion" },
+                    { key: "listas.fecha_actualizacion" },
+                    { key: "listas.estado" },
+                    { key: "clientes.nombre" },
+                    { key: "clientes.telefono" },
+                    { key: "clientes.email" },
+                    { key: "clientes.direccion" },
+                    { key: "clientes.usuario_id" },
+                ],
+                Filtros: [
+                    { key: "clientes.usuario_id", value: userId, operator: "=" },
+                ],
+                Order: [
+                    { Key: "listas.fecha_creacion", Direction: "Desc" }
+                ]
+            };
+
+            const response = await getWithFilter({
+                table: "listas left join clientes on listas.usuario_id = clientes.usuario_id",
+                pageSize: 10,
+                page: 1,
+                tag: 'Pedidos',
+                filtros: filtros
+            }).unwrap();
+
+            if (response && response.data && response.data.length > 0) {
+                const pedidosProcesados: Pedido[] = response.data.map(parseListaData);
+
+                // Ordenar pedidos y tomar el más reciente
+                const pedidosOrdenados = pedidosProcesados.sort((a, b) => {
+                    const prioridadEstado = { 'nuevo': 3, 'proceso': 2, 'listo': 1, 'entregado': 0, 'cancelado': 0, 'incompleto': 0 };
+                    const prioridadEstadoA = prioridadEstado[a.estado] || 0;
+                    const prioridadEstadoB = prioridadEstado[b.estado] || 0;
+
+                    if (prioridadEstadoA !== prioridadEstadoB) {
+                        return prioridadEstadoB - prioridadEstadoA;
+                    }
+
+                    if (a.estado === 'nuevo' || a.estado === 'proceso') {
+                        const prioridadUrgencia = { 'alta': 3, 'media': 2, 'baja': 1 };
+                        return (prioridadUrgencia[b.urgencia || 'baja'] - prioridadUrgencia[a.urgencia || 'baja']);
+                    }
+
+                    return new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime();
+                });
+
+                // Establecer el pedido más reciente
+                setPedido(pedidosOrdenados[0]);
+            } else {
+                console.log("No se encontraron pedidos para este cliente");
+            }
+        } catch (error) {
+            console.error("Error fetching pedidos:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchPedidos();
+    }, [fetchPedidos]);
+
+    // Convertir items del pedido al formato OrderItem
+    const orderItems: OrderItem[] = pedido?.items?.map(item => ({
+        id: item.id,
+        name: item.nombre,
+        quantity: item.quantity.toString(),
+        price: item.precio,
+        unit: item.unidad
+    })) || [];
+
+    // Formatear fecha
+    const formatFecha = (fecha: string) => {
+        return new Date(fecha).toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    if (loading) {
+        return (
+            <IonContent
+                fullscreen
+                scrollEvents
+                onIonScroll={(e) => {
+                    const isScrolled = e.detail.scrollTop > 10;
+                    onScroll?.(isScrolled);
+                }}>
+                <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
+                    <IonToolbar>
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    </IonToolbar>
+                </IonHeader>
+                <div className="flex justify-center items-center min-h-screen">
+                    <IonText>Cargando pedidos...</IonText>
+                </div>
+            </IonContent>
+        );
+    }
+
+    if (!pedido) {
+        return (
+            <IonContent
+                fullscreen
+                scrollEvents
+                onIonScroll={(e) => {
+                    const isScrolled = e.detail.scrollTop > 10;
+                    onScroll?.(isScrolled);
+                }}>
+                <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
+                    <IonToolbar>
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    </IonToolbar>
+                </IonHeader>
+                <div className="flex justify-center items-center min-h-screen">
+                    <IonText>No se encontraron pedidos</IonText>
+                </div>
+            </IonContent>
+        );
+    }
+
     return (
-        <IonContent fullscreen>
-            <IonHeader collapse="condense" className="custom-toolbar z-50 -top-16">
+        <IonContent
+            fullscreen
+            scrollEvents
+            onIonScroll={(e) => {
+                const isScrolled = e.detail.scrollTop > 10;
+                onScroll?.(isScrolled);
+            }}>
+            <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
                     <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
 
             <section className="py-1 px-2 max-w-6xl mx-auto min-h-screen space-y-5">
-                {/*  Encabezado del pedido  */}
+                {/* Encabezado del pedido */}
                 <div>
                     <IonCardTitle className="text-4xl font-bold text-purple-900">
-                        Pedido #S9BLVF
+                        Pedido #{pedido.id}
                     </IonCardTitle>
                     <IonText color="medium">
-                        <p className="text-sm mt-1">Realizado el 20 Nov, 2024</p>
+                        <p className="text-sm mt-1">Realizado el {formatFecha(pedido.fecha_creacion)}</p>
                     </IonText>
                 </div>
+
                 <IonCard className="rounded-2xl border -1border-gray-200 shadow-sm bg-white">
                     <IonCardHeader className="pb-8">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between ">
-                            <IonBadge color="success" className="mt-4 md:mt-2 ">
-                                {orderStatus.find(s => s.active)?.status}
+                            <IonBadge
+                                color={
+                                    pedido.estado === 'entregado' ? 'success' :
+                                        pedido.estado === 'cancelado' ? 'danger' :
+                                            pedido.estado === 'incompleto' ? 'warning' : 'primary'
+                                }
+                                className="mt-4 md:mt-2 "
+                            >
+                                {pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1)}
                             </IonBadge>
                         </div>
 
@@ -152,7 +430,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonCard>
 
                 {/* BentoGrid */}
-                <div className="grid gap-1  md:grid-cols-2 ">{ }
+                <div className="grid gap-1  md:grid-cols-2 ">
                     {/* Recoger en tienda */}
                     <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white mt-1 mb-1">
                         <IonCardHeader>
@@ -204,7 +482,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 <p className="text-gray-500">
                                     Subtotal ({orderItems.length} productos)
                                 </p>
-                                <p>{formatCurrency(orderSummary.subtotal)}</p>
+                                <p>{formatCurrency(pedido.total)}</p>
                             </div>
                             <div className="flex justify-between py-2">
                                 <p className="text-gray-500">Tarifa de servicio</p>
@@ -213,7 +491,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             <div className="border-t border-gray-200 pt-3 mt-2 flex justify-between items-center">
                                 <p className="font-bold text-lg">Total</p>
                                 <p className="font-bold text-xl text-purple-600">
-                                    {formatCurrency(orderSummary.total)}
+                                    {formatCurrency(pedido.total + orderSummary.serviceFee)}
                                 </p>
                             </div>
                         </IonCardContent>
@@ -252,24 +530,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             ))}
                         </IonCardContent>
                     </IonCard>
-
-                    {/* Botones */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <IonButton expand="block" color="primary" className="rounded-xl h-10 font-semibold">
-                            <IonIcon icon={navigate} slot="start" />
-                            Ver Ruta en Mapa
-                            <IonIcon icon={chevronForward} slot="end" />
-                        </IonButton>
-                        <IonButton
-                            expand="block"
-                            color="light"
-                            fill="outline"
-                            className="rounded-xl h-12 font-semibold"
-                        >
-                            <IonIcon icon={call} slot="start" />
-                            Llamar a la Tienda
-                        </IonButton>
-                    </div>
                 </div>
             </section>
             <Footer />

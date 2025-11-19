@@ -23,7 +23,6 @@ import Background from './template/background';
 
 import Layout from './app/layout';
 import LayoutProductos from './app/productos/layout';
-import LayoutPedidos from './app/pedido/layout';
 import LayoutCarrito from './app/carrito/layout';
 import LayoutCheckout from './app/checkout/layout';
 import LayoutSeguimiento from './app/seguimiento/layout';
@@ -48,7 +47,6 @@ const App: React.FC = () => {
                 <Route path="/productos" render={() => <LayoutProductos />} exact />
                 <Route path="/carrito" render={() => <LayoutCarrito />} exact />
                 <Route path="/checkout" render={() => <LayoutCheckout />} exact />
-                <Route path="/pedidos" render={() => <LayoutPedidos />} exact />
                 <Route path="/seguimiento" render={() => <LayoutSeguimiento />} exact />
 
                 <Redirect exact path="/" to="/home" />

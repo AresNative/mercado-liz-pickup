@@ -10,7 +10,7 @@ import { CheckOutField } from "./utils/checkoutfield";
 import { CheckOutTarjetaField } from "./utils/tarjetacheckoutfiel";
 import Calendar from "./components/calendar";
 import Sucursales from "./components/map";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import TimeSlots from "./components/time";
 
 // API
@@ -31,11 +31,15 @@ import {
     useLogoutUserMutation
 } from "@/hooks/reducers/auth";
 
-import { usePedidosSignalR } from "./utils/signalr-pedidos";
 import {
     setLocalStorageItem,
     getLocalStorageItem
 } from "@/utils/functions/local-storage";
+
+import { usePedidosSignalR } from "./utils/signalr-pedidos";
+
+import { useAppDispatch } from "@/hooks/selector";
+import { clearCart } from "@/hooks/slices/cart";
 
 interface InfoUser {
     telefono?: string;
@@ -55,7 +59,7 @@ interface InfoPago {
 type Citas = (args: { user: any; pago: any }) => Promise<void>;
 
 const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
-
+    const dispatch = useAppDispatch();
     const {
         connection,
         isConnected,
@@ -88,7 +92,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return sum + (unit * item.quantity);
     }, 0);
 
-    const serv = total * 0.05;
+    const serv = total * 0.02;
     const totalConServicio = total + serv;
 
     const [PostData] = usePostMutation();
@@ -140,11 +144,11 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const usuarios = usuarioExistente?.data?.data ?? [];
 
             if (usuarios.length > 0 && userData.correo !== usuarios[0].email) {
+                const userId = getLocalStorageItem("user-id");
                 // Actualizar usuario existente
-                const usuarioId = usuarios[0].id;
                 await PutData({
                     url: "v1/users",
-                    id: usuarioId,
+                    id: userId,
                     data: {
                         email: userData.correo,
                         // Agregar más campos según sea necesario
@@ -192,6 +196,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const regPayload = {
                     email: userData.correo,
                     password: userData.telefono,
+                    nombre: userData.nombre || "Cliente",
                     rol: "cliente"
                 };
 
@@ -248,44 +253,25 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const isConfirmButtonEnabled = () => !!selectedDate && !!selectedTime;
 
-    const ejecutarConReintentoAuth = async (operacion: () => Promise<void>, maxReintentos: number = 2) => {
+    const ejecutarConReintentoAuth = async (maxReintentos: number = 2) => {
         let reintentos = 0;
 
         while (reintentos <= maxReintentos) {
-            try {
-                await operacion();
-                return; // Éxito, salir del bucle
-            } catch (error: any) {
-                reintentos++;
-                console.error(`❌ Error en operación (intento ${reintentos}/${maxReintentos}):`, error);
+            reintentos++;
+            console.error(`❌ Error en operación (intento ${reintentos}/${maxReintentos}):`);
 
-                if (reintentos > maxReintentos) {
-                    throw error; // Lanzar error después de max reintentos
-                }
+            console.log("🔄 Error de autenticación detectado, reiniciando sesión...");
+            await reiniciarAutenticacion();
 
-                // Si el error parece ser de autenticación, reiniciar sesión
-                if (error.message?.includes('autenticación') ||
-                    error.message?.includes('token') ||
-                    error.message?.includes('autorización') ||
-                    error.status === 401) {
+            // Reautenticar con los datos actuales
+            const { user: currentUser } = await getFormData();
+            const authSuccess = await authenticateUser(currentUser);
 
-                    console.log("🔄 Error de autenticación detectado, reiniciando sesión...");
-                    await reiniciarAutenticacion();
-
-                    // Reautenticar con los datos actuales
-                    const { user: currentUser } = await getFormData();
-                    const authSuccess = await authenticateUser(currentUser);
-
-                    if (!authSuccess) {
-                        throw new Error("No se pudo reautenticar después del error");
-                    }
-
-                    console.log("✅ Reautenticación exitosa, reintentando operación...");
-                } else {
-                    // Para otros tipos de error, esperar un momento antes de reintentar
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
+            if (!authSuccess) {
+                throw new Error("No se pudo reautenticar después del error");
             }
+
+            console.log("✅ Reautenticación exitosa, reintentando operación...");
         }
     };
     const handleConfirmarCitaCompleta = async () => {
@@ -301,15 +287,19 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 if (!ok) throw new Error("No se pudo autenticar.");
             }
 
-            // Ejecutar operaciones de Intelisis con manejo de errores y reintentos
-            await ejecutarConReintentoAuth(async () => {
+            try {
                 await handleConfirmarCitaIntelisis();
-            });
-
-            await cargarCitasExistentes({ user: currentUser, pago: currentPago });
+                await cargarCitasExistentes({ user: currentUser, pago: currentPago });
+            }
+            catch {
+                await ejecutarConReintentoAuth();
+                await handleConfirmarCitaCompleta();
+            } finally {
+                setIsProcessing(false);
+            }
 
             alert("Cita creada exitosamente.");
-
+            dispatch(clearCart());
         } catch (e: any) {
             console.error("❌ Error en confirmación de cita:", e);
             alert("Error: " + (e.message || "No se pudo crear la cita"));
@@ -317,6 +307,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             setIsProcessing(false);
         }
     };
+
     const handleConfirmarCitaIntelisis = async () => {
         try {
             console.log("🚀 Iniciando proceso Intelisis...");
@@ -580,7 +571,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         });
 
         const clientes = r?.data?.data ?? [];
-
+        const userId = getLocalStorageItem("user-id");
         if (clientes.length > 0) {
             clienteId = clientes[0].id;
         } else {
@@ -588,9 +579,11 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const res = await PostData({
                 url: "v1/pickup/clientes",
                 data: {
-                    nombre: user.nombre,
+                    nombre: user.Nombre + " " + (user.Apellidos || ""),
                     telefono: user.telefono,
-                    email: user.correo
+                    email: user.correo,
+                    fecha_registro: new Date().toISOString(),
+                    usuario_id: userId
                 }
             });
 
@@ -604,7 +597,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             url: "v1/pickup/listas",
             data: {
                 id_cliente: clienteId,
-                usuario_id: clienteId,
+                usuario_id: userId,
                 sucursal_id: 1,
                 nombre_lista: `${selectedDate} ${selectedTime}`,
                 servicio: "Pickup",
@@ -661,7 +654,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             shape="round"
                             className="custom-tertiary mt-5"
                             onClick={handleConfirmarCitaCompleta}
-                            disabled={!isConfirmButtonEnabled() || isProcessing || authLoading}
+                            disabled={!isConfirmButtonEnabled() || isProcessing || authLoading || items.length === 0}
                         >
                             {isProcessing ? "Procesando..." : authLoading ? "Autenticando..." : "Confirmar cita"}
                         </IonButton>

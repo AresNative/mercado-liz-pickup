@@ -30,7 +30,7 @@ export const navigationDefault = [
   {
     name: "Pedidos",
     tab: "pedidos",
-    href: "/pedidos",
+    href: "/seguimiento",
     icon: Clock,
   },
   {
