@@ -71,6 +71,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         () => console.log("Refrescar")
     );
 
+    
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
