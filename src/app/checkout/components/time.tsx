@@ -49,6 +49,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
 
         const slots: { id: string; time: string; isAvailable: boolean }[] = [];
 
+        
         for (
             let t = startDate.getTime();
             t <= endDate.getTime();
