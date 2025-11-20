@@ -9,6 +9,7 @@ import { cn } from "@/utils/functions/cn";
 import { useHistory } from "react-router";
 import { formatValue } from '@/utils/constants/format-values';
 
+
 /* 
  @example: https://v0.app/chat/supermarket-app-design-vZOCJkxnwdg
  * Al dar click en "Agendar" redireccionar a 'checkout'

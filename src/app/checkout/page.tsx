@@ -43,6 +43,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         handleRefrescarDatos
     );
 
+    
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
