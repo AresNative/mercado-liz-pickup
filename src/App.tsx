@@ -26,9 +26,9 @@ import LayoutProductos from './app/productos/layout';
 import LayoutCarrito from './app/carrito/layout';
 import LayoutCheckout from './app/checkout/layout';
 import LayoutSeguimiento from './app/seguimiento/layout';
+import LayoutUsuario from './app/perfil/layout';
 import Tabs from './template/tabs';
 import { IonReactRouter } from '@ionic/react-router';
-import PerfilUsuario from './app/perfil/page';
 
 setupIonicReact({
   mode: 'ios',
@@ -49,7 +49,7 @@ const App: React.FC = () => {
                 <Route path="/carrito" render={() => <LayoutCarrito />} exact />
                 <Route path="/checkout" render={() => <LayoutCheckout />} exact />
                 <Route path="/seguimiento" render={() => <LayoutSeguimiento />} exact />
-                <Route path="/perfil" render={() => <PerfilUsuario />} exact />
+                <Route path="/cuentas" render={() => <LayoutUsuario />} exact />
                 <Redirect exact path="/" to="/home" />
 
                 <Route>

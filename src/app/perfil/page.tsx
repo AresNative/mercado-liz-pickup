@@ -51,12 +51,18 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     return (
-
-        <IonContent fullscreen >
-            <IonHeader collapse="condense" className="custom-toolbar z-50 -top-0">
-
+        <IonContent
+            fullscreen
+            scrollEvents
+            onIonScroll={(e) => {
+                const isScrolled = e.detail.scrollTop > 20;
+                onScroll?.(isScrolled);
+            }}>
+            <IonHeader
+                collapse="condense"
+                className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
-                    <IconLiz fill={onScroll ? "#7927F5" : "#FFF" } width={55} />
+                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                 </IonToolbar>
             </IonHeader>
             <section className="py-1 px-2 max-w-6xl mx-auto space-y-5">
