@@ -20,7 +20,6 @@ import { IconLiz } from "./productos/components/ionc-liz";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { useEffect, useState } from "react";
 
-// Tipo para la respuesta de la API
 interface ApiResponse {
     totalRecords: number;
     totalPages: number;
@@ -31,11 +30,11 @@ interface ApiResponse {
 
 const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
-    const [products, setproducts] = useState<Producto[]>([])
+    const [products, setproducts] = useState<Producto[]>([]);
 
     useEffect(() => {
-        LoadOffers()
-    }, [getData])
+        LoadOffers();
+    }, [getData]);
 
     async function LoadOffers() {
         try {
@@ -62,41 +61,34 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 pageSize: 10,
                 page: 1,
                 filtros: {
-                    "Filtros": [
-                        { "key": "ofrd.Precio", "Operator": ">", "Value": "0" }
+                    Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }],
+                    Selects: [
+                        { key: "cb.Codigo" },
+                        { key: "cb.Cuenta" },
+                        { key: "art.Grupo" },
+                        { key: "art.Descripcion1" },
+                        { key: "lpu.Unidad" },
+                        { key: "lpu.Precio" },
+                        { key: "ofrd.Precio", alias: "Descuento" },
+                        { key: "au.Unidad", alias: "UnidadFactor" },
+                        { key: "au.Factor" },
                     ],
-                    "Selects": [
-                        { "key": "cb.Codigo" },
-                        { "key": "cb.Cuenta" },
-                        { "key": "art.Grupo" },
-                        { "key": "art.Descripcion1" },
-                        { "key": "lpu.Unidad" },
-                        { "key": "lpu.Precio" },
-                        { "key": "ofrd.Precio", "alias": "Descuento" },
-                        { "key": "au.Unidad", "alias": "UnidadFactor" },
-                        { "key": "au.Factor" }
-                    ],
-                    "Agregaciones": [
+                    Agregaciones: [
                         {
-                            "Key": "ad.DispMenosApartado",
-                            "Operation": "SUM",
-                            "Alias": "Cantidad"
-                        }
+                            Key: "ad.DispMenosApartado",
+                            Operation: "SUM",
+                            Alias: "Cantidad",
+                        },
                     ],
-                    "Order": [
-                        {
-                            "Key": "cb.Codigo",
-                            "Direction": "DESC"
-                        }
-                    ]
+                    Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
                 },
                 signal: undefined,
             });
-            if ('data' in result && result.data) {
+
+            if ("data" in result && result.data) {
                 const apiData: ApiResponse = result.data;
 
                 if (apiData.data && apiData.data.length > 0) {
-                    // Mapear los datos de la API al formato de Producto
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
                         id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
                         nombre: item.Descripcion1 || "Sin nombre",
@@ -111,9 +103,10 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }
             }
         } catch {
-            return { data: [] }
+            return { data: [] };
         }
     }
+
     return (
         <IonContent
             fullscreen
@@ -128,116 +121,181 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar h-fit absolute -top-0"
             >
                 <IonToolbar>
-                    <a className='decoration-none cursor-pointer' href='/productos'>
+                    <a className="cursor-pointer" href="/productos">
                         <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                     </a>
                 </IonToolbar>
             </IonHeader>
-            {/* Hero Section */}
-            <header className="text-purple-800 dark:text-purple-200 bg-no-repeat bg-center relative my-12">
-                <section className="max-w-6xl py-5 md:py-10 px-4 mx-auto flex flex-col gap-6">
-                    <h1 className="text-4xl md:text-6xl font-bold mb-4">Compra tus productos frescos online</h1>
-                    <p className="text-xl text-gray-400 md:text-2xl mb-8 max-w-3xl">
-                        Selecciona tus productos favoritos, elige tu horario de recogida y recoge tu pedido sin esperas.
+
+            {/* HERO NUEVO */}
+            <header className="relative text-purple-800 dark:text-purple-200 bg-gradient-to-b my-12">
+                <section className="max-w-6xl py-10 md:py-20 px-4 mx-auto flex flex-col gap-6">
+                    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
+                        Compra fresco, rápido y al mejor precio
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-300 max-w-2xl">
+                        Productos seleccionados, ofertas activas y recogida sin filas.
+                        Fácil, rápido y al instante.
                     </p>
-                    <ul className="flex flex-col sm:flex-row relative gap-4 z-10 items-center text-center ">
-                        <a href="https://mercadosliz.com" className="bg-white cursor-pointer text-purple-500 hover:bg-purple-200 px-4 py-3 rounded-md font-semibold transition-all duration-300 transform hover:scale-105">
+
+                    <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                        <a
+                            href="/productos"
+                            className="flex gap-3 items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-4 rounded-xl text-lg shadow-md shadow-purple-300/30 transition-all hover:scale-105"
+                        >
+                            Explorar Productos
+                            <MoveRight />
+                        </a>
+
+                        <a
+                            href="https://mercadosliz.com"
+                            className="bg-white dark:bg-purple-950 border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-300 hover:bg-purple-100 px-6 py-4 rounded-xl font-semibold transition-all"
+                        >
                             Conocer más
                         </a>
-                        <a href="/productos" className="flex gap-2 bg-purple-500 cursor-pointer text-white hover:bg-purple-200 hover:text-purple-500 px-4 py-2 rounded-md font-semibold transition-all duration-300">
-                            Explorar Productos <MoveRight />
-                        </a>
-                    </ul>
+                    </div>
                 </section>
             </header>
+
+            {/* MÁS VENDIDOS */}
             <article className="py-16 px-4 max-w-6xl mx-auto">
                 <label className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">Productos más vendidos</h2>
-                    <p className="text-gray-600 dark:text-gray-100 max-w-2xl mx-auto">
-                        Explora nuestra selección de productos más populares, cuidadosamente elegidos por nuestros clientes.
+                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white">
+                        Productos más vendidos 🔥
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mt-2">
+                        Esta semana nuestros clientes están eligiendo estos productos.
+                        ¡No te quedes sin los tuyos!
                     </p>
+
+                    <a
+                        href="/productos"
+                        className="inline-flex gap-2 items-center mt-6 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all hover:scale-105"
+                    >
+                        Ver todo el catálogo <MoveRight />
+                    </a>
                 </label>
+
                 <BentoGrid cols={2}>
                     <BentoItem
                         title="Frutas frescas"
-                        description="Disfruta de una variedad de frutas frescas y jugosas, perfectas para cualquier ocasión."
+                        description="Jugosas y recién seleccionadas, perfectas para cada día."
                         icon={<Apple className="size-6 text-red-600" />}
                         className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
                     />
                     <BentoItem
                         title="Verduras orgánicas"
-                        description="Nuestras verduras orgánicas son cultivadas sin pesticidas, garantizando frescura y sabor."
+                        description="Cultivo limpio y natural, sin pesticidas."
                         icon={<Wheat className="size-6 text-green-600" />}
                         className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
                     />
                     <BentoItem
                         title="Lácteos naturales"
-                        description="Encuentra una selección de productos lácteos naturales, desde leche hasta yogures y quesos."
+                        description="Frescos, nutritivos y de productores confiables."
                         icon={<Milk className="size-6 text-blue-600" />}
                         className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
                     />
                     <BentoItem
                         title="Panadería artesanal"
-                        description="Deléitate con nuestro pan artesanal, horneado diariamente para garantizar frescura."
+                        description="Horneado diario, irresistible y recién hecho."
                         icon={<Croissant className="size-6 text-yellow-600" />}
                         className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800"
                     />
                 </BentoGrid>
             </article>
+
+            {/* OFERTAS */}
             <ul className="px-4 flex flex-col gap-2 max-w-6xl mx-auto relative">
                 <li className="flex justify-between items-center">
-                    <label className="font-semibold text-3xl text-center">Ofertas</label>
-                    <a className="flex items-center underline right-0 mt-5 text-purple-800 cursor-pointer hover:text-purple-950"> Explorar <ArrowRightIcon className="ml-1 h-4 w-4" /></a>
+                    <label className="font-semibold text-3xl text-center">
+                        Ofertas
+                    </label>
+
+                    <a
+                        href="/productos"
+                        className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-purple-700 transition"
+                    >
+                        Ver todas las ofertas
+                        <ArrowRightIcon className="h-4 w-4" />
+                    </a>
                 </li>
-                {/* Listado de porductos mas vendidos */}
+
                 <li className="flex flex-1 gap-2 overflow-x-auto scrollbar-hide">
-                    {products && products.map((producto, index) => (
-                        <Card
-                            key={`${producto.id}-${index}`}
-                            producto={producto}
-                        />
-                    ))}
+                    {products &&
+                        products.map((producto, index) => (
+                            <Card
+                                key={`${producto.id}-${index}`}
+                                producto={producto}
+                            />
+                        ))}
                 </li>
             </ul>
-            {/* Benefits Section */}
+
+            {/* BENEFICIOS */}
             <section className="pt-16 px-4 max-w-6xl mx-auto mb-36">
                 <label className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">Beneficios Clave</h2>
-                    <p className="text-gray-600 dark:text-gray-100 max-w-2xl mx-auto">
-                        Descubre cómo nuestro sistema puede transformar tu estilo de vida y optimizar tus operaciones diarias.
+                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white">
+                        Beneficios Clave
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                        Descubre cómo hacer tus compras más fácil, rápido y económico.
                     </p>
                 </label>
+
                 <BentoGrid cols={2}>
                     <BentoItem
                         title="Eficiencia de Compras"
-                        description="Ahorra tiempo realizando todas tus compras en un solo lugar con nuestra plataforma fácil de usar."
+                        description="Haz todo tu pedido en un solo lugar."
                         icon={<Zap className="size-6 text-blue-600" />}
                         className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
                     />
-
                     <BentoItem
                         title="Tiempo Real"
-                        description="Monitorea el estado de tus pedidos y recibe actualizaciones instantáneas sobre su progreso."
+                        description="Actualizaciones instantáneas del estado de tu pedido."
                         icon={<Clock className="size-6 text-purple-600" />}
                         className="bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800"
                     />
                     <BentoItem
                         title="Seguridad de Datos"
-                        description="Tus datos están protegidos con las últimas tecnologías de seguridad y encriptación."
+                        description="Protección avanzada para tu información."
                         icon={<Lock className="size-6 text-indigo-600" />}
                         className="bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800"
                     />
                     <BentoItem
                         title="Ahorro de Costos"
-                        description="Disfruta de precios competitivos y ofertas exclusivas que te ayudarán a ahorrar en cada compra."
+                        description="Ofertas exclusivas y precios competitivos."
                         icon={<DollarSign className="size-6 text-green-600" />}
                         className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
                     />
                 </BentoGrid>
-            </section >
+            </section>
+
+            {/* BANNER DE CONVERSIÓN EXTRA */}
+            <section className="max-w-6xl mx-auto my-24 px-4">
+                <div className="bg-gradient-to-r from-purple-600 to-purple-500 text-white py-10 px-6 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 className="text-3xl font-bold">
+                            ¿Listo para hacer tu pedido?
+                        </h3>
+                        <p className="text-white/90 mt-2 text-lg">
+                            Explora más de 2,000 productos disponibles hoy mismo.
+                        </p>
+                    </div>
+
+                    <a
+                        href="/productos"
+                        className="bg-white text-purple-600 px-6 py-4 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                        Comprar ahora
+                        <MoveRight />
+                    </a>
+                </div>
+            </section>
+
             <Footer />
         </IonContent>
     );
-}
+};
 
 export default Landing;

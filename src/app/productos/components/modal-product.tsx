@@ -24,7 +24,8 @@ import { Barcode, ChartColumnStackedIcon, Hash, Heart, MessageCircle, ThumbsUp }
 import AddToCartButton from "./product-add-cart";
 import { cn } from "@/utils/functions/cn";
 import { IconLiz } from "./ionc-liz";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 
 interface ProductModalProps {
     producto: Producto;
@@ -64,41 +65,10 @@ const sampleComments = [
     }
 ];
 
-// Datos de ejemplo para productos recomendados
-const recommendedProducts: Producto[] = [
-    {
-        id: "REC001",
-        nombre: "Producto Recomendado 1",
-        precio: 25.99,
-        precioRegular: 29.99,
-        descuento: 15,
-        cantidad: 15,
-        unidad: "unidad",
-        categoria: "Electrónicos"
-    },
-    {
-        id: "REC002",
-        nombre: "Producto Recomendado 2",
-        precio: 45.50,
-        precioRegular: 45.50,
-        descuento: 0,
-        cantidad: 8,
-        unidad: "unidad",
-        categoria: "Hogar"
-    },
-    {
-        id: "REC003",
-        nombre: "Producto Recomendado 3",
-        precio: 12.75,
-        precioRegular: 15.99,
-        descuento: 20,
-        cantidad: 20,
-        unidad: "unidad",
-        categoria: "Oficina"
-    }
-];
-
 const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavoriteToggle, isFavorite }) => {
+    const [recomendados, setrecomendados] = useState<Producto[]>([])
+    const [getWithFilter] = useGetWithFiltersGeneralInIntelisisMutation();
+
     const router = useIonRouter();
     const isLowStock = producto.cantidad > 0 && producto.cantidad <= 10;
     const isOutOfStock = producto.cantidad <= 0;
@@ -128,6 +98,77 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavorit
             }
         });
     };
+
+    async function LoadImage() {
+        const response = await getWithFilter({
+            table: `
+                CB AS cb
+                    INNER JOIN Art AS art
+                        ON cb.Cuenta = art.Articulo
+                    INNER JOIN ListaPreciosDUnidad AS lpu
+                        ON art.Articulo = lpu.Articulo
+                        AND cb.Unidad = lpu.Unidad
+                        AND lpu.Lista = '(Precio Lista)'
+                    INNER JOIN ArtUnidad AS au
+                        ON art.Articulo = au.Articulo
+                        AND lpu.Unidad = au.Unidad
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                    INNER JOIN (
+                                    SELECT *,
+                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
+                                    FROM OfertaD
+                                ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
+                `,
+            pageSize: 4,
+            page: 1,
+            filtros: {
+                Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
+                Selects: [
+                    { key: "cb.Codigo" },
+                    { key: "cb.Cuenta" },
+                    { key: "art.Grupo" },
+                    { key: "art.Descripcion1" },
+                    { key: "lpu.Unidad" },
+                    { key: "lpu.Precio" },
+                    { key: "ofrd.Precio", alias: "Descuento" },
+                    { key: "au.Unidad", alias: "UnidadFactor" },
+                    { key: "au.Factor" },
+                ],
+                Agregaciones: [
+                    {
+                        Key: "ad.DispMenosApartado",
+                        Operation: "SUM",
+                        Alias: "Cantidad",
+                    },
+                ],
+                Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
+            },
+            signal: undefined,
+        }).unwrap();
+
+        if (response && response.data) {
+            const apiData: any = response.data;
+
+            if (apiData && apiData.length > 0) {
+                const mappedItems: Producto[] = apiData.map((item: any) => ({
+                    id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                    nombre: item.Descripcion1 || "Sin nombre",
+                    categoria: item.Grupo || "Sin categoría",
+                    unidad: item.Unidad || "Unidad",
+                    precio: item.Precio || 0,
+                    cantidad: item.Factor || 1,
+                    descuento: item.Descuento || 0,
+                }));
+
+                setrecomendados(mappedItems);
+            }
+        }
+    }
+    useEffect(() => {
+        LoadImage();
+    }, [producto]);
+    console.log(recomendados);
 
     return (
         <IonPage>
@@ -299,7 +340,7 @@ const ModalProd: React.FC<ProductModalProps> = ({ producto, image, handleFavorit
 
                         <IonGrid className="p-0">
                             <IonRow>
-                                {recommendedProducts.map((recommended) => (
+                                {recomendados.map((recommended) => (
                                     <IonCol size="6" key={recommended.id}>
                                         <div
                                             className="bg-gray-50 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100 transition-colors"
