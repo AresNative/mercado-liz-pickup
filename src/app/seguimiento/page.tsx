@@ -347,7 +347,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }}>
                 <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                     <IonToolbar>
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                        <a className='decoration-none cursor-pointer' href='/productos'>
+                            <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                        </a>
                     </IonToolbar>
                 </IonHeader>
                 <div className="flex justify-center items-center min-h-screen">
@@ -368,7 +370,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }}>
                 <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                     <IonToolbar>
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                        <a className='decoration-none cursor-pointer' href='/productos'>
+                            <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                        </a>
                     </IonToolbar>
                 </IonHeader>
                 <div className="flex justify-center items-center min-h-screen">
@@ -388,7 +392,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }}>
             <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
-                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    <a className='decoration-none cursor-pointer' href='/productos'>
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    </a>
                 </IonToolbar>
             </IonHeader>
 

@@ -116,17 +116,6 @@ const AppMenu = () => {
                             );
                         })}
                     </IonList>
-
-                    {!user && (
-                        <div className="p-4 text-sm text-gray-500">
-                            <p>
-                                ¿Eres proveedor?
-                                <Link to="/proveedor-login" className="text-primary-600">
-                                    Acceso proveedores
-                                </Link>
-                            </p>
-                        </div>
-                    )}
                 </IonContent>
                 <IonModal
                     isOpen={isOpen}

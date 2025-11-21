@@ -71,7 +71,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         () => console.log("Refrescar")
     );
 
-    
+
     const [selectedTime, setSelectedTime] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -252,7 +252,21 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
     };
 
-    const isConfirmButtonEnabled = () => !!selectedDate && !!selectedTime;
+    const isConfirmButtonEnabled = useCallback(() => {
+        // Acceder directamente a los valores del formulario a través del control
+        const userValues = infoFormRef.current?.control?._formValues || {};
+        const pagoValues = pagoFormRef.current?.control?._formValues || {};
+
+        const currentUser = { ...infoUser, ...userValues };
+        const currentPago = { ...infoPago, ...pagoValues };
+
+        const hasUserInfo = currentUser.telefono && currentUser.nombre && currentUser.correo;
+        const hasPaymentInfo = currentPago.numeroTarjeta && currentPago.fechaExpiracion && currentPago.cvv;
+        const hasDateTime = !!selectedDate && !!selectedTime;
+
+        return hasDateTime && hasUserInfo && hasPaymentInfo;
+    }, [infoUser, infoPago, selectedDate, selectedTime]);
+
 
     const ejecutarConReintentoAuth = async (maxReintentos: number = 2) => {
         let reintentos = 0;
@@ -631,7 +645,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }}>
             <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
-                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    <a className='decoration-none cursor-pointer' href='/productos'>
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    </a>
                 </IonToolbar>
             </IonHeader>
 

@@ -77,20 +77,20 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     CB AS cb
                     INNER JOIN Art AS art
                         ON cb.Cuenta = art.Articulo
-                    INNER JOIN ListaPreciosDUnidad AS lpu
+                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
-                    INNER JOIN ArtUnidad AS au
+                   INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
                     INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
-                    INNER JOIN (
+                    LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
                                 ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
                     `,
                 pageSize: 5,
                 page: pageToFetch,
@@ -100,7 +100,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             "key": "art.Descripcion1",
                             "value": searchTerm,
                             "operator": "like"
-                        }
+                        },
+                        /*  {
+                             "key": "art.Articulo",
+                             "value": searchTerm,
+                             "operator": "like"
+                         } */
                     ],
                     "Selects": [
                         { "key": "cb.Codigo" },
@@ -114,17 +119,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         { "key": "art.TipoImpuesto2" },
                         { "key": "lpu.Unidad" },
                         { "key": "lpu.Precio" },
-                        { "key": "ofrd.Precio", "alias": "Descuento" },
-                        { "key": "au.Unidad", "alias": "UnidadFactor" },
-                        { "key": "au.Factor" }
+                        /*     { "key": "ofrd.Precio", "alias": "Descuento" },
+                          { "key": "au.Unidad", "alias": "UnidadFactor" },
+                          { "key": "au.Factor" } */
                     ],
-                    "Agregaciones": [
+                    /* "Agregaciones": [
                         {
                             "Key": "ad.DispMenosApartado",
                             "Operation": "SUM",
                             "Alias": "Cantidad"
                         }
-                    ],
+                    ], */
                     "Order": [
                         {
                             "Key": "art.Descripcion1",

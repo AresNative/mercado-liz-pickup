@@ -77,9 +77,11 @@ const Header: React.FC<HeaderProps> = ({
                         </IonButtons>
                     )}
 
-                    <section className='flex flex-1 justify-center items-center mt-2 absolute left-0 right-0 top-0'>
+                    <section slot="end" className='flex flex-1 justify-center items-center mt-2 absolute left-0 right-0 top-0 z-50'>
                         {isScrolled && (
-                            <IconLiz className='mx-auto' fill={"#7927F5"} width={35} />
+                            <a className='decoration-none cursor-pointer' href='/productos'>
+                                <IconLiz className='mx-auto' fill={"#7927F5"} width={35} />
+                            </a>
                         )}
                     </section>
 

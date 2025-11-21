@@ -10,6 +10,7 @@ export function CheckOutTarjetaField(): Field[] {
             label: "Formas de pago",
             placeholder: "Selecciona un método de pago",
             require: false,
+            multiple: false,
             icon: <CreditCard />,
             options: [
                 { value: "Efectivo", label: "Pago en Efectivo" },

@@ -96,6 +96,7 @@
 }
 
 .custom-search-barr {
+    --z-index: 10 !important;
     /* Estado normal */
     --background: linear-gradient(100deg, #DABFFF 0%, #9238e749 100%);
     --color: #ffffff;

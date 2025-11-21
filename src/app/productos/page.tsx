@@ -1,13 +1,12 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, IonSearchbar } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { IconLiz } from "./components/ionc-liz";
 import CategorySlider from "./components/categories";
-import PromoBanner from "./components/banner-offers";
-import { promoItems } from "./data/promos";
+import PromoBanner from "./components/banner";
 import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
@@ -278,12 +277,39 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar h-fit absolute -top-0"
             >
                 <IonToolbar>
-                    <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    <a className='decoration-none cursor-pointer' href='/productos'>
+                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                    </a>
                 </IonToolbar>
             </IonHeader>
 
             <section className="px-4 py-4 max-w-6xl mx-auto">
-                <PromoBanner items={promoItems} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
+                <PromoBanner items={[
+                    {
+                        id: "1",
+                        backgroundColor: "bg-blue-600",
+                        content: {
+                            title: "Bienvenido a nuestra tienda",
+                            description: "Descubre nuestros productos exclusivos",
+                            position: "center",
+                            textColor: "text-white",
+                            buttonColor: "bg-white",
+                            buttonTextColor: "text-blue-600"
+                        }
+                    },
+                    {
+                        id: "2",
+                        gradient: "bg-gradient-to-r from-purple-500 to-pink-500",
+                        content: {
+                            title: "Nuevas Funcionalidades",
+                            subtitle: "Actualización de temporada",
+                            description: "Hemos añadido nuevas características para mejorar tu experiencia",
+                            position: "left",
+                            textColor: "text-white",
+                            buttonColor: "bg-yellow-400",
+                        }
+                    },
+                ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
                 <CategorySlider />
 
                 <section className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide">
