@@ -12,7 +12,7 @@ const Layout: React.FC = () => {
         <>
             <AppMenu />
             <IonPage id="main-content">
-                <Header isScrolled={isScrolled} showScrollBarr showMenuButton mobileScreen={isPlatform('mobile')} />
+                <Header isScrolled={isScrolled} showMenuButton mobileScreen={isPlatform('mobile')} />
                 <Page onScroll={(scrolled) => setIsScrolled(scrolled)} mobileScreen={isPlatform('mobile')} />
             </IonPage>
         </>

@@ -19,6 +19,7 @@ import Card from "./productos/components/card";
 import { IconLiz } from "./productos/components/ionc-liz";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { useEffect, useState } from "react";
+import { cn } from "@/utils/functions/cn";
 
 interface ApiResponse {
     totalRecords: number;
@@ -126,6 +127,56 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
+            {/* SELECCIÓN DE SUCURSAL */}
+            <section className="max-w-6xl mx-auto px-4 mb-10">
+                <h3 className="font-bold text-center mb-6 dark:text-white">
+                    Selecciona tu sucursal
+                </h3>
+
+                <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
+                    Elige tu sucursal preferida para ver productos con disponibilidad real.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                        { id: "mayoreo", name: "Mayoreo" },
+                        { id: "guadalupe", name: "Valle de Guadalupe" },
+                        { id: "palmas", name: "Palmas" },
+                        { id: "testerazo", name: "Testerazo" },
+                    ].map((s, index) => (
+                        <label
+                            key={s.id}
+                            className={cn(`
+                                    flex items-center gap-3 p-4 rounded-xl
+                                    border 
+                                `,
+                                index === 0 && `
+                                    border-purple-300 dark:border-purple-700
+                                    bg-white dark:bg-purple-950
+                                    hover:bg-purple-50
+                                    dark:hover:bg-purple-900
+                                    transition-all
+                                    shadow-sm
+                                    hover:shadow-md
+                                     cursor-pointer
+                                `)}
+                        >
+                            <input
+                                type="radio"
+                                name="sucursal"
+                                value={s.id}
+                                defaultChecked={index === 0}  // SOLO LA PRIMERA ACTIVADA
+                                disabled={index !== 0} // SOLO LA PRIMERA HABILITADA
+                                className="w-5 h-5 text-purple-600 accent-purple-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+
+                            <span className={cn(index === 0 ? "font-semibold " : "disabled:font-light", "text-gray-700 dark:text-gray-200")}>
+                                {s.name}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+            </section>
 
             {/* HERO NUEVO */}
             <header className="relative text-purple-800 dark:text-purple-200 bg-gradient-to-b my-12">

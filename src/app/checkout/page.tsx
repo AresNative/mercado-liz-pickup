@@ -264,7 +264,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const hasPaymentInfo = currentPago.numeroTarjeta && currentPago.fechaExpiracion && currentPago.cvv;
         const hasDateTime = !!selectedDate && !!selectedTime;
 
-        return hasDateTime && hasUserInfo && hasPaymentInfo;
+        return hasDateTime /* && hasUserInfo && hasPaymentInfo */;
     }, [infoUser, infoPago, selectedDate, selectedTime]);
 
 

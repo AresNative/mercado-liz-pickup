@@ -85,11 +85,13 @@ const Header: React.FC<HeaderProps> = ({
                         )}
                     </section>
 
-                    <SearchBar
-                        mobileScreen={mobileScreen}
-                        isScrolled={isScrolled}
-                        onSearchChange={handleSearchChange}
-                    />
+                    {showScrollBarr && (
+                        <SearchBar
+                            mobileScreen={mobileScreen}
+                            isScrolled={isScrolled}
+                            onSearchChange={handleSearchChange}
+                        />
+                    )}
 
                     <IonButtons slot="end" className='flex items-center gap-2 cursor-pointer'>
                         {showMenuButton && (

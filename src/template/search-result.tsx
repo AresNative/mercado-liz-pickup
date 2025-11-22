@@ -163,7 +163,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     // Corrección: pasar las opciones del modal al presentarlo
     const [present] = useIonModal(ModalProd, {
         producto,
-        onDismiss: (data: string, role: string) => console.log('Modal dismissed:', data, role),
     });
 
     const handleCardClick = (productoSelected: any) => {
