@@ -14,7 +14,6 @@ import {
     IonBackButton,
     IonBadge,
     IonItem,
-    IonLabel,
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
@@ -42,7 +41,6 @@ const Header: React.FC<HeaderProps> = ({
     const [showSearchResults, setShowSearchResults] = useState(false);
 
     const cart = useAppSelector((state: RootState) => state.cart);
-    const searchTerm = useAppSelector((state: RootState) => state.filterData.search?.value || "");
     const { items = [] } = cart || {};
 
     // Calcular el total correctamente

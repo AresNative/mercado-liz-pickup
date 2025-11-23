@@ -150,7 +150,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         >
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar h-fit absolute -top-0"
+                className="custom-toolbar-clear h-fit absolute -top-0"
             >
                 <IonToolbar>
                     <a className="cursor-pointer" href="/productos">
@@ -160,7 +160,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </IonHeader>
 
             {/* HERO PRINCIPAL MEJORADO */}
-            <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-16 md:py-24">
+            <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-6 md:py-24">
                 <div className="max-w-6xl mx-auto px-4 text-center">
                     <div className="flex justify-center mb-6">
                         <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm">
@@ -180,7 +180,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </p>
 
                     {/* Características rápidas */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 max-w-2xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 max-w-2xl mx-auto">
                         {features.map((feature, index) => (
                             <div key={index} className="text-center">
                                 <div className="bg-white/20 rounded-full p-3 inline-flex mb-2">
@@ -241,7 +241,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             status: "coming",
                             badge: "🔜 Próximamente",
                             description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                            features: ["Muy pronto", "Mismo servicio"]
                         },
                         {
                             id: "palmas",
@@ -249,7 +249,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             status: "coming",
                             badge: "🔜 Próximamente",
                             description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                            features: ["Muy pronto", "Mismo servicio"]
                         },
                         {
                             id: "testerazo",
@@ -257,7 +257,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             status: "coming",
                             badge: "🔜 Próximamente",
                             description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                            features: ["Muy pronto", "Mismo servicio"]
                         },
                     ].map((sucursal, index) => (
                         <div

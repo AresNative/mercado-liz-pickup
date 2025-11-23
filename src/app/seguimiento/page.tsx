@@ -3,15 +3,16 @@ import { PageProps } from "@/utils/types/page";
 import {
     IonContent, IonHeader, IonToolbar, IonCard, IonCardContent, IonCardHeader,
     IonCardTitle, IonText, IonChip, IonBadge, IonIcon, IonSegment, IonSegmentButton,
+    IonButton, IonAlert
 } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { cn } from "@/utils/functions/cn";
 import {
     location, time, storefront,
-    receipt, call
+    receipt, call, closeCircle
 } from "ionicons/icons";
 import { useCallback, useEffect, useState } from "react";
-import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+import { useGetWithFiltersGeneralMutation, usePutGeneralMutation } from "@/hooks/reducers/api";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
 
 interface OrderStatus {
@@ -89,10 +90,12 @@ interface Pedido {
 const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const [getWithFilter] = useGetWithFiltersGeneralMutation();
+    const [putGeneral] = usePutGeneralMutation();
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null);
     const [segmentoActivo, setSegmentoActivo] = useState<'activos' | 'todos'>('activos');
     const [loading, setLoading] = useState(true);
+    const [showCancelAlert, setShowCancelAlert] = useState(false);
 
     // Función para determinar el orderStatus basado en el estado del pedido
     const getOrderStatus = (pedido: Pedido): OrderStatus[] => {
@@ -164,6 +167,43 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+
+    // Función para cancelar pedido
+    const handleCancelarPedido = async () => {
+        if (!pedidoSeleccionado) return;
+
+        try {
+            await putGeneral({
+                table: "listas",
+                id: pedidoSeleccionado.id,
+                data: {
+                    estado: 'cancelado',
+                    fecha_actualizacion: new Date().toISOString()
+                }
+            }).unwrap();
+
+            // Actualizar localmente
+            setPedidoSeleccionado(prev => prev ? {
+                ...prev,
+                estado: 'cancelado',
+                fecha_actualizacion: new Date().toISOString()
+            } : null);
+
+            // Actualizar la lista de pedidos
+            setPedidos(prev => prev.map(pedido =>
+                pedido.id === pedidoSeleccionado.id
+                    ? { ...pedido, estado: 'cancelado', fecha_actualizacion: new Date().toISOString() }
+                    : pedido
+            ));
+
+            console.log(`Pedido #${pedidoSeleccionado.id} cancelado exitosamente`);
+
+        } catch (error) {
+            console.error("Error cancelando pedido:", error);
+        } finally {
+            setShowCancelAlert(false);
+        }
+    };
 
     // Función para parsear array_lista y calcular total
     const parseListaData = (lista: any): Pedido => {
@@ -336,6 +376,10 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         });
     };
 
+    // Verificar si el pedido puede ser cancelado
+    const puedeCancelar = pedidoSeleccionado &&
+        ['nuevo', 'proceso'].includes(pedidoSeleccionado.estado);
+
     if (loading) {
         return (
             <IonContent
@@ -453,13 +497,28 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 {pedidoSeleccionado && (
                     <>
                         {/* Encabezado del pedido seleccionado */}
-                        <div>
-                            <IonCardTitle className="text-4xl font-bold text-purple-900">
-                                Pedido #{pedidoSeleccionado.id}
-                            </IonCardTitle>
-                            <IonText color="medium">
-                                <p className="text-sm mt-1">Realizado el {formatFecha(pedidoSeleccionado.fecha_creacion)}</p>
-                            </IonText>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <IonCardTitle className="text-4xl font-bold text-purple-900">
+                                    Pedido #{pedidoSeleccionado.id}
+                                </IonCardTitle>
+                                <IonText color="medium">
+                                    <p className="text-sm mt-1">Realizado el {formatFecha(pedidoSeleccionado.fecha_creacion)}</p>
+                                </IonText>
+                            </div>
+
+                            {/* Botón para cancelar pedido */}
+                            {puedeCancelar && (
+                                <IonButton
+                                    fill="outline"
+                                    color="danger"
+                                    onClick={() => setShowCancelAlert(true)}
+                                    className="ml-4"
+                                >
+                                    <IonIcon icon={closeCircle} slot="start" />
+                                    Cancelar Pedido
+                                </IonButton>
+                            )}
                         </div>
 
                         <IonCard className="rounded-2xl border -1border-gray-200 shadow-sm bg-white">
@@ -627,6 +686,27 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 )}
             </section>
             <Footer />
+
+            {/* Alert para confirmar cancelación */}
+            <IonAlert
+                isOpen={showCancelAlert}
+                onDidDismiss={() => setShowCancelAlert(false)}
+                header={'Cancelar Pedido'}
+                message={'¿Estás seguro de que quieres cancelar este pedido? Esta acción no se puede deshacer.'}
+                buttons={[
+                    {
+                        text: 'No, mantener',
+                        role: 'cancel',
+                        cssClass: 'secondary'
+                    },
+                    {
+                        text: 'Sí, cancelar',
+                        role: 'confirm',
+                        cssClass: 'danger',
+                        handler: handleCancelarPedido
+                    }
+                ]}
+            />
         </IonContent>
     );
 };

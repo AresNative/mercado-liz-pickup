@@ -225,7 +225,12 @@ ion-tab-button {
     --color-selected: var(--ion-color-tertiary);
     --color: var(--text-secondary);
 }
-
+.custom-toolbar-clear ion-toolbar {
+    --background: linear-gradient(100deg, #9333ea 0%,  #a855f7 100%, #4f46e5 100%) !important;
+    --min-height: 64px;
+    position: relative;
+    font-family: 'Lobster';
+}
 .custom-toolbar ion-toolbar {
     --background: linear-gradient(100deg, #4d0488 0%, #7a2fc4 100%) !important;
     --min-height: 64px;

@@ -1,6 +1,6 @@
 import type React from "react";
 import { useState } from "react";
-import { IonPage } from "@ionic/react";
+import { IonPage, isPlatform } from "@ionic/react";
 import Header from "@/template/header";
 import Page from "./page";
 import AppMenu from "@/template/menu";
@@ -12,7 +12,7 @@ const Layout: React.FC = () => {
         <>
             <AppMenu />
             <IonPage id="main-content">
-                <Header isScrolled={isScrolled} showMenuButton />
+                <Header isScrolled={isScrolled} showScrollBarr showMenuButton mobileScreen={isPlatform('mobile')} />
                 <Page onScroll={(scrolled) => setIsScrolled(scrolled)} />
             </IonPage>
         </>

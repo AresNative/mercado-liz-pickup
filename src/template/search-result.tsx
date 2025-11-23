@@ -161,8 +161,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         }
     }, [getData, searchTerm]);
     // Corrección: pasar las opciones del modal al presentarlo
-    const [present] = useIonModal(ModalProd, {
+    const [present, dismiss] = useIonModal(ModalProd, {
         producto,
+        onDismiss: () => dismiss(),
     });
 
     const handleCardClick = (productoSelected: any) => {
@@ -236,7 +237,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         <div
             ref={resultsRef}
             onScroll={handleResultsScroll}
-            className="absolute top-20 left-0 right-0 w-[70%] mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto mt-2"
+            className="absolute md:top-20 left-0 right-0 md:w-[70%] md:mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 md:max-h-60 overflow-y-auto mt-2"
         >
             {isSearching && suggestions.length === 0 ? (
                 <IonItem>

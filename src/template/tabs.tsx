@@ -6,23 +6,38 @@ import {
     IonTabBar,
     IonTabButton,
     isPlatform,
-    IonFabButton
+    IonFabButton,
+    useIonModal
 } from '@ionic/react';
 import { Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import ModalSearch from './modal-search'; // Ajusta la ruta según tu estructura
 
 const Tabs: React.FC = () => {
     const mobile = isPlatform('mobile');
     const userRole = getLocalStorageItem("user-role");
     const location = useLocation();
 
+    // Modal para la búsqueda
+    const [presentSearchModal, dismiss] = useIonModal(ModalSearch, {
+        onDismiss: () => dismiss(),
+    });
+
     const getNavigation = () => {
         if (!userRole) return navigationDefault;
         const navigationMap: any = {
             admin: navigationAdmin,
-            // ... otros roles
         };
         return navigationMap[userRole] || navigationDefault;
+    };
+
+    // Función para abrir el modal de búsqueda
+    const handleSearchClick = () => {
+        presentSearchModal({
+            initialBreakpoint: 0.8,
+            breakpoints: [0, 0.5, 0.8, 0.95],
+            handle: true
+        });
     };
 
     if (!mobile) return null;
@@ -36,7 +51,6 @@ const Tabs: React.FC = () => {
                     const Icon = item.icon;
                     if (!Icon) return null;
 
-                    // Determinar si esta pestaña está activa
                     const isActive = location.pathname === item.href ||
                         (item.href === '/' && location.pathname === '/home')
 
@@ -56,9 +70,14 @@ const Tabs: React.FC = () => {
                     );
                 })}
             </IonTabBar>
-            {location.pathname === "/productos" && (
+
+            {/* FAB Button para búsqueda */}
+            {["/productos", "/carrito", "/checkout"].includes(location.pathname) && (
                 <div className="z-10 grid h-full w-10 bottom-7 mx-auto relative">
-                    <IonFabButton className='absolute bottom-1 size-10 p-1 bg-white rounded-full border custom-tertiary'>
+                    <IonFabButton
+                        className='absolute bottom-1 size-10 p-1 bg-white rounded-full border custom-tertiary'
+                        onClick={handleSearchClick}
+                    >
                         <Search className='size-6' />
                     </IonFabButton>
                 </div>

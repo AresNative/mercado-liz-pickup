@@ -335,8 +335,8 @@ const ModalProd: React.FC<ProductModalProps> = ({
                     <IonButton
                         fill="clear"
                         slot="start"
+                        color={"light"}
                         onClick={onDismiss}
-                        className="text-white"
                     >
                         <IonIcon icon={close} />
                     </IonButton>

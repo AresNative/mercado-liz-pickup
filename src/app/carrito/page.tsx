@@ -71,11 +71,11 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     {items.map((row: any, key: any) => <Card key={key} producto={row} />)}
                 </ul>
             </section>
-            <IonFab vertical="bottom" horizontal="start" slot="fixed">
+            {/* <IonFab vertical="bottom" horizontal="start" slot="fixed">
                 <IonFabButton className="custom-tertiary md:mb-0 mb-12" size="small">
                     <ChevronDown />
                 </IonFabButton>
-            </IonFab>
+            </IonFab> */}
         </IonContent>
     );
 }

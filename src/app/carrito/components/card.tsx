@@ -55,12 +55,12 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     }, [isFavorite, producto.id]);
 
     // Corrección: pasar las opciones del modal al presentarlo
-    const [present] = useIonModal(ModalProd, {
+    const [present, dismiss] = useIonModal(ModalProd, {
         producto,
         image,
         handleFavoriteToggle,
         isFavorite,
-        onDismiss: (data: string, role: string) => console.log('Modal dismissed:', data, role),
+        onDismiss: () => dismiss(),
     });
 
     const handleCardClick = () => {

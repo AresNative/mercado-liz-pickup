@@ -1,4 +1,3 @@
-// --- IMPORTS ---
 import { PageProps } from "@/utils/types/page";
 import { IonContent, IonHeader, IonToolbar, IonButton } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
@@ -273,15 +272,14 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const hasUserData = Boolean(
             userValues.telefono &&
             userValues.Nombre &&
-            userValues.correo &&
-            Object.keys(userValues).length > 0
+            userValues.correo
         );
 
         const hasPaymentData = Boolean(
-            paymentValues.numero_tarjeta &&
-            paymentValues.vencimiento &&
-            paymentValues.cvv &&
-            Object.keys(paymentValues).length > 0
+            paymentValues.pago === "Tarjeta Credito/Debito" ? (
+                paymentValues.numero_tarjeta &&
+                paymentValues.vencimiento &&
+                paymentValues.cvv) : paymentValues.pago
         );
 
         const hasDateTime = Boolean(selectedDate && selectedTime);
@@ -290,7 +288,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
         return isValid;
-    }, [userFormRef, paymentFormRef, selectedDate, selectedTime, items.length]);
+    }, [selectedDate, selectedTime, items.length, userInfo, paymentInfo]);
 
     // --- FUNCIONES INTELISIS (SIN MODIFICAR DATOS) ---
     const getLastSaleInfo = async () => {
@@ -664,7 +662,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="flex flex-col md:flex-row-reverse gap-4 px-4 mt-6 max-w-6xl mx-auto">
+            <section className="flex flex-col-reverse md:flex-row-reverse gap-4 px-4 my-16 md:my-6 max-w-6xl mx-auto">
                 {/* RESUMEN DEL PEDIDO */}
                 <div className="md:w-1/3">
                     <article className="bg-white rounded-xl border p-4 shadow-sm sticky top-4 z-50">
@@ -693,7 +691,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             shape="round"
                             className="custom-tertiary mt-5"
                             onClick={confirmCompleteAppointment}
-                            disabled={!isConfirmButtonEnabled() || isProcessing || authLoading || items.length === 0}
+                            disabled={!isConfirmButtonEnabled() || isProcessing || authLoading}
                         >
                             {getButtonText(isProcessing, authLoading, shouldRedirect)}
                         </IonButton>
