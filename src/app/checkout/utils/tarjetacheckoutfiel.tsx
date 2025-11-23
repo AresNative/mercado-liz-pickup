@@ -46,7 +46,7 @@ export function CheckOutTarjetaField(): Field[] {
                     {
                         id: 2,
                         type: "PASSWORD",
-                        name: "CVC",
+                        name: "cvv",
                         label: "CVC",
                         placeholder: "123",
                         maxLength: 3,

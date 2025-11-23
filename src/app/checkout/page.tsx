@@ -2,7 +2,7 @@
 import { PageProps } from "@/utils/types/page";
 import { IonContent, IonHeader, IonToolbar, IonButton } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
-import { useAppSelector } from "@/hooks/selector";
+import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
 import { formatValue } from '@/utils/constants/format-values';
 import MainForm from "@/components/form/main-form";
@@ -10,7 +10,7 @@ import { CheckOutField } from "./utils/checkoutfield";
 import { CheckOutTarjetaField } from "./utils/tarjetacheckoutfiel";
 import Calendar from "./components/calendar";
 import Sucursales from "./components/map";
-import { use, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TimeSlots from "./components/time";
 
 // API
@@ -37,11 +37,10 @@ import {
 } from "@/utils/functions/local-storage";
 
 import { usePedidosSignalR } from "./utils/signalr-pedidos";
-
-import { useAppDispatch } from "@/hooks/selector";
 import { clearCart } from "@/hooks/slices/cart";
 
-interface InfoUser {
+// --- INTERFACES ---
+interface UserInfo {
     telefono?: string;
     nombre?: string;
     email?: string;
@@ -49,73 +48,116 @@ interface InfoUser {
     [key: string]: any;
 }
 
-interface InfoPago {
+interface PaymentInfo {
     numeroTarjeta?: string;
     fechaExpiracion?: string;
     cvv?: string;
     [key: string]: any;
 }
 
-type Citas = (args: { user: any; pago: any }) => Promise<void>;
+interface FormData {
+    user: UserInfo;
+    pago: PaymentInfo;
+}
 
+// --- CONSTANTES ---
+const INTELISIS_CONFIG = {
+    database: "[TC032841E_Pruebas].dbo",
+    empresa: "SMM",
+    almacen: "ALMMAYO",
+    usuario: "SISTEMAS02",
+    moneda: "Pesos"
+} as const;
+
+// --- UTILIDADES ---
+const calculateCartTotal = (items: any[]) => {
+    return items.reduce((sum, item) => {
+        const unitPrice = item.descuento || item.precio;
+        return sum + (unitPrice * item.quantity);
+    }, 0);
+};
+
+const generateNewMovId = (lastMovId: string): string => {
+    const movIdParts = lastMovId.split('-');
+    const prefix = movIdParts[0];
+    const currentNumber = parseInt(movIdParts[1]);
+    return `${prefix}-${currentNumber + 1}`;
+};
+
+const getCurrentDateTime = () => {
+    const now = new Date();
+    return {
+        date: now.toISOString().split('T')[0] + 'T00:00:00',
+        timestamp: now.toISOString().slice(0, 23)
+    };
+};
+
+// --- COMPONENTE PRINCIPAL ---
 const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+    // --- ESTADOS ---
+    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [userInfo, setUserInfo] = useState<UserInfo>({});
+    const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [authLoading, setAuthLoading] = useState<boolean>(false);
+    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+    const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
+
+    // --- REFERENCIAS ---
+    const userFormRef = useRef<any>(null);
+    const paymentFormRef = useRef<any>(null);
+
+    // --- HOOKS ---
     const dispatch = useAppDispatch();
-    const {
-        connection,
-        isConnected,
-        notificarCambioLista
-    } = usePedidosSignalR(
+    const cart = useAppSelector((state: RootState) => state.cart);
+    const { items = [] } = cart || {};
+
+    // SignalR
+    const { connection, isConnected, notificarCambioLista } = usePedidosSignalR(
         (p) => console.log("Pedido actualizado:", p),
         (p) => console.log("Nuevo pedido:", p),
         (id) => console.log("Pedido borrado:", id),
         () => console.log("Refrescar")
     );
 
-
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
-    const [selectedDate, setSelectedDate] = useState<string | null>(null);
-
-    const [infoUser, setInfoUser] = useState<InfoUser>({});
-    const [infoPago, setInfoPago] = useState<InfoPago>({});
-
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [authLoading, setAuthLoading] = useState<boolean>(false);
-    const [isProcessing, setIsProcessing] = useState<boolean>(false);
-
-    const infoFormRef = useRef<any>(null);
-    const pagoFormRef = useRef<any>(null);
-
-    const cart = useAppSelector((state: RootState) => state.cart);
-    const { items = [] } = cart || {};
-
-    const total = items.reduce((sum, item) => {
-        const unit = item.descuento ? item.descuento : item.precio;
-        return sum + (unit * item.quantity);
-    }, 0);
-
-    const serv = total * 0.02;
-    const totalConServicio = total + serv;
-
+    // API Mutations
     const [PostData] = usePostMutation();
     const [GetData] = useGetWithFiltersMutation();
     const [PutData] = usePutMutation();
-
     const [PostInt] = usePostIntelisisMutation();
     const [GetInt] = useGetWithFiltersGeneralInIntelisisMutation();
-
     const [loginUser] = useLoginUserMutation();
     const [registerUser] = useRegisterUserMutation();
     const [logoutUser] = useLogoutUserMutation();
 
-    let newMovId: string = "";
+    // --- CÁLCULOS ---
+    const subtotal = calculateCartTotal(items);
+    const serviceFee = subtotal * 0.02;
+    const totalWithService = subtotal + serviceFee;
 
-    const reiniciarAutenticacion = async () => {
+    // --- EFECTOS ---
+    useEffect(() => {
+        const token = getLocalStorageItem("token");
+        if (token) {
+            setIsAuthenticated(true);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (shouldRedirect) {
+            console.log("✅ Redirigiendo a /seguimiento...");
+            window.location.href = '/seguimiento';
+        }
+    }, [shouldRedirect]);
+
+    // --- FUNCIONES DE AUTENTICACIÓN ---
+    const resetAuthentication = async (): Promise<void> => {
         try {
             console.log("🔄 Reiniciando autenticación...");
             const userId = getLocalStorageItem("user-id");
             await logoutUser(userId).unwrap();
             setIsAuthenticated(false);
-
             console.log("✅ Sesión cerrada correctamente");
         } catch (error) {
             console.error("❌ Error al cerrar sesión:", error);
@@ -123,7 +165,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
-    const actualizarDatosUsuario = async (userData: InfoUser): Promise<boolean> => {
+    const updateUserData = async (userData: UserInfo): Promise<boolean> => {
         try {
             if (!userData.correo || !userData.telefono) {
                 console.error("❌ Datos insuficientes para actualizar usuario:", userData);
@@ -132,8 +174,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             console.log("📝 Actualizando datos del usuario:", userData);
 
-            // Buscar si el usuario ya existe
-            const usuarioExistente = await GetData({
+            const existingUser = await GetData({
                 url: "v1/users",
                 filtros: {
                     Filtros: [{ Key: "email", Value: userData.correo }],
@@ -142,18 +183,14 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 pageSize: 1
             });
 
-            const usuarios = usuarioExistente?.data?.data ?? [];
+            const users = existingUser?.data?.data ?? [];
 
-            if (usuarios.length > 0 && userData.correo !== usuarios[0].email) {
+            if (users.length > 0 && userData.correo !== users[0].email) {
                 const userId = getLocalStorageItem("user-id");
-                // Actualizar usuario existente
                 await PutData({
                     url: "v1/users",
                     id: userId,
-                    data: {
-                        email: userData.correo,
-                        // Agregar más campos según sea necesario
-                    }
+                    data: { email: userData.correo }
                 });
                 console.log("✅ Usuario actualizado correctamente");
             }
@@ -165,13 +202,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
-    const authenticateUser = async (userData: InfoUser): Promise<boolean> => {
+    const authenticateUser = async (userData: UserInfo): Promise<boolean> => {
         setAuthLoading(true);
 
         try {
             if (!userData.correo || !userData.telefono) {
                 console.error("❌ Datos insuficientes para autenticar:", userData);
-                setAuthLoading(false);
                 return false;
             }
 
@@ -183,102 +219,319 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             };
 
             try {
-                const r = await loginUser(loginPayload).unwrap();
-                console.log("✅ Login ok:", r);
+                await loginUser(loginPayload).unwrap();
+                console.log("✅ Login exitoso");
                 setIsAuthenticated(true);
-
-                // Actualizar datos del usuario después del login exitoso
-                await actualizarDatosUsuario(userData);
-
+                await updateUserData(userData);
                 return true;
             } catch {
                 console.log("⚠ Login falló, intentando registro...");
 
-                const regPayload = {
+                const registerPayload = {
                     email: userData.correo,
                     password: userData.telefono,
                     nombre: userData.nombre || "Cliente",
                     rol: "cliente"
                 };
 
-                await registerUser(regPayload).unwrap();
+                await registerUser(registerPayload).unwrap();
                 console.log("✅ Registrado correctamente");
 
                 await loginUser(loginPayload).unwrap();
-                console.log("✅ Login posterior al registro OK");
+                console.log("✅ Login posterior al registro exitoso");
 
                 setIsAuthenticated(true);
-
-                // Actualizar datos del usuario después del registro exitoso
-                await actualizarDatosUsuario(userData);
-
+                await updateUserData(userData);
                 return true;
             }
-        } catch (err) {
-            console.error("❌ Error autenticando:", err);
+        } catch (error) {
+            console.error("❌ Error en autenticación:", error);
             return false;
         } finally {
             setAuthLoading(false);
         }
     };
 
-    // token persistido
-    useEffect(() => {
-        const token = getLocalStorageItem("token");
-        if (token) {
-            setIsAuthenticated(true);
-        }
-    }, []);
+    // --- FUNCIONES DE DATOS DEL FORMULARIO ---
+    const getFormData = async (): Promise<FormData> => {
+        await userFormRef.current?.submitForm?.();
+        await paymentFormRef.current?.submitForm?.();
 
-    const getFormData = async (): Promise<{ user: InfoUser; pago: InfoPago }> => {
-        let userData: InfoUser = {};
-        let pagoData: InfoPago = {};
-
-        // Asegurar que el formulario ejecute su submit interno
-        await infoFormRef.current?.submitForm?.();
-        await pagoFormRef.current?.submitForm?.();
-
-        if (infoFormRef.current?.getFormData) {
-            userData = infoFormRef.current.getFormData();
-        }
-
-        if (pagoFormRef.current?.getFormData) {
-            pagoData = pagoFormRef.current.getFormData();
-        }
+        const userData = userFormRef.current?.getFormData?.() || {};
+        const paymentData = paymentFormRef.current?.getFormData?.() || {};
 
         return {
-            user: { ...infoUser, ...userData },
-            pago: { ...infoPago, ...pagoData }
+            user: { ...userInfo, ...userData },
+            pago: { ...paymentInfo, ...paymentData }
         };
     };
 
-    const isConfirmButtonEnabled = useCallback(() => {
-        // Acceder directamente a los valores del formulario a través del control
-        const userValues = infoFormRef.current?.control?._formValues || {};
-        const pagoValues = pagoFormRef.current?.control?._formValues || {};
+    const isConfirmButtonEnabled = useCallback((): boolean => {
+        const userValues = userFormRef.current?.getLiveValues?.() || {};
+        const paymentValues = paymentFormRef.current?.getLiveValues?.() || {};
 
-        const currentUser = { ...infoUser, ...userValues };
-        const currentPago = { ...infoPago, ...pagoValues };
+        const hasUserData = Boolean(
+            userValues.telefono &&
+            userValues.Nombre &&
+            userValues.correo &&
+            Object.keys(userValues).length > 0
+        );
 
-        const hasUserInfo = currentUser.telefono && currentUser.nombre && currentUser.correo;
-        const hasPaymentInfo = currentPago.numeroTarjeta && currentPago.fechaExpiracion && currentPago.cvv;
-        const hasDateTime = !!selectedDate && !!selectedTime;
+        const hasPaymentData = Boolean(
+            paymentValues.numero_tarjeta &&
+            paymentValues.vencimiento &&
+            paymentValues.cvv &&
+            Object.keys(paymentValues).length > 0
+        );
 
-        return hasDateTime /* && hasUserInfo && hasPaymentInfo */;
-    }, [infoUser, infoPago, selectedDate, selectedTime]);
+        const hasDateTime = Boolean(selectedDate && selectedTime);
+        const hasCartItems = items.length > 0;
 
+        const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
-    const ejecutarConReintentoAuth = async (maxReintentos: number = 2) => {
-        let reintentos = 0;
+        return isValid;
+    }, [userFormRef, paymentFormRef, selectedDate, selectedTime, items.length]);
 
-        while (reintentos <= maxReintentos) {
-            reintentos++;
-            console.error(`❌ Error en operación (intento ${reintentos}/${maxReintentos}):`);
+    // --- FUNCIONES INTELISIS (SIN MODIFICAR DATOS) ---
+    const getLastSaleInfo = async () => {
+        const result = await GetInt({
+            table: `${INTELISIS_CONFIG.database}.venta`,
+            pageSize: 1,
+            page: 1,
+            filtros: {
+                Filtros: [
+                    { Key: "Usuario", Value: INTELISIS_CONFIG.usuario },
+                    { Key: "MovID", Value: "Null", Operator: "<>" }
+                ],
+                Order: [{ Key: "id", Direction: "desc" }]
+            },
+            signal: undefined,
+        });
 
-            console.log("🔄 Error de autenticación detectado, reiniciando sesión...");
-            await reiniciarAutenticacion();
+        if (!('data' in result) || !result.data) {
+            throw new Error("No se pudo obtener información de ventas anteriores");
+        }
 
-            // Reautenticar con los datos actuales
+        const apiData = Array.isArray(result.data.data) ? result.data.data : result.data;
+
+        if (!Array.isArray(apiData) || apiData.length === 0) {
+            throw new Error("No se encontró información de venta para generar el consecutivo");
+        }
+
+        const lastSale = apiData[0];
+        const saleId = lastSale.id ?? lastSale.Id ?? lastSale.ID ?? lastSale.ventaId;
+        const movId = lastSale.MovID ?? lastSale.MovId ?? lastSale.MOVID;
+
+        if (saleId == null || movId == null) {
+            throw new Error("Datos de venta incompletos");
+        }
+
+        return { saleId, movId };
+    };
+
+    const insertIntelisisData = async (newMovId: string, saleId: number) => {
+        const { date, timestamp } = getCurrentDateTime();
+        const baseId = parseInt(saleId.toString()) + 1;
+
+        // 1. Insertar Venta
+        const saleData = {
+            Empresa: INTELISIS_CONFIG.empresa,
+            Mov: "Pedido",
+            MovID: newMovId,
+            FechaEmision: date,
+            UltimoCambio: timestamp,
+            Concepto: "PICK UP",
+            Moneda: INTELISIS_CONFIG.moneda,
+            TipoCambio: 1,
+            Usuario: INTELISIS_CONFIG.usuario,
+            Estatus: "PENDIENTE",
+            Cliente: "MOSTRADOR",
+            Almacen: INTELISIS_CONFIG.almacen,
+            Importe: subtotal,
+            Impuestos: 0,
+            Saldo: subtotal,
+            CostoTotal: subtotal * 0.6,
+            PrecioTotal: subtotal,
+            ServicioExpress: true,
+            Sucursal: 1
+        };
+
+        const saleResult = await PostInt({
+            table: `${INTELISIS_CONFIG.database}.Venta`,
+            data: saleData,
+            signal: undefined
+        });
+
+        if ('error' in saleResult) {
+            throw new Error(`Error en insert Venta: ${JSON.stringify(saleResult.error)}`);
+        }
+
+        // 2. Insertar Mov
+        const movData = {
+            ID: baseId,
+            Empresa: INTELISIS_CONFIG.empresa,
+            Modulo: "VTAS",
+            Mov: "Pedido",
+            MovID: newMovId,
+            FechaEmision: date,
+            FechaRegistro: date,
+            Concepto: "PICK UP",
+            Ejercicio: 2025,
+            Periodo: new Date().getMonth() + 1,
+            Moneda: INTELISIS_CONFIG.moneda,
+            TipoCambio: 1,
+            Usuario: INTELISIS_CONFIG.usuario,
+            Sucursal: 1
+        };
+
+        const movResult = await PostInt({
+            table: `${INTELISIS_CONFIG.database}.Mov`,
+            data: movData,
+            signal: undefined
+        });
+
+        if ('error' in movResult) {
+            throw new Error(`Error en insert Mov: ${JSON.stringify(movResult.error)}`);
+        }
+
+        // 3. Insertar Movimientos
+        const movementsData = {
+            ID: baseId,
+            Empresa: INTELISIS_CONFIG.empresa,
+            Modulo: "VTAS",
+            Mov: "Pedido",
+            MovID: newMovId,
+            FechaEmision: date,
+            Moneda: INTELISIS_CONFIG.moneda,
+            TipoCambio: 1,
+            Importe: subtotal,
+            Estatus: "PENDIENTE",
+            Impuestos: subtotal * 0.16,
+            Retencion: 0
+        };
+
+        const movementsResult = await PostInt({
+            table: `${INTELISIS_CONFIG.database}.Movimientos`,
+            data: movementsData,
+            signal: undefined
+        });
+
+        if ('error' in movementsResult) {
+            throw new Error(`Error en insert Movimientos: ${JSON.stringify(movementsResult.error)}`);
+        }
+
+        return baseId;
+    };
+
+    const insertSaleDetails = async (baseId: number, newMovId: string) => {
+        const { date } = getCurrentDateTime();
+        const baseRow = 2048;
+
+        // Insertar servicio de pickup
+        const serviceData = {
+            ID: baseId,
+            Renglon: baseRow,
+            RenglonSub: 0,
+            RenglonID: 1,
+            RenglonTipo: "N",
+            Cantidad: 1,
+            Almacen: INTELISIS_CONFIG.almacen,
+            Codigo: "SPICKUP",
+            Articulo: "999911112",
+            Precio: serviceFee,
+            PrecioSugerido: serviceFee,
+            DescuentoLinea: 0,
+            Impuesto1: 8,
+            Costo: '0.01',
+            CantidadReservada: 1,
+            Unidad: "servicio",
+            Factor: 1,
+            FechaRequerida: date,
+            Sucursal: 1,
+            TipoImpuesto1: 'IVA8',
+        };
+
+        const serviceResult = await PostInt({
+            table: `${INTELISIS_CONFIG.database}.VentaD`,
+            data: serviceData,
+            signal: undefined
+        });
+
+        if ('error' in serviceResult) {
+            throw new Error(`Error en insert Servicio: ${JSON.stringify(serviceResult.error)}`);
+        }
+
+        // Insertar items del carrito
+        const saleItems = items.map((item, index) => {
+            const unitPrice = item.descuento || item.precio;
+            const quantity = item.quantity || 1;
+
+            return {
+                ID: baseId,
+                Renglon: baseRow + (index + 1),
+                RenglonSub: 0,
+                RenglonID: index + 2,
+                RenglonTipo: "N",
+                Cantidad: quantity,
+                Almacen: INTELISIS_CONFIG.almacen,
+                Codigo: String(item.id || ""),
+                Articulo: String(item.articulo || ""),
+                Precio: unitPrice,
+                PrecioSugerido: unitPrice,
+                DescuentoLinea: 0,
+                Impuesto1: item.impuesto1,
+                Impuesto2: item.impuesto2,
+                Costo: unitPrice * 0.6,
+                CantidadReservada: quantity,
+                Unidad: item.unidad || "Unidad",
+                Factor: 1,
+                CantidadInventario: quantity,
+                FechaRequerida: date,
+                Sucursal: 1,
+                TipoImpuesto1: item.tipoImpuesto1,
+                TipoImpuesto2: item.tipoImpuesto2
+            };
+        });
+
+        for (const itemData of saleItems) {
+            const itemResult = await PostInt({
+                table: `${INTELISIS_CONFIG.database}.VentaD`,
+                data: itemData,
+                signal: undefined
+            });
+
+            if ('error' in itemResult) {
+                throw new Error(`Error en insert Item: ${JSON.stringify(itemResult.error)}`);
+            }
+        }
+    };
+
+    const processIntelisisOrder = async (): Promise<string> => {
+        console.log("🚀 Iniciando proceso Intelisis...");
+
+        const { saleId, movId } = await getLastSaleInfo();
+        console.log("📊 Venta obtenida:", saleId, movId);
+
+        const newMovId = generateNewMovId(movId);
+        console.log("🆕 Nuevo MovID generado:", newMovId);
+
+        console.log("💾 Realizando inserts en Intelisis...");
+        const baseId = await insertIntelisisData(newMovId, saleId);
+
+        console.log("📦 Insertando detalles de venta...");
+        await insertSaleDetails(baseId, newMovId);
+
+        console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
+        return newMovId;
+    };
+
+    // --- FUNCIONES PRINCIPALES ---
+    const retryWithAuth = async (maxRetries: number = 2): Promise<void> => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔄 Reintento ${attempt}/${maxRetries}...`);
+
+            await resetAuthentication();
+
             const { user: currentUser } = await getFormData();
             const authSuccess = await authenticateUser(currentUser);
 
@@ -289,294 +542,19 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             console.log("✅ Reautenticación exitosa, reintentando operación...");
         }
     };
-    const handleConfirmarCitaCompleta = async () => {
-        setIsProcessing(true);
-        try {
-            // 🔥 AQUI SE OBTIENE LA DATA REAL DEL FORM
-            const { user: currentUser, pago: currentPago } = await getFormData();
 
-            console.log("📝 Datos usuario antes de login:", currentUser);
-
-            if (!isAuthenticated) {
-                const ok = await authenticateUser(currentUser);
-                if (!ok) throw new Error("No se pudo autenticar.");
-            }
-
-            try {
-                await handleConfirmarCitaIntelisis();
-                await cargarCitasExistentes({ user: currentUser, pago: currentPago });
-            }
-            catch {
-                await ejecutarConReintentoAuth();
-                await handleConfirmarCitaCompleta();
-            } finally {
-                setIsProcessing(false);
-            }
-
-            alert("Cita creada exitosamente.");
-            dispatch(clearCart());
-        } catch (e: any) {
-            console.error("❌ Error en confirmación de cita:", e);
-            alert("Error: " + (e.message || "No se pudo crear la cita"));
-        } finally {
-            setIsProcessing(false);
+    const savePickupAppointment = useCallback(async ({ user, pago }: FormData) => {
+        if (!user || items.length === 0) {
+            throw new Error("Datos de usuario o carrito incompletos");
         }
-    };
 
-    const handleConfirmarCitaIntelisis = async () => {
-        try {
-            console.log("🚀 Iniciando proceso Intelisis...");
-
-            const result = await GetInt({
-                table: `[TC032841E_Pruebas].dbo.venta`,
-                pageSize: 1,
-                page: 1,
-                filtros: {
-                    "Filtros": [
-                        {
-                            "Key": "Usuario",
-                            "Value": "SISTEMAS02"
-                        },
-                        {
-                            "Key": "MovID",
-                            "Value": "Null",
-                            "Operator": "<>"
-                        }
-                    ],
-                    "Order": [
-                        {
-                            "Key": "id",
-                            "Direction": "desc"
-                        }
-                    ]
-                },
-                signal: undefined,
-            });
-
-            if ('data' in result && result.data) {
-                const apiResp: any = result.data;
-                const apiData = Array.isArray(apiResp.data) ? apiResp.data : apiResp;
-
-                let ventaId: number | string | null = null;
-                let MovId: string | null = null;
-
-                if (Array.isArray(apiData) && apiData.length > 0) {
-                    ventaId = apiData[0].id ?? apiData[0].Id ?? apiData[0].ID ?? apiData[0].ventaId ?? null;
-                    MovId = apiData[0].MovID ?? apiData[0].MovID ?? apiData[0].MOVID ?? apiData[0].MovId ?? null;
-                } else if (typeof apiData === "object" && apiData !== null) {
-                    ventaId = apiData.id ?? apiData.Id ?? apiData.ID ?? apiData.ventaId ?? null;
-                    MovId = apiData.MovID ?? apiData.MovID ?? apiData.MOVID ?? apiData.MovId ?? null;
-                }
-
-                if (ventaId != null && MovId != null) {
-                    console.log("📊 Venta obtenida:", ventaId, MovId);
-
-                    // 2. Generar nuevo MovID (consecutivo +1)
-                    const movIdParts = MovId.split('-');
-                    const prefix = movIdParts[0];
-                    const currentNumber = parseInt(movIdParts[1]);
-                    newMovId = `${prefix}-${currentNumber + 1}`;
-
-                    console.log("🆕 Nuevo MovID generado:", newMovId);
-
-                    // 3. Realizar los inserts en Intelisis con manejo individual de errores
-                    console.log("💾 Realizando inserts en Intelisis...");
-
-                    // Insert 1: Venta
-                    const ventaData = {
-                        Empresa: "SMM",
-                        Mov: "Pedido",
-                        MovID: newMovId,
-                        FechaEmision: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                        UltimoCambio: new Date().toISOString().slice(0, 23),
-                        Concepto: "PICK UP",
-                        Moneda: "Pesos",
-                        TipoCambio: 1,
-                        Usuario: "SISTEMAS02",
-                        Estatus: "PENDIENTE",
-                        Cliente: "MOSTRADOR",
-                        Almacen: "ALMMAYO",
-                        Importe: total,
-                        Impuestos: 0,
-                        Saldo: total,
-                        CostoTotal: total * 0.6,
-                        PrecioTotal: total,
-                        ServicioExpress: true,
-                        Sucursal: 1
-                    };
-
-                    const ventaResult = await PostInt({
-                        table: "[TC032841E_Pruebas].dbo.Venta",
-                        data: ventaData,
-                        signal: undefined
-                    });
-
-                    if ('error' in ventaResult) {
-                        throw new Error(`Error en insert Venta: ${JSON.stringify(ventaResult.error)}`);
-                    }
-
-                    // Insert 2: Mov
-                    const movData = {
-                        ID: parseInt(ventaId.toString()) + 1,
-                        Empresa: "SMM",
-                        Modulo: "VTAS",
-                        Mov: "Pedido",
-                        MovID: newMovId,
-                        FechaEmision: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                        FechaRegistro: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                        Concepto: "PICK UP",
-                        Ejercicio: 2025,
-                        Periodo: new Date().getMonth() + 1,
-                        Moneda: "Pesos",
-                        TipoCambio: 1,
-                        Usuario: "SISTEMAS02",
-                        Sucursal: 1
-                    };
-
-                    const movResult = await PostInt({
-                        table: "[TC032841E_Pruebas].dbo.Mov",
-                        data: movData,
-                        signal: undefined
-                    });
-
-                    if ('error' in movResult) {
-                        throw new Error(`Error en insert Mov: ${JSON.stringify(movResult.error)}`);
-                    }
-
-                    // Insert 3: Movimientos
-                    const movimientosData = {
-                        ID: parseInt(ventaId.toString()) + 1,
-                        Empresa: "SMM",
-                        Modulo: "VTAS",
-                        Mov: "Pedido",
-                        MovID: newMovId,
-                        FechaEmision: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                        Moneda: "Pesos",
-                        TipoCambio: 1,
-                        Importe: total,
-                        Estatus: "PENDIENTE",
-                        Impuestos: total * 0.16,
-                        Retencion: 0
-                    };
-
-                    const movimientosResult = await PostInt({
-                        table: "[TC032841E_Pruebas].dbo.Movimientos",
-                        data: movimientosData,
-                        signal: undefined
-                    });
-
-                    if ('error' in movimientosResult) {
-                        throw new Error(`Error en insert Movimientos: ${JSON.stringify(movimientosResult.error)}`);
-                    }
-
-                    // Insert 4: VentaD (Detalle de venta)
-                    console.log("📦 Insertando detalles de venta...");
-                    const ventaDId = parseInt(ventaId.toString()) + 1;
-                    const baseRenglon = 2048;
-
-                    // Insertar servicio de pickup primero (RenglonID = 1)
-                    const servicioVentaD = {
-                        ID: ventaDId,
-                        Renglon: baseRenglon,
-                        RenglonSub: 0,
-                        RenglonID: 1,
-                        RenglonTipo: "N",
-                        Cantidad: 1,
-                        Almacen: "ALMMAYO",
-                        Codigo: "SPICKUP",
-                        Articulo: "999911112",
-                        Precio: serv,
-                        PrecioSugerido: serv,
-                        DescuentoLinea: 0,
-                        Impuesto1: 8,
-                        Costo: '0.01',
-                        CantidadReservada: 1,
-                        Unidad: "servicio",
-                        Factor: 1,
-                        FechaRequerida: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                        Sucursal: 1,
-                        TipoImpuesto1: 'IVA8',
-                    };
-
-                    const servicioResult = await PostInt({
-                        table: "[TC032841E_Pruebas].dbo.VentaD",
-                        data: servicioVentaD,
-                        signal: undefined
-                    });
-
-                    if ('error' in servicioResult) {
-                        throw new Error(`Error en insert Servicio VentaD: ${JSON.stringify(servicioResult.error)}`);
-                    }
-
-                    // Insertar los items de la venta después del servicio
-                    const ventaDList = items.map((item, idx) => {
-                        const unitPrice = item.descuento ? item.descuento : item.precio;
-                        const cantidad = item.quantity ?? 1;
-                        return {
-                            ID: ventaDId,
-                            Renglon: baseRenglon + (idx + 1),
-                            RenglonSub: 0,
-                            RenglonID: idx + 2,
-                            RenglonTipo: "N",
-                            Cantidad: cantidad,
-                            Almacen: "ALMMAYO",
-                            Codigo: String(item.id ?? ""),
-                            Articulo: String(item.articulo ?? ""),
-                            Precio: unitPrice,
-                            PrecioSugerido: unitPrice,
-                            DescuentoLinea: 0,
-                            Impuesto1: item.impuesto1,
-                            Impuesto2: item.impuesto2,
-                            Costo: unitPrice * 0.6,
-                            CantidadReservada: cantidad,
-                            Unidad: item.unidad ?? "Unidad",
-                            Factor: 1,
-                            CantidadInventario: cantidad,
-                            FechaRequerida: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                            Sucursal: 1,
-                            TipoImpuesto1: item.tipoImpuesto1,
-                            TipoImpuesto2: item.tipoImpuesto2
-                        };
-                    });
-
-                    for (const ventaDData of ventaDList) {
-                        const itemResult = await PostInt({
-                            table: "[TC032841E_Pruebas].dbo.VentaD",
-                            data: ventaDData,
-                            signal: undefined
-                        });
-
-                        if ('error' in itemResult) {
-                            throw new Error(`Error en insert Item VentaD: ${JSON.stringify(itemResult.error)}`);
-                        }
-                    }
-
-                    console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
-                    console.log("📋 Nuevo MovID:", newMovId);
-
-                } else {
-                    throw new Error("No se encontró información de venta para generar el consecutivo");
-                }
-            } else {
-                throw new Error("No se pudo obtener información de ventas anteriores");
-            }
-        } catch (error) {
-            console.error("❌ Error en Intelisis:", error);
-            throw new Error(`Error al procesar en Intelisis: ${error instanceof Error ? error.message : "Error desconocido"}`);
+        const duplicateKey = `pickup_${user.telefono}_${selectedDate}_${selectedTime}`;
+        if (localStorage.getItem(duplicateKey)) {
+            return;
         }
-    };
 
-    const cargarCitasExistentes: Citas = useCallback(async ({ user, pago }) => {
-
-        if (!user || items.length === 0) throw new Error("Sin datos.");
-
-        const dedupeKey = `pickup_${user.telefono}_${selectedDate}_${selectedTime}`;
-        if (localStorage.getItem(dedupeKey)) return;
-
-        let clienteId: any = null;
-
-        // buscar cliente
-        const r = await GetData({
+        // Buscar o crear cliente
+        const clientResponse = await GetData({
             url: "v1/pickup/clientes",
             filtros: {
                 Filtros: [{ Key: "telefono", Value: user.telefono }],
@@ -585,16 +563,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             pageSize: 1
         });
 
-        const clientes = r?.data?.data ?? [];
+        const clients = clientResponse?.data?.data ?? [];
         const userId = getLocalStorageItem("user-id");
-        if (clientes.length > 0) {
-            clienteId = clientes[0].id;
+        let clientId: any = null;
+
+        if (clients.length > 0) {
+            clientId = clients[0].id;
         } else {
-            // crear
-            const res = await PostData({
+            const createResponse = await PostData({
                 url: "v1/pickup/clientes",
                 data: {
-                    nombre: user.Nombre + " " + (user.Apellidos || ""),
+                    nombre: `${user.Nombre} ${user.Apellidos || ""}`.trim(),
                     telefono: user.telefono,
                     email: user.correo,
                     fecha_registro: new Date().toISOString(),
@@ -602,16 +581,16 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }
             });
 
-            clienteId = res?.data?.ids?.[0];
+            clientId = createResponse?.data?.ids?.[0];
         }
 
-        setLocalStorageItem("user", clienteId);
+        setLocalStorageItem("user", clientId);
 
-        // lista
+        // Crear lista de pickup
         await PostData({
             url: "v1/pickup/listas",
             data: {
-                id_cliente: clienteId,
+                id_cliente: clientId,
                 usuario_id: userId,
                 sucursal_id: 1,
                 nombre_lista: `${selectedDate} ${selectedTime}`,
@@ -622,19 +601,52 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }
         });
 
-        localStorage.setItem(dedupeKey, "1");
+        localStorage.setItem(duplicateKey, "1");
 
+        // Notificar via SignalR
         if (isConnected && connection) {
             await notificarCambioLista("created", {
                 listaId: `${selectedDate} ${selectedTime}`,
-                clienteId,
+                clientId,
                 fecha: selectedDate,
                 hora: selectedTime
             });
         }
-
     }, [GetData, PostData, items, selectedDate, selectedTime, isConnected, connection, notificarCambioLista]);
 
+    const confirmCompleteAppointment = async (): Promise<void> => {
+        setIsProcessing(true);
+
+        try {
+            const formData = await getFormData();
+            console.log("📝 Datos usuario antes de login:", formData.user);
+
+            if (!isAuthenticated) {
+                const authSuccess = await authenticateUser(formData.user);
+                if (!authSuccess) {
+                    throw new Error("No se pudo autenticar");
+                }
+            }
+
+            try {
+                await processIntelisisOrder();
+                await savePickupAppointment(formData);
+
+                setShouldRedirect(true);
+                dispatch(clearCart());
+            } catch {
+                await retryWithAuth();
+                await confirmCompleteAppointment();
+            }
+        } catch (error: any) {
+            console.error("❌ Error en confirmación de cita:", error);
+            alert(`Error: ${error.message || "No se pudo crear la cita"}`);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // --- RENDER ---
     return (
         <IonContent
             fullscreen
@@ -643,6 +655,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const isScrolled = e.detail.scrollTop > 10;
                 onScroll?.(isScrolled);
             }}>
+
             <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/productos'>
@@ -652,65 +665,102 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </IonHeader>
 
             <section className="flex flex-col md:flex-row-reverse gap-4 px-4 mt-6 max-w-6xl mx-auto">
+                {/* RESUMEN DEL PEDIDO */}
                 <div className="md:w-1/3">
                     <article className="bg-white rounded-xl border p-4 shadow-sm sticky top-4 z-50">
                         <h2 className="font-bold text-lg mb-4">Resumen del pedido</h2>
 
-                        <p className="flex justify-between"><span>Subtotal</span>{formatValue(total, "currency")}</p>
-                        <p className="flex justify-between"><span>Servicio</span>{formatValue(serv, "currency")}</p>
-                        <hr className="my-3" />
-                        <p className="flex justify-between font-semibold">
-                            <span>Total</span>
-                            {formatValue(totalConServicio, "currency")}
-                        </p>
+                        <div className="space-y-2">
+                            <p className="flex justify-between">
+                                <span>Subtotal</span>
+                                {formatValue(subtotal, "currency")}
+                            </p>
+                            <p className="flex justify-between">
+                                <span>Servicio</span>
+                                {formatValue(serviceFee, "currency")}
+                            </p>
+                            <hr className="my-3" />
+                            <p className="flex justify-between font-semibold">
+                                <span>Total</span>
+                                {formatValue(totalWithService, "currency")}
+                            </p>
+                        </div>
 
-                        {isProcessing && <p>Procesando...</p>}
+                        {isProcessing && <p className="text-center mt-3">Procesando...</p>}
 
                         <IonButton
                             expand="block"
                             shape="round"
                             className="custom-tertiary mt-5"
-                            onClick={handleConfirmarCitaCompleta}
+                            onClick={confirmCompleteAppointment}
                             disabled={!isConfirmButtonEnabled() || isProcessing || authLoading || items.length === 0}
                         >
-                            {isProcessing ? "Procesando..." : authLoading ? "Autenticando..." : "Confirmar cita"}
+                            {getButtonText(isProcessing, authLoading, shouldRedirect)}
                         </IonButton>
                     </article>
 
                     <Sucursales sucursalVista="(Precio Lista)" />
                 </div>
 
+                {/* FORMULARIOS */}
                 <section className="flex flex-col gap-4 w-full md:w-2/3">
-                    <Calendar selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
-                    <TimeSlots selectedDate={selectedDate} selectedTime={selectedTime} setSelectedTime={setSelectedTime} />
+                    <Calendar
+                        selectedDate={selectedDate}
+                        setSelectedDate={setSelectedDate}
+                    />
 
-                    <div className="border-2 rounded-lg p-4">
-                        <h2 className="font-bold text-lg mb-2">Información</h2>
-                        <MainForm
-                            message_button=""
-                            ref={infoFormRef}
-                            actionType=""
-                            dataForm={CheckOutField()}
-                            onSuccess={(r) => setInfoUser(r)}
-                            showButton={false}
-                        />
-                    </div>
+                    <TimeSlots
+                        selectedDate={selectedDate}
+                        selectedTime={selectedTime}
+                        setSelectedTime={setSelectedTime}
+                    />
 
-                    <div className="border-2 rounded-lg p-4">
-                        <h2 className="font-bold text-lg mb-1">Forma de pago</h2>
-                        <MainForm
-                            message_button=""
-                            ref={pagoFormRef}
-                            actionType=""
-                            dataForm={CheckOutTarjetaField()}
-                            onSuccess={(r) => setInfoPago(r)}
-                            showButton={false}
-                        />
-                    </div>
+                    <FormSection
+                        title="Información"
+                        formRef={userFormRef}
+                        formConfig={CheckOutField()}
+                        onSuccess={setUserInfo}
+                    />
+
+                    <FormSection
+                        title="Forma de pago"
+                        formRef={paymentFormRef}
+                        formConfig={CheckOutTarjetaField()}
+                        onSuccess={setPaymentInfo}
+                    />
                 </section>
             </section>
         </IonContent>
     );
 };
+
+// --- COMPONENTES AUXILIARES ---
+const getButtonText = (isProcessing: boolean, authLoading: boolean, shouldRedirect: boolean): string => {
+    if (isProcessing) return "🔄 Procesando...";
+    if (authLoading) return "🔐 Autenticando...";
+    if (shouldRedirect) return "✅ Redirigiendo...";
+    return "📅 Confirmar cita";
+};
+
+interface FormSectionProps {
+    title: string;
+    formRef: React.RefObject<any>;
+    formConfig: any;
+    onSuccess: (data: any) => void;
+}
+
+const FormSection: React.FC<FormSectionProps> = ({ title, formRef, formConfig, onSuccess }) => (
+    <div className="border-2 rounded-lg p-4">
+        <h2 className="font-bold text-lg mb-2">{title}</h2>
+        <MainForm
+            message_button=""
+            ref={formRef}
+            actionType=""
+            dataForm={formConfig}
+            onSuccess={onSuccess}
+            showButton={false}
+        />
+    </div>
+);
 
 export default Checkout;

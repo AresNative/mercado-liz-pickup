@@ -52,6 +52,8 @@ export const MainForm = React.forwardRef(({
   const [formData, setFormData] = useState<any>({}); // Estado para guardar datos
   const [loading, setLoading] = useState(false);
 
+  const [formValues, setFormValues] = useState<any>({});
+
   const {
     handleSubmit,
     clearErrors,
@@ -65,7 +67,14 @@ export const MainForm = React.forwardRef(({
     trigger,
     formState: { errors },
   } = useForm();
-
+  // 🔄 EFECTO PARA OBSERVAR CAMBIOS EN TIEMPO REAL
+  useEffect(() => {
+    const subscription = watch((value) => {
+      setFormValues(value);
+      console.log("📊 Form values changed:", value); // Debug en consola
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
   useImperativeHandle(ref, () => ({
     getFormData: () => {
       try {
@@ -92,6 +101,15 @@ export const MainForm = React.forwardRef(({
         console.error("Error en submitForm:", e);
         return null;
       }
+    },
+    // 🔥 NUEVO MÉTODO: Obtener valores en tiempo real
+    getLiveValues: () => {
+      return formValues;
+    },
+
+    // 🔥 NUEVO MÉTODO: Ver estado de validación
+    getValidationStatus: async () => {
+      return await trigger();
     }
   }));
 

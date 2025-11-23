@@ -14,6 +14,13 @@ import {
     Croissant,
     Wheat,
     MoveRight,
+    Star,
+    Truck,
+    Shield,
+    Sparkles,
+    ShoppingCart,
+    Calendar,
+    MapPin,
 } from "lucide-react";
 import Card from "./productos/components/card";
 import { IconLiz } from "./productos/components/ionc-liz";
@@ -59,7 +66,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
                     LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
                 `,
-                pageSize: 10,
+                pageSize: 8, // Reducido para mejor rendimiento
                 page: 1,
                 filtros: {
                     Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }],
@@ -108,6 +115,30 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     }
 
+    // Datos de características principales
+    const features = [
+        {
+            icon: <ShoppingCart className="size-6" />,
+            title: "Compra Rápida",
+            description: "Encuentra y compra en menos de 5 minutos"
+        },
+        {
+            icon: <Truck className="size-6" />,
+            title: "Recoge Sin Filas",
+            description: "Tu pedido listo para llevar al instante"
+        },
+        {
+            icon: <DollarSign className="size-6" />,
+            title: "Mejor Precio",
+            description: "Ofertas exclusivas y precios competitivos"
+        },
+        {
+            icon: <Shield className="size-6" />,
+            title: "Pago Seguro",
+            description: "Transacciones 100% protegidas"
+        }
+    ];
+
     return (
         <IonContent
             fullscreen
@@ -127,220 +158,412 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
-            {/* SELECCIÓN DE SUCURSAL */}
-            <section className="max-w-6xl mx-auto px-4 mb-10">
-                <h3 className="font-bold text-center mb-6 dark:text-white">
-                    Selecciona tu sucursal
-                </h3>
 
-                <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
-                    Elige tu sucursal preferida para ver productos con disponibilidad real.
-                </p>
+            {/* HERO PRINCIPAL MEJORADO */}
+            <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-16 md:py-24">
+                <div className="max-w-6xl mx-auto px-4 text-center">
+                    <div className="flex justify-center mb-6">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm">
+                            <Sparkles className="size-4" />
+                            <span>+2,000 productos frescos disponibles</span>
+                        </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                        { id: "mayoreo", name: "Mayoreo" },
-                        { id: "guadalupe", name: "Valle de Guadalupe" },
-                        { id: "palmas", name: "Palmas" },
-                        { id: "testerazo", name: "Testerazo" },
-                    ].map((s, index) => (
-                        <label
-                            key={s.id}
-                            className={cn(`
-                                    flex items-center gap-3 p-4 rounded-xl
-                                    border 
-                                `,
-                                index === 0 && `
-                                    border-purple-300 dark:border-purple-700
-                                    bg-white dark:bg-purple-950
-                                    hover:bg-purple-50
-                                    dark:hover:bg-purple-900
-                                    transition-all
-                                    shadow-sm
-                                    hover:shadow-md
-                                     cursor-pointer
-                                `)}
+                    <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
+                        Tu mercado
+                        <span className="block text-yellow-300">fresco y rápido</span>
+                    </h1>
+
+                    <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8 leading-relaxed">
+                        Productos seleccionados, ofertas activas y recogida sin filas.
+                        <span className="font-semibold"> Fácil, rápido y al instante.</span>
+                    </p>
+
+                    {/* Características rápidas */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 max-w-2xl mx-auto">
+                        {features.map((feature, index) => (
+                            <div key={index} className="text-center">
+                                <div className="bg-white/20 rounded-full p-3 inline-flex mb-2">
+                                    {feature.icon}
+                                </div>
+                                <p className="text-sm font-medium">{feature.title}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* CTA Principal Mejorado */}
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <a
+                            href="/productos"
+                            className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-8 py-4 rounded-2xl text-lg shadow-2xl shadow-yellow-500/25 transition-all hover:scale-105 hover:shadow-yellow-500/40 flex items-center gap-3 min-w-[200px] justify-center"
                         >
-                            <input
-                                type="radio"
-                                name="sucursal"
-                                value={s.id}
-                                defaultChecked={index === 0}  // SOLO LA PRIMERA ACTIVADA
-                                disabled={index !== 0} // SOLO LA PRIMERA HABILITADA
-                                className="w-5 h-5 text-purple-600 accent-purple-600 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                            />
+                            <ShoppingCart className="size-5" />
+                            Comprar Ahora
+                            <MoveRight className="size-5 group-hover:translate-x-1 transition-transform" />
+                        </a>
 
-                            <span className={cn(index === 0 ? "font-semibold " : "disabled:font-light", "text-gray-700 dark:text-gray-200")}>
-                                {s.name}
-                            </span>
-                        </label>
-                    ))}
+                        <a
+                            href="#ofertas"
+                            className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl backdrop-blur-sm transition-all border border-white/20 hover:border-white/30 flex items-center gap-2"
+                        >
+                            <Star className="size-5" />
+                            Ver Ofertas
+                        </a>
+                    </div>
                 </div>
             </section>
 
-            {/* HERO NUEVO */}
-            <header className="relative text-purple-800 dark:text-purple-200 bg-gradient-to-b my-12">
-                <section className="max-w-6xl py-10 md:py-20 px-4 mx-auto flex flex-col gap-6">
-                    <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-                        Compra fresco, rápido y al mejor precio
-                    </h1>
-
-                    <p className="text-xl md:text-2xl text-gray-500 dark:text-gray-300 max-w-2xl">
-                        Productos seleccionados, ofertas activas y recogida sin filas.
-                        Fácil, rápido y al instante.
+            {/* SELECCIÓN DE SUCURSAL MEJORADA */}
+            <section className="max-w-6xl mx-auto px-4 mb-10">
+                <div className="text-center mb-8">
+                    <h3 className="font-bold text-2xl md:text-3xl dark:text-white mb-3">
+                        🏪 Elige Tu Sucursal
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                        Selecciona donde quieres recoger tu pedido.
+                        <span className="font-semibold text-green-600"> ¡Recogida sin filas garantizada!</span>
                     </p>
+                </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                        <a
-                            href="/productos"
-                            className="flex gap-3 items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-4 rounded-xl text-lg shadow-md shadow-purple-300/30 transition-all hover:scale-105"
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                        {
+                            id: "mayoreo",
+                            name: "Sucursal Mayoreo",
+                            status: "active",
+                            badge: "✅ Disponible",
+                            description: "Tu pedido listo en 30 min",
+                            features: ["Recogida inmediata", "++2,000 productos", "Ofertas exclusivas"]
+                        },
+                        {
+                            id: "guadalupe",
+                            name: "Valle de Guadalupe",
+                            status: "coming",
+                            badge: "🔜 Próximamente",
+                            description: "En preparación",
+                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                        },
+                        {
+                            id: "palmas",
+                            name: "Valle de las Palmas",
+                            status: "coming",
+                            badge: "🔜 Próximamente",
+                            description: "En preparación",
+                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                        },
+                        {
+                            id: "testerazo",
+                            name: "Testerazo",
+                            status: "coming",
+                            badge: "🔜 Próximamente",
+                            description: "En preparación",
+                            features: ["Muy pronto", "Mismo servicio", "Mismos precios"]
+                        },
+                    ].map((sucursal, index) => (
+                        <div
+                            key={sucursal.id}
+                            className={cn(`
+                    relative p-4 rounded-xl border-2 transition-all duration-300
+                    group cursor-pointer
+                `,
+                                sucursal.status === "active"
+                                    ? `
+                            border-green-300 dark:border-green-700
+                            bg-green-50 dark:bg-green-900/20
+                            hover:bg-green-100 dark:hover:bg-green-900/30
+                            hover:shadow-lg hover:scale-105
+                            ring-2 ring-green-200 dark:ring-green-800
+                        `
+                                    : `
+                            border-gray-200 dark:border-gray-700
+                            bg-gray-50 dark:bg-gray-800/50
+                            opacity-80 grayscale
+                            cursor-not-allowed
+                        `
+                            )}
                         >
-                            Explorar Productos
-                            <MoveRight />
-                        </a>
+                            {/* Badge de estado */}
+                            <div className={cn(
+                                "absolute -top-2 -right-2 px-3 py-1 rounded-full text-xs font-semibold",
+                                sucursal.status === "active"
+                                    ? "bg-green-500 text-white shadow-lg"
+                                    : "bg-gray-500 text-white"
+                            )}>
+                                {sucursal.badge}
+                            </div>
 
-                        <a
-                            href="https://mercadosliz.com"
-                            className="bg-white dark:bg-purple-950 border border-purple-300 dark:border-purple-700 text-purple-600 dark:text-purple-300 hover:bg-purple-100 px-6 py-4 rounded-xl font-semibold transition-all"
-                        >
-                            Conocer más
-                        </a>
+                            {/* Contenido de la sucursal */}
+                            <div className="text-center">
+                                {/* Icono */}
+                                <div className={cn(
+                                    "w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center",
+                                    sucursal.status === "active"
+                                        ? "bg-green-100 dark:bg-green-800"
+                                        : "bg-gray-100 dark:bg-gray-700"
+                                )}>
+                                    {sucursal.status === "active" ? (
+                                        <MapPin className={cn(
+                                            "size-6",
+                                            sucursal.status === "active"
+                                                ? "text-green-600 dark:text-green-400"
+                                                : "text-gray-400"
+                                        )} />
+                                    ) : (
+                                        <Clock className="size-5 text-gray-400" />
+                                    )}
+                                </div>
+
+                                {/* Nombre */}
+                                <h4 className={cn(
+                                    "font-bold text-lg mb-2",
+                                    sucursal.status === "active"
+                                        ? "text-gray-800 dark:text-white"
+                                        : "text-gray-500 dark:text-gray-400"
+                                )}>
+                                    {sucursal.name}
+                                </h4>
+
+                                {/* Descripción */}
+                                <p className={cn(
+                                    "text-sm mb-3",
+                                    sucursal.status === "active"
+                                        ? "text-green-600 dark:text-green-400 font-semibold"
+                                        : "text-gray-400 dark:text-gray-500"
+                                )}>
+                                    {sucursal.description}
+                                </p>
+
+                                {/* Características */}
+                                <ul className="space-y-1 mb-4">
+                                    {sucursal.features.map((feature, idx) => (
+                                        <li key={idx} className={cn(
+                                            "text-xs",
+                                            sucursal.status === "active"
+                                                ? "text-gray-600 dark:text-gray-300"
+                                                : "text-gray-400 dark:text-gray-500"
+                                        )}>
+                                            • {feature}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* Radio Button solo para activa */}
+                                {sucursal.status === "active" && (
+                                    <div className="flex items-center justify-center gap-2 mt-2">
+                                        <input
+                                            type="radio"
+                                            name="sucursal"
+                                            value={sucursal.id}
+                                            defaultChecked
+                                            className="w-4 h-4 text-green-600 accent-green-600 cursor-pointer"
+                                        />
+                                        <span className="text-sm text-green-700 dark:text-green-400 font-medium">
+                                            Seleccionada
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Mensaje para próximamente */}
+                                {sucursal.status === "coming" && (
+                                    <div className="mt-2">
+                                        <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+                                            Estamos trabajando para llegar pronto
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Efecto hover solo para activa */}
+                            {sucursal.status === "active" && (
+                                <div className="absolute inset-0 rounded-xl border-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Información adicional */}
+                <div className="text-center mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                        <Sparkles className="size-5" />
+                        <span className="font-semibold">Expansión en Progreso</span>
                     </div>
-                </section>
-            </header>
-
-            {/* MÁS VENDIDOS */}
-            <article className="py-16 px-4 max-w-6xl mx-auto">
-                <label className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white">
-                        Productos más vendidos 🔥
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mt-2">
-                        Esta semana nuestros clientes están eligiendo estos productos.
-                        ¡No te quedes sin los tuyos!
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Estamos expandiéndonos para servirte mejor. Próximamente en más ubicaciones.
                     </p>
+                </div>
+            </section>
 
-                    <a
-                        href="/productos"
-                        className="inline-flex gap-2 items-center mt-6 px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold hover:bg-purple-700 transition-all hover:scale-105"
-                    >
-                        Ver todo el catálogo <MoveRight />
-                    </a>
-                </label>
+            {/* OFERTAS DESTACADAS */}
+            <section id="ofertas" className="bg-gray-50 dark:bg-gray-900 py-16">
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <div className="inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                            <Star className="size-4" />
+                            OFERTAS LIMITADAS
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                            Descuentos Especiales
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg">
+                            Productos seleccionados con descuentos exclusivos.
+                            <span className="font-semibold text-red-500"> ¡Solo por tiempo limitado!</span>
+                        </p>
+                    </div>
+
+                    {isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-4 animate-pulse">
+                                    <div className="bg-gray-300 dark:bg-gray-700 h-40 rounded-xl mb-4"></div>
+                                    <div className="bg-gray-300 dark:bg-gray-700 h-4 rounded mb-2"></div>
+                                    <div className="bg-gray-300 dark:bg-gray-700 h-4 rounded w-2/3"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                {products.slice(0, 4).map((producto, index) => (
+                                    <Card
+                                        key={`${producto.id}-${index}`}
+                                        producto={producto}
+                                    />
+                                ))}
+                            </div>
+
+                            {products.length > 4 && (
+                                <div className="text-center">
+                                    <a
+                                        href="/productos"
+                                        className="inline-flex items-center gap-3 bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-all hover:scale-105 hover:shadow-lg"
+                                    >
+                                        <ShoppingCart className="size-5" />
+                                        Ver Todas las Ofertas
+                                        <MoveRight className="size-5" />
+                                    </a>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            </section>
+
+            {/* CATEGORÍAS DESTACADAS */}
+            <section className="py-16 px-4 max-w-6xl mx-auto">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                        Explora por Categoría
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                        Encuentra fácilmente lo que necesitas
+                    </p>
+                </div>
 
                 <BentoGrid cols={2}>
                     <BentoItem
-                        title="Frutas frescas"
+                        title="Frutas Frescas"
                         description="Jugosas y recién seleccionadas, perfectas para cada día."
                         icon={<Apple className="size-6 text-red-600" />}
-                        className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800"
+                        className="bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 hover:shadow-lg transition-all cursor-pointer group"
                     />
                     <BentoItem
-                        title="Verduras orgánicas"
+                        title="Verduras Orgánicas"
                         description="Cultivo limpio y natural, sin pesticidas."
                         icon={<Wheat className="size-6 text-green-600" />}
-                        className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                        className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 hover:shadow-lg transition-all cursor-pointer group"
                     />
                     <BentoItem
-                        title="Lácteos naturales"
+                        title="Lácteos Naturales"
                         description="Frescos, nutritivos y de productores confiables."
                         icon={<Milk className="size-6 text-blue-600" />}
-                        className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+                        className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 hover:shadow-lg transition-all cursor-pointer group"
                     />
                     <BentoItem
-                        title="Panadería artesanal"
+                        title="Panadería Artesanal"
                         description="Horneado diario, irresistible y recién hecho."
                         icon={<Croissant className="size-6 text-yellow-600" />}
-                        className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800"
-                    />
-                </BentoGrid>
-            </article>
-
-            {/* OFERTAS */}
-            <ul className="px-4 flex flex-col gap-2 max-w-6xl mx-auto relative">
-                <li className="flex justify-between items-center">
-                    <label className="font-semibold text-3xl text-center">
-                        Ofertas
-                    </label>
-
-                    <a
-                        href="/productos"
-                        className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-purple-700 transition"
-                    >
-                        Ver todas las ofertas
-                        <ArrowRightIcon className="h-4 w-4" />
-                    </a>
-                </li>
-
-                <li className="flex flex-1 gap-2 overflow-x-auto scrollbar-hide">
-                    {products &&
-                        products.map((producto, index) => (
-                            <Card
-                                key={`${producto.id}-${index}`}
-                                producto={producto}
-                            />
-                        ))}
-                </li>
-            </ul>
-
-            {/* BENEFICIOS */}
-            <section className="pt-16 px-4 max-w-6xl mx-auto mb-36">
-                <label className="text-center mb-16">
-                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white">
-                        Beneficios Clave
-                    </h2>
-                    <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                        Descubre cómo hacer tus compras más fácil, rápido y económico.
-                    </p>
-                </label>
-
-                <BentoGrid cols={2}>
-                    <BentoItem
-                        title="Eficiencia de Compras"
-                        description="Haz todo tu pedido en un solo lugar."
-                        icon={<Zap className="size-6 text-blue-600" />}
-                        className="bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800"
-                    />
-                    <BentoItem
-                        title="Tiempo Real"
-                        description="Actualizaciones instantáneas del estado de tu pedido."
-                        icon={<Clock className="size-6 text-purple-600" />}
-                        className="bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800"
-                    />
-                    <BentoItem
-                        title="Seguridad de Datos"
-                        description="Protección avanzada para tu información."
-                        icon={<Lock className="size-6 text-indigo-600" />}
-                        className="bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800"
-                    />
-                    <BentoItem
-                        title="Ahorro de Costos"
-                        description="Ofertas exclusivas y precios competitivos."
-                        icon={<DollarSign className="size-6 text-green-600" />}
-                        className="bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800"
+                        className="bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 hover:shadow-lg transition-all cursor-pointer group"
                     />
                 </BentoGrid>
             </section>
 
-            {/* BANNER DE CONVERSIÓN EXTRA */}
-            <section className="max-w-6xl mx-auto my-24 px-4">
-                <div className="bg-gradient-to-r from-purple-600 to-purple-500 text-white py-10 px-6 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div>
-                        <h3 className="text-3xl font-bold">
-                            ¿Listo para hacer tu pedido?
-                        </h3>
-                        <p className="text-white/90 mt-2 text-lg">
-                            Explora más de 2,000 productos disponibles hoy mismo.
+            {/* CÓMO FUNCIONA - SIMPLIFICADO */}
+            <section className="bg-purple-50 dark:bg-purple-900/20 py-16">
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                            Compra en 3 Pasos
+                        </h2>
+                        <p className="text-gray-600 dark:text-gray-300 text-lg">
+                            Así de fácil es hacer tu pedido
                         </p>
                     </div>
 
-                    <a
-                        href="/productos"
-                        className="bg-white text-purple-600 px-6 py-4 rounded-xl font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
-                    >
-                        Comprar ahora
-                        <MoveRight />
-                    </a>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {[
+                            {
+                                step: "1",
+                                title: "Elige Productos",
+                                description: "Selecciona entre +2,000 productos frescos",
+                                icon: <ShoppingCart className="size-8" />
+                            },
+                            {
+                                step: "2",
+                                title: "Programa Recogida",
+                                description: "Elige fecha y hora para recoger sin filas",
+                                icon: <Calendar className="size-8" />
+                            },
+                            {
+                                step: "3",
+                                title: "Paga y Recoge",
+                                description: "Pago seguro y recoge tu pedido al instante",
+                                icon: <Truck className="size-8" />
+                            }
+                        ].map((item, index) => (
+                            <div key={index} className="text-center bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="bg-purple-100 dark:bg-purple-800 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-purple-600 dark:text-purple-400 font-bold text-xl">
+                                        {item.step}
+                                    </span>
+                                </div>
+                                <h3 className="font-bold text-lg mb-2 dark:text-white">{item.title}</h3>
+                                <p className="text-gray-600 dark:text-gray-300">{item.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* BANNER FINAL DE CONVERSIÓN */}
+            <section className="max-w-6xl mx-auto my-16 px-4">
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-12 px-8 rounded-3xl shadow-2xl text-center">
+                    <h3 className="text-3xl md:text-4xl font-bold mb-4">
+                        ¿Listo para comenzar?
+                    </h3>
+                    <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
+                        Únete a miles de clientes que ya compran de forma rápida y segura
+                    </p>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <a
+                            href="/productos"
+                            className="bg-white text-purple-600 px-8 py-4 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center gap-3 text-lg min-w-[200px] justify-center"
+                        >
+                            <ShoppingCart className="size-5" />
+                            Comenzar a Comprar
+                        </a>
+
+                        <div className="flex items-center gap-4 text-white/80">
+                            <div className="flex items-center gap-1">
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                                <Star className="size-4 fill-yellow-400 text-yellow-400" />
+                            </div>
+                            <span className="text-sm">4.9/5 (2,500+ reseñas)</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
