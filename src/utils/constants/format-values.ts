@@ -1,15 +1,43 @@
-export const formatValue = (value: number, format?: string): string => {
+export const formatValue = (
+  value: number | string | null | undefined,
+  format: "currency" | "percentage" | "number" | "compact" = "number",
+  decimals: number = 2
+): string => {
+  // Manejo de valores nulos, vacíos o NaN
+  if (value === null || value === undefined || value === "") return "—";
+
+  const num = Number(value);
+  if (isNaN(num)) return "—";
+
   switch (format) {
     case "currency":
-      return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+      return num.toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN",
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+
     case "percentage":
-      return `${value.toFixed(2)}%`;
+      return `${num.toFixed(decimals)}%`;
+
+    case "compact":
+      return num.toLocaleString("es-MX", {
+        notation: "compact",
+        compactDisplay: "short",
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      });
+
     case "number":
-      return value.toLocaleString("en-US");
     default:
-      return value.toString();
+      return num.toLocaleString("es-MX", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals,
+      });
   }
 };
+
 export const formatAPIDate = (dateString: string) => {
   if (!dateString) return "";
   return new Date(dateString).toISOString();

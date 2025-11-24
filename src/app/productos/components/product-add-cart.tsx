@@ -8,7 +8,7 @@ import { addToCart, removeFromCart } from "@/hooks/slices/cart";
 
 interface ButtonProps {
     id: string;
-    cantidad: number;
+    cantidad: any;
     producto: Producto;
 }
 
@@ -20,30 +20,30 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
 
     const quantity = cartItem?.quantity || 0;
 
-    // Stock status
+    // Stock status - usar la cantidad actualizada
     const isOutOfStock = cantidad <= 0;
     const canAddToCart = !isOutOfStock && quantity < cantidad;
 
+    // Asegurar que las funciones usen los props actualizados
     const handleAddToCart = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        if (cantidad > 0) {
-            // Siempre agregar 1 unidad, no depende del quantity actual
+        if (cantidad > 0 && quantity < cantidad) {
             dispatch(addToCart({
                 ...producto,
                 quantity: 1
             }));
         }
-    }, [producto, cantidad, dispatch]);
+    }, [producto, cantidad, quantity, dispatch]);
+
     const handleIncrement = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         if (quantity < cantidad) {
-            // Agregar 1 unidad más
             dispatch(addToCart({
                 ...producto,
                 quantity: 1
             }));
         }
-    }, [producto, quantity, dispatch]);
+    }, [producto, cantidad, quantity, dispatch]);
 
     const handleDecrement = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
@@ -51,15 +51,13 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
             if (quantity === 1) {
                 dispatch(removeFromCart(id));
             } else {
-                // Restar 1 unidad (usando quantity negativo)
                 dispatch(addToCart({
                     ...producto,
                     quantity: -1
                 }));
             }
         }
-    }, [producto, quantity, dispatch]);
-
+    }, [producto, id, quantity, dispatch]);
 
     const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuantity = parseInt(e.target.value) || 0;
@@ -68,7 +66,6 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
             if (newQuantity === 0) {
                 dispatch(removeFromCart(id));
             } else {
-                // Calcular la diferencia y enviar esa cantidad
                 const difference = newQuantity - quantity;
                 if (difference !== 0) {
                     dispatch(addToCart({
@@ -78,7 +75,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                 }
             }
         }
-    }, [producto, quantity, dispatch]);
+    }, [producto, id, cantidad, quantity, dispatch]);
 
     return (
         <motion.div className="flex items-center gap-2 flex-shrink-0">

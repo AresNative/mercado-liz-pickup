@@ -145,7 +145,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 if (apiData.data && apiData.data.length > 0) {
                     // Mapear los datos de la API al formato de Producto
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                        id: item.Cuenta + "-" + item.Unidad,
+                        codigo: item.Codigo || "0000",
                         articulo: item.Cuenta || "Cuenta",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",

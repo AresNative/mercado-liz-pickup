@@ -442,7 +442,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="py-1 px-2 max-w-6xl mx-auto min-h-screen space-y-5">
+            <section className="py-1 px-2 max-w-6xl mx-auto min-h-screen my-16 md:my-6 space-y-5">
                 {/* Selector de pedidos */}
                 <div className="space-y-4">
                     <IonSegment value={segmentoActivo} onIonChange={e => setSegmentoActivo(e.detail.value as any)}>

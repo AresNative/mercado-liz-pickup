@@ -9,7 +9,6 @@ import { IonItem, IonLabel, IonNote, useIonModal } from "@ionic/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SearchResultsProps {
-    onProductSelect?: (producto: Producto) => void;
     isVisible?: boolean;
     onClose?: () => void;
 }
@@ -23,7 +22,6 @@ interface ApiResponse {
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({
-    onProductSelect,
     isVisible = false,
     onClose
 }) => {
@@ -44,7 +42,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     // Construir objetos Producto desde item API
     const mapApiItemToProducto = (item: any): Producto => ({
-        id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+        id: item.Cuenta + "-" + item.Unidad,
+        codigo: item.Codigo || "0000",
         articulo: item.Cuenta || "Cuenta",
         nombre: item.Descripcion1 || "Sin nombre",
         categoria: item.Grupo || "Sin categoría",
@@ -91,22 +90,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                     FROM OfertaD
                                 ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
                     LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
+
+                    WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')
                     `,
                 pageSize: 5,
                 page: pageToFetch,
                 filtros: {
-                    "Filtros": [
-                        {
-                            "key": "art.Descripcion1",
-                            "value": searchTerm,
-                            "operator": "like"
-                        },
-                        /*  {
-                             "key": "art.Articulo",
-                             "value": searchTerm,
-                             "operator": "like"
-                         } */
-                    ],
+                    "Filtros": [],
                     "Selects": [
                         { "key": "cb.Codigo" },
                         { "key": "cb.Cuenta" },
@@ -119,17 +109,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         { "key": "art.TipoImpuesto2" },
                         { "key": "lpu.Unidad" },
                         { "key": "lpu.Precio" },
-                        /*     { "key": "ofrd.Precio", "alias": "Descuento" },
-                          { "key": "au.Unidad", "alias": "UnidadFactor" },
-                          { "key": "au.Factor" } */
+                        { "key": "ofrd.Precio", "alias": "Descuento" },
+                        { "key": "au.Unidad", "alias": "UnidadFactor" },
+                        { "key": "au.Factor" }
                     ],
-                    /* "Agregaciones": [
-                        {
-                            "Key": "ad.DispMenosApartado",
-                            "Operation": "SUM",
-                            "Alias": "Cantidad"
-                        }
-                    ], */
                     "Order": [
                         {
                             "Key": "art.Descripcion1",
@@ -237,7 +220,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
         <div
             ref={resultsRef}
             onScroll={handleResultsScroll}
-            className="absolute md:top-20 left-0 right-0 md:w-[70%] md:mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 md:max-h-60 overflow-y-auto mt-2"
+            className="absolute md:top-20 sm:top-10 left-0 right-0 md:w-[70%] md:mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 md:max-h-60 overflow-y-auto mt-2"
         >
             {isSearching && suggestions.length === 0 ? (
                 <IonItem>

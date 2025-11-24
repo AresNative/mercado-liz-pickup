@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({
                 className={cn(
                     `transition-all duration-300 safe-area-top`,
                     showBackButton || isScrolled
-                        ? 'bg-white/70 border-b backdrop-blur-sm'
+                        ? 'bg-white/70 border-b backdrop-blur-sm border-gray-200 shadow-md'
                         : 'bg-transparent',
                     className
                 )}

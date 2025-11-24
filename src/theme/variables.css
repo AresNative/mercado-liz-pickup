@@ -98,8 +98,9 @@
 .custom-search-barr {
     --z-index: 10 !important;
     /* Estado normal */
-    --background: linear-gradient(100deg, #DABFFF 0%, #9238e749 100%);
+    --background: linear-gradient(100deg, #b8a2d6 0%, #9238e749 100%);
     --color: #ffffff;
+    --clear-button-color: #fff;
     --button-color: #ffffff;
     --border-color: #5c1e92;
     --transition: all 0.2s ease-in-out;
@@ -108,7 +109,7 @@
     --background-hover: linear-gradient(100deg, #4d0488 0%, #7a2fc4 100%);
     --color-hover: #ffffff;
     --border-color-hover: #4a1675;
-
+    --placeholder-font-style: italic;
     /* Variables de estado active/pressed */
     --background-activated: linear-gradient(100deg, #3d036d 0%, #64269f 100%);
     --color-activated: #e0e0e0;

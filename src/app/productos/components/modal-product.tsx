@@ -36,6 +36,7 @@ interface ProductModalProps {
 }
 
 interface Unidad {
+    id: string;
     unidad: string;
     factor: number;
     precio: number;
@@ -85,6 +86,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
     const [recomendadosselect, setrecomendadosselect] = useState()
     const [unidades, setUnidades] = useState<Unidad[]>([]);
     const [unidadSeleccionada, setUnidadSeleccionada] = useState<Unidad>({
+        id: producto.id,
         unidad: producto.unidad,
         factor: producto.factor || 1,
         precio: producto.precio,
@@ -129,23 +131,23 @@ const ModalProd: React.FC<ProductModalProps> = ({
         try {
             const response = await getWithFilter({
                 table: `
-                    ArtUnidad AS au
-                    INNER JOIN ListaPreciosDUnidad AS lpu 
-                        ON au.Articulo = lpu.Articulo 
-                        AND au.Unidad = lpu.Unidad
-                        AND lpu.Lista = '(Precio Lista)'
-                    LEFT JOIN ArtDisponible AS ad 
-                        ON au.Articulo = ad.Articulo 
-                        AND ad.Almacen = 'ALMMAYO'
-                    LEFT JOIN (
-                        SELECT *, 
-                            ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                        FROM OfertaD
-                    ) AS ofrd 
-                        ON ofrd.Articulo = au.Articulo 
-                        AND ofrd.Unidad = au.Unidad 
-                        AND ofrd.rn = 1
-                `,
+                ArtUnidad AS au
+                INNER JOIN ListaPreciosDUnidad AS lpu 
+                    ON au.Articulo = lpu.Articulo 
+                    AND au.Unidad = lpu.Unidad
+                    AND lpu.Lista = '(Precio Lista)'
+                LEFT JOIN ArtDisponible AS ad 
+                    ON au.Articulo = ad.Articulo 
+                    AND ad.Almacen = 'ALMMAYO'
+                LEFT JOIN (
+                    SELECT *, 
+                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
+                    FROM OfertaD
+                ) AS ofrd 
+                    ON ofrd.Articulo = au.Articulo 
+                    AND ofrd.Unidad = au.Unidad 
+                    AND ofrd.rn = 1
+            `,
                 pageSize: 10,
                 page: 1,
                 filtros: {
@@ -170,6 +172,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
             if (response && response.data) {
                 const unidadesData: Unidad[] = response.data.map((item: any) => ({
+                    id: `${producto.articulo}-${item.Unidad}`, // ID único con artículo y unidad
                     unidad: item.Unidad || "Unidad",
                     factor: item.Factor || 1,
                     precio: item.Precio || 0,
@@ -187,8 +190,9 @@ const ModalProd: React.FC<ProductModalProps> = ({
             }
         } catch (error) {
             console.error("Error al cargar unidades:", error);
-            // En caso de error, mantener la unidad original
+            // En caso de error, mantener la unidad original con ID correcto
             setUnidades([{
+                id: `${producto.articulo}-${producto.unidad}`, // ID único
                 unidad: producto.unidad,
                 factor: producto.factor || 1,
                 precio: producto.precio,
@@ -295,7 +299,13 @@ const ModalProd: React.FC<ProductModalProps> = ({
     const handleUnidadChange = (unidad: string) => {
         const unidadEncontrada = unidades.find(u => u.unidad === unidad);
         if (unidadEncontrada) {
-            setUnidadSeleccionada(unidadEncontrada);
+            // Crear un ID único que combine el artículo y la unidad seleccionada
+            const nuevoId = `${producto.articulo}-${unidad}`;
+
+            setUnidadSeleccionada({
+                ...unidadEncontrada,
+                id: nuevoId // Actualizar el ID con la unidad seleccionada
+            });
         }
     };
 
@@ -312,18 +322,32 @@ const ModalProd: React.FC<ProductModalProps> = ({
         }
     };
 
-    // Crear producto actualizado con la unidad seleccionada
+    // Y en el productoActualizado, asegúrate de usar el ID correcto
     const productoActualizado: Producto = useMemo(() => {
+        const cantidadEnPiezas = unidadSeleccionada.unidad !== 'Pieza' && unidadSeleccionada.factor > 1
+            ? unidadSeleccionada.cantidad * unidadSeleccionada.factor
+            : unidadSeleccionada.cantidad;
+
+        // Usar el ID de unidadSeleccionada que ahora se actualiza correctamente
+        const idUnico = unidadSeleccionada.id || `${producto.articulo}-${unidadSeleccionada.unidad}`;
+
         return {
             ...producto,
-            id: `${producto.articulo}-${unidadSeleccionada.unidad}`, // ID único basado en artículo + unidad
+            id: idUnico, // Usar el ID único que incluye la unidad
+            codigo: producto.codigo || producto.id,
+            articulo: producto.articulo,
+            nombre: producto.nombre,
+            categoria: producto.categoria,
             unidad: unidadSeleccionada.unidad,
             factor: unidadSeleccionada.factor,
             precio: unidadSeleccionada.precio,
             descuento: unidadSeleccionada.descuento,
-            cantidad: unidadSeleccionada.cantidad,
-            // Agregar información adicional para identificar la combinación
-            articuloUnidad: `${producto.articulo}-${unidadSeleccionada.unidad}`,
+            cantidad: cantidadEnPiezas,
+            impuesto1: producto.impuesto1 || 0,
+            impuesto2: producto.impuesto2 || 0,
+            tipoImpuesto1: producto.tipoImpuesto1 || 0,
+            tipoImpuesto2: producto.tipoImpuesto2 || 0,
+            articuloUnidad: idUnico,
             nombreCompleto: `${producto.nombre} (${unidadSeleccionada.unidad})`
         };
     }, [producto, unidadSeleccionada]);
@@ -356,7 +380,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                                 alt="Product Image"
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />) :
-                            (<IconLiz fill="#DBDBDB" />)}
+                            (<IconLiz fill="#DBDBDB" width="300" />)}
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
                                 {discountPercentage > 0 && (
@@ -441,7 +465,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                             <div className="flex items-center gap-2 text-sm">
                                 <Barcode className="size-4 text-purple-600" />
                                 <IonText color="medium">
-                                    <span>Código: {producto.id}</span>
+                                    <span>Código: {producto.codigo}</span>
                                 </IonText>
                             </div>
 
@@ -578,7 +602,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         </div>
                         <AddToCartButton
                             id={productoActualizado.id} // Usar el ID único
-                            cantidad={unidadSeleccionada.cantidad}
+                            cantidad={formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)}
                             producto={productoActualizado} // Pasar el producto actualizado
                         />
                     </div>

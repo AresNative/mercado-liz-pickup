@@ -109,6 +109,19 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
         LoadImage();
     }, [producto.id]);
 
+    // Función para formatear el stock según la unidad
+    const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
+        if (/kilo|kg/i.test(unidad)) {
+            return unidad !== 'Pieza'
+                ? (factor ? (cantidad / factor).toFixed(2) : cantidad.toFixed(2))
+                : cantidad.toFixed(0);
+        } else {
+            return unidad !== 'Pieza'
+                ? (factor ? Math.trunc(cantidad / factor) : Math.trunc(cantidad))
+                : Math.trunc(cantidad);
+        }
+    };
+
     return (
         <motion.article
             initial={{ opacity: 0, scale: 0.9 }}
@@ -116,7 +129,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-52 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
+            className="group relative min-w-52 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
 
             <section
                 className="relative border-b border-gray-200 overflow-hidden">
@@ -135,17 +148,17 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                     <li className="flex flex-col gap-1">
                         {discountPercentage > 0 && (
-                            <div className="w-full text-center border-2 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
                                 -{discountPercentage}%
                             </div>
                         )}
                         {isLowStock && (
-                            <div className="w-full text-center border-2 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-yellow-100 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
                                 última(s) {producto.cantidad}
                             </div>
                         )}
                         {isOutOfStock && (
-                            <div className="w-full text-center border-2 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
                                 agotado
                             </div>
                         )}
@@ -169,14 +182,13 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                     <Barcode className="size-3 text-purple-800" />
-                    CB: {producto.id}
+                    CB: {producto.codigo}
                 </p>
                 <p className="text-xs text-gray-500 flex items-center">
                     <Hash className="size-3 text-purple-800" />
-                    STOK: {(/kilo|kg/i).test(producto.unidad)
-                        ? (producto.unidad !== 'Pieza' ? (producto.factor ? (producto.cantidad / producto.factor) : producto.cantidad) : producto.cantidad)
-                        : (producto.unidad !== 'Pieza' ? (producto.factor ? Math.trunc(producto.cantidad / producto.factor) : Math.trunc(producto.cantidad)) : Math.trunc(producto.cantidad))}
+                    STOK: {formatearStock(producto.cantidad, producto.unidad, producto.factor)}
                 </p>
+
                 {producto.unidad !== 'Pieza' && producto.unidad !== 'Kilogramo' && (
                     <p className="text-xs text-gray-500 flex items-center gap-1">
                         <ReceiptText className="size-3 text-purple-800" />
@@ -185,31 +197,40 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 )}
             </section>
 
-            <footer className="mt-auto">
-                <ul className="w-full px-4 pb-2 mt-auto bg-white flex items-center justify-between">
-                    <li className="flex flex-col">
+            <footer className="mt-auto w-full bg-white border-t border-gray-100">
+                <div className="flex items-center justify-between px-4 py-2 gap-2">
+
+                    {/* ---- PRECIO ---- */}
+                    <div className="flex flex-col max-w-[90px] overflow-hidden">
                         {producto.descuento ? (
                             <>
-                                <span className="text-lg font-semibold text-purple-600">
+                                <span className="text-base font-semibold text-purple-600 leading-none truncate">
                                     {formatValue(producto.descuento, "currency")}
                                 </span>
-                                <span className="text-xs text-gray-500 line-through">
+                                <span className="text-[11px] text-gray-500 line-through truncate leading-none">
                                     {formatValue(producto.precio, "currency")}
                                 </span>
                             </>
                         ) : (
-                            <span className="text-lg font-semibold text-purple-600">
+                            <span className="text-base font-semibold text-purple-600 leading-none truncate">
                                 {formatValue(producto.precio, "currency")}
                             </span>
                         )}
-                    </li>
-                    <li>
-                        <AddToCartButton id={producto.id} cantidad={producto.cantidad} producto={producto} />
-                    </li>
-                </ul>
+                    </div>
+
+                    {/* ---- BOTÓN ADD TO CART ---- */}
+                    <div className="flex-shrink-0">
+                        <AddToCartButton
+                            id={producto.id}
+                            cantidad={formatearStock(producto.cantidad, producto.unidad, producto.factor)}
+                            producto={producto}
+                        />
+                    </div>
+                </div>
             </footer>
+
         </motion.article >
     );
 }
-
+/* bodka gray goose 700 */
 export default Card;

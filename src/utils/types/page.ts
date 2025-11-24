@@ -14,6 +14,7 @@ export interface Producto {
   nombre: string;
   descuento?: number;
   categoria: string;
+  codigo: string;
   unidad: string;
   precio: number;
   cantidad: number;
