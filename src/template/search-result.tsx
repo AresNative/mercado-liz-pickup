@@ -42,7 +42,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     // Construir objetos Producto desde item API
     const mapApiItemToProducto = (item: any): Producto => ({
-        id: item.Cuenta + "-" + item.Unidad,
+        id: item.Codigo + "-" + item.Unidad,
         codigo: item.Codigo || "0000",
         articulo: item.Cuenta || "Cuenta",
         nombre: item.Descripcion1 || "Sin nombre",
@@ -80,16 +80,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
+                        AND lpu.Precio > 0
                    INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0
                     LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
 
                     WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')
                     `,
@@ -112,6 +113,13 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                         { "key": "ofrd.Precio", "alias": "Descuento" },
                         { "key": "au.Unidad", "alias": "UnidadFactor" },
                         { "key": "au.Factor" }
+                    ],
+                    "Agregaciones": [
+                        {
+                            "Key": "ad.DispMenosApartado",
+                            "Operation": "SUM",
+                            "Alias": "Cantidad"
+                        }
                     ],
                     "Order": [
                         {

@@ -71,10 +71,10 @@ export const MainForm = React.forwardRef(({
   useEffect(() => {
     const subscription = watch((value) => {
       setFormValues(value);
-      console.log("📊 Form values changed:", value); // Debug en consola
     });
     return () => subscription.unsubscribe();
   }, [watch]);
+
   useImperativeHandle(ref, () => ({
     getFormData: () => {
       try {

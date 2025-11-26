@@ -55,16 +55,17 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
+                        AND lpu.Precio > 0
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
-                    INNER JOIN (
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0
+                    LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
                 pageSize: 8, // Reducido para mejor rendimiento
                 page: 1,
@@ -98,12 +99,19 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 if (apiData.data && apiData.data.length > 0) {
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                        id: item.Codigo + "-" + item.Unidad,
+                        codigo: item.Codigo || "0000",
+                        articulo: item.Cuenta || "Cuenta",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",
                         unidad: item.Unidad || "Unidad",
                         precio: item.Precio || 0,
-                        cantidad: item.Factor || 1,
+                        cantidad: item.Cantidad || 1,
+                        factor: item.Factor || 1,
+                        impuesto1: item.Impuesto1 || 0,
+                        impuesto2: item.Impuesto2 || 0,
+                        tipoImpuesto1: item.TipoImpuesto1 || 0,
+                        tipoImpuesto2: item.TipoImpuesto2 || 0,
                         descuento: item.Descuento || 0,
                     }));
 

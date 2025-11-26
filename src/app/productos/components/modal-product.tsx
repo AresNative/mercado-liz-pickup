@@ -172,7 +172,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
             if (response && response.data) {
                 const unidadesData: Unidad[] = response.data.map((item: any) => ({
-                    id: `${producto.articulo}-${item.Unidad}`, // ID único con artículo y unidad
+                    id: `${producto.codigo}-${item.Unidad}`, // ID único con artículo y unidad
                     unidad: item.Unidad || "Unidad",
                     factor: item.Factor || 1,
                     precio: item.Precio || 0,
@@ -212,16 +212,17 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         ON art.Articulo = lpu.Articulo
                         AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
+                        AND lpu.Precio > 0
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' and art.Articulo = ad.Articulo
-                    INNER JOIN (
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
+                    LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo and ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo and ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE()
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
             pageSize: 4,
             page: 1,
@@ -300,7 +301,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
         const unidadEncontrada = unidades.find(u => u.unidad === unidad);
         if (unidadEncontrada) {
             // Crear un ID único que combine el artículo y la unidad seleccionada
-            const nuevoId = `${producto.articulo}-${unidad}`;
+            const nuevoId = `${producto.codigo}-${unidad}`;
 
             setUnidadSeleccionada({
                 ...unidadEncontrada,
@@ -324,12 +325,8 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     // Y en el productoActualizado, asegúrate de usar el ID correcto
     const productoActualizado: Producto = useMemo(() => {
-        const cantidadEnPiezas = unidadSeleccionada.unidad !== 'Pieza' && unidadSeleccionada.factor > 1
-            ? unidadSeleccionada.cantidad * unidadSeleccionada.factor
-            : unidadSeleccionada.cantidad;
-
         // Usar el ID de unidadSeleccionada que ahora se actualiza correctamente
-        const idUnico = unidadSeleccionada.id || `${producto.articulo}-${unidadSeleccionada.unidad}`;
+        const idUnico = unidadSeleccionada.id || `${producto.codigo}-${unidadSeleccionada.unidad}`;
 
         return {
             ...producto,
@@ -342,13 +339,11 @@ const ModalProd: React.FC<ProductModalProps> = ({
             factor: unidadSeleccionada.factor,
             precio: unidadSeleccionada.precio,
             descuento: unidadSeleccionada.descuento,
-            cantidad: cantidadEnPiezas,
+            cantidad: producto.cantidad,
             impuesto1: producto.impuesto1 || 0,
             impuesto2: producto.impuesto2 || 0,
             tipoImpuesto1: producto.tipoImpuesto1 || 0,
-            tipoImpuesto2: producto.tipoImpuesto2 || 0,
-            articuloUnidad: idUnico,
-            nombreCompleto: `${producto.nombre} (${unidadSeleccionada.unidad})`
+            tipoImpuesto2: producto.tipoImpuesto2 || 0
         };
     }, [producto, unidadSeleccionada]);
 

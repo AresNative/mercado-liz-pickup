@@ -14,6 +14,9 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useGetWithFiltersGeneralMutation, usePutGeneralMutation } from "@/hooks/reducers/api";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import { formatValue } from "@/utils/constants/format-values";
+import { ShoppingCart, MoveRight } from "lucide-react";
+import { usePedidosSignalR } from "./utils/signalr-pedidos";
 
 interface OrderStatus {
     status: string;
@@ -31,6 +34,8 @@ interface OrderItem {
     price: number;
     unit: string;
     image?: string;
+    descuento?: number;
+    precioRegular?: number;
 }
 
 interface ListaItem {
@@ -97,6 +102,66 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [loading, setLoading] = useState(true);
     const [showCancelAlert, setShowCancelAlert] = useState(false);
 
+    // Callbacks para SignalR
+    const handlePedidoActualizado = useCallback((pedidoActualizado: any) => {
+        console.log("Pedido actualizado via SignalR:", pedidoActualizado);
+
+        setPedidos(prevPedidos => {
+            const nuevosPedidos = prevPedidos.map(pedido =>
+                pedido.id === pedidoActualizado.id
+                    ? parseListaData(pedidoActualizado)
+                    : pedido
+            );
+
+            // Actualizar también el pedido seleccionado si es el mismo
+            setPedidoSeleccionado(prev =>
+                prev && prev.id === pedidoActualizado.id
+                    ? parseListaData(pedidoActualizado)
+                    : prev
+            );
+
+            return nuevosPedidos;
+        });
+    }, []);
+
+    const handleNuevoPedido = useCallback((nuevoPedido: any) => {
+        console.log("Nuevo pedido via SignalR:", nuevoPedido);
+
+        setPedidos(prevPedidos => {
+            const pedidoProcesado = parseListaData(nuevoPedido);
+            // Agregar al inicio de la lista
+            return [pedidoProcesado, ...prevPedidos];
+        });
+    }, []);
+
+    const handlePedidoBorrado = useCallback((idPedido: number) => {
+        console.log("Pedido borrado via SignalR:", idPedido);
+
+        setPedidos(prevPedidos => {
+            const nuevosPedidos = prevPedidos.filter(pedido => pedido.id !== idPedido);
+
+            // Si el pedido seleccionado fue borrado, limpiar selección
+            if (pedidoSeleccionado?.id === idPedido) {
+                setPedidoSeleccionado(nuevosPedidos.length > 0 ? nuevosPedidos[0] : null);
+            }
+
+            return nuevosPedidos;
+        });
+    }, [pedidoSeleccionado]);
+
+    const handleRefrescar = useCallback(() => {
+        console.log("Refrescar pedidos via SignalR");
+        fetchPedidos();
+    }, []);
+
+    // SignalR con callbacks corregidos
+    const { connection, isConnected, notificarCambioLista } = usePedidosSignalR(
+        handlePedidoActualizado,
+        handleNuevoPedido,
+        handlePedidoBorrado,
+        handleRefrescar
+    );
+
     // Función para determinar el orderStatus basado en el estado del pedido
     const getOrderStatus = (pedido: Pedido): OrderStatus[] => {
         const fechaCreacion = new Date(pedido.fecha_creacion);
@@ -116,19 +181,19 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             },
             {
                 status: "Preparando",
-                completed: pedido.estado === 'proceso' || pedido.estado === 'listo' || pedido.estado === 'entregado',
-                time: pedido.estado === 'proceso' || pedido.estado === 'listo' || pedido.estado === 'entregado' ?
+                completed: ['proceso', 'listo', 'entregado'].includes(pedido.estado),
+                time: ['proceso', 'listo', 'entregado'].includes(pedido.estado) ?
                     formatTime(fechaActualizacion) : undefined,
                 icon: "🛒",
-                active: pedido.estado === 'proceso' || pedido.estado === 'listo' || pedido.estado === 'entregado'
+                active: ['proceso', 'listo', 'entregado'].includes(pedido.estado)
             },
             {
                 status: "Listo para Recoger",
-                completed: pedido.estado === 'listo' || pedido.estado === 'entregado',
-                time: pedido.estado === 'listo' || pedido.estado === 'entregado' ?
+                completed: ['listo', 'entregado'].includes(pedido.estado),
+                time: ['listo', 'entregado'].includes(pedido.estado) ?
                     formatTime(fechaActualizacion) : undefined,
                 icon: "🛻",
-                active: pedido.estado === 'listo' || pedido.estado === 'entregado',
+                active: ['listo', 'entregado'].includes(pedido.estado),
             },
             {
                 status: pedido.estado === 'entregado' ? "Entregado" : "Completado",
@@ -152,12 +217,11 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return baseStatus;
     };
 
-    const orderSummary = { subtotal: 13.45, serviceFee: 2.5, total: 15.95 };
     const pickupDetails = {
-        store: "FreshMarket Centro",
-        address: "Av. Principal 123, Ciudad Central",
+        store: "Sucursal Mayoreo",
+        address: "Calle Principal 216, 22750",
         schedule: "Hoy, 10:00 - 11:00",
-        phone: "+1 234 567 8900",
+        phone: "+52 (646) 155 2258",
         estimatedTime: "15-20 min",
     };
 
@@ -166,7 +230,12 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return completed / orderStatus.length;
     };
 
-    const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
+    // Función para calcular porcentaje de descuento (igual que en el card)
+    const calculateDiscountPercentage = (precio: number, descuento?: number) => {
+        if (!descuento) return 0;
+        const percentage = ((precio - descuento) / precio) * 100;
+        return Math.round(percentage);
+    };
 
     // Función para cancelar pedido
     const handleCancelarPedido = async () => {
@@ -198,6 +267,11 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             console.log(`Pedido #${pedidoSeleccionado.id} cancelado exitosamente`);
 
+            // Notificar via SignalR
+            if (isConnected && connection) {
+                await notificarCambioLista("updated", pedidoSeleccionado);
+            }
+
         } catch (error) {
             console.error("Error cancelando pedido:", error);
         } finally {
@@ -205,7 +279,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
-    // Función para parsear array_lista y calcular total
+    // Función para parsear array_lista y calcular total (MOVIDA ARRIBA para usarla en los callbacks)
     const parseListaData = (lista: any): Pedido => {
         let items: ListaItem[] = [];
         let total = 0;
@@ -213,7 +287,11 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         try {
             if (lista.array_lista) {
                 items = JSON.parse(lista.array_lista);
-                total = items.reduce((sum, item) => sum + (item.precio * item.quantity), 0);
+                // Calcular total considerando descuentos
+                total = items.reduce((sum, item) => {
+                    const precioFinal = item.descuento ? item.descuento : item.precio;
+                    return sum + (precioFinal * item.quantity);
+                }, 0);
             }
         } catch (error) {
             console.error('Error parsing array_lista:', error);
@@ -263,7 +341,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 email: lista.email,
                 direccion: lista.direccion,
                 ciudad: lista.ciudad,
-                estado: lista.estado
+                estado: lista.estado_cliente
             } : undefined,
             nombre: lista.nombre || `Cliente ${lista.id_cliente}`,
             cliente_telefono: lista.telefono || 'N/A',
@@ -300,10 +378,12 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     { key: "clientes.telefono" },
                     { key: "clientes.email" },
                     { key: "clientes.direccion" },
+                    { key: "clientes.ciudad" },
+                    { key: "clientes.estado", alias: "estado_cliente" },
                     { key: "clientes.usuario_id" },
                 ],
                 Filtros: [
-                    { key: "clientes.usuario_id", value: userId, operator: "=" },
+                    { key: "listas.usuario_id", value: userId, operator: "=" },
                 ],
                 Order: [
                     { Key: "listas.fecha_creacion", Direction: "Desc" }
@@ -311,8 +391,8 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             };
 
             const response = await getWithFilter({
-                table: "listas left join clientes on listas.usuario_id = clientes.usuario_id",
-                pageSize: 10,
+                table: "listas left join clientes on listas.id_cliente = clientes.id",
+                pageSize: 20,
                 page: 1,
                 tag: 'Pedidos',
                 filtros: filtros
@@ -335,21 +415,33 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 });
 
                 setPedidos(pedidosOrdenados);
-                // Seleccionar el primer pedido por defecto
-                setPedidoSeleccionado(pedidosOrdenados[0]);
+                if (pedidosOrdenados.length > 0) {
+                    setPedidoSeleccionado(pedidosOrdenados[0]);
+                }
             } else {
                 console.log("No se encontraron pedidos para este cliente");
+                setPedidos([]);
             }
         } catch (error) {
             console.error("Error fetching pedidos:", error);
+            setPedidos([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [getWithFilter]);
 
     useEffect(() => {
         fetchPedidos();
     }, [fetchPedidos]);
+
+    // Efecto para reconectar SignalR cuando cambia la conexión
+    useEffect(() => {
+        if (isConnected) {
+            console.log("✅ SignalR conectado - Escuchando actualizaciones en tiempo real");
+        } else {
+            console.log("❌ SignalR desconectado");
+        }
+    }, [isConnected]);
 
     // Filtrar pedidos según el segmento activo
     const pedidosFiltrados = segmentoActivo === 'activos'
@@ -361,8 +453,10 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         id: item.id,
         name: item.nombre,
         quantity: item.quantity.toString(),
-        price: item.precio,
-        unit: item.unidad
+        price: item.descuento ? item.descuento : item.precio,
+        unit: item.unidad,
+        descuento: item.descuento,
+        precioRegular: item.precio
     })) || [];
 
     // Formatear fecha
@@ -419,8 +513,22 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </a>
                     </IonToolbar>
                 </IonHeader>
-                <div className="flex justify-center items-center min-h-screen">
-                    <IonText>No se encontraron pedidos</IonText>
+                <div className="flex flex-col justify-center items-center min-h-screen px-4 text-center">
+                    <IconLiz fill="#7927F5" width={80} className="mb-4" />
+                    <IonText className="text-lg font-semibold text-gray-700 mb-2">
+                        No se encontraron pedidos
+                    </IonText>
+                    <IonText className="text-sm text-gray-500 mb-6">
+                        Cuando realices un pedido, aparecerá aquí para que puedas seguir su estado.
+                    </IonText>
+                    <a
+                        href="/productos"
+                        className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-8 py-4 rounded-2xl text-lg shadow-2xl shadow-yellow-500/25 transition-all hover:scale-105 hover:shadow-yellow-500/40 flex items-center gap-3 min-w-[200px] justify-center"
+                    >
+                        <ShoppingCart className="size-5" />
+                        Comprar Ahora
+                        <MoveRight className="size-5 group-hover:translate-x-1 transition-transform" />
+                    </a>
                 </div>
             </IonContent>
         );
@@ -442,7 +550,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="py-1 px-2 max-w-6xl mx-auto min-h-screen my-16 md:my-6 space-y-5">
+            <section className="py-1 px-4 max-w-6xl mx-auto min-h-screen my-16 md:my-6 space-y-5">
                 {/* Selector de pedidos */}
                 <div className="space-y-4">
                     <IonSegment value={segmentoActivo} onIonChange={e => setSegmentoActivo(e.detail.value as any)}>
@@ -470,7 +578,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                         <div>
                                             <IonText className="font-semibold">Pedido #{pedido.id}</IonText>
                                             <IonText color="medium" className="block text-sm">
-                                                {formatFecha(pedido.fecha_creacion)}
+                                                {formatFecha(pedido.nombre_lista)}
                                             </IonText>
                                         </div>
                                         <div className="text-right">
@@ -483,8 +591,8 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                             >
                                                 {pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1)}
                                             </IonBadge>
-                                            <IonText className="block font-bold text-lg">
-                                                {formatCurrency(pedido.total)}
+                                            <IonText className="block font-bold text-lg text-purple-600">
+                                                {formatValue(pedido.total, "currency")}
                                             </IonText>
                                         </div>
                                     </div>
@@ -497,9 +605,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 {pedidoSeleccionado && (
                     <>
                         {/* Encabezado del pedido seleccionado */}
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
-                                <IonCardTitle className="text-4xl font-bold text-purple-900">
+                                <IonCardTitle className="text-2xl md:text-4xl font-bold text-purple-900">
                                     Pedido #{pedidoSeleccionado.id}
                                 </IonCardTitle>
                                 <IonText color="medium">
@@ -507,52 +615,64 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 </IonText>
                             </div>
 
-                            {/* Botón para cancelar pedido */}
-                            {puedeCancelar && (
-                                <IonButton
-                                    fill="outline"
-                                    color="danger"
-                                    onClick={() => setShowCancelAlert(true)}
-                                    className="ml-4"
+                            <div className="flex flex-col-reverse sm:flex-row-reverse gap-3 w-full md:w-auto">
+                                {/* Botón para seguir comprando */}
+                                <a
+                                    href="/productos"
+                                    className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-6 py-3 rounded-2xl text-base shadow-2xl shadow-yellow-500/25 transition-all hover:scale-105 hover:shadow-yellow-500/40 flex items-center gap-2 justify-center"
                                 >
-                                    <IonIcon icon={closeCircle} slot="start" />
-                                    Cancelar Pedido
-                                </IonButton>
-                            )}
+                                    <ShoppingCart className="size-4" />
+                                    Seguir Comprando
+                                    <MoveRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                                </a>
+
+                                {/* Botón para cancelar pedido */}
+                                {puedeCancelar && (
+                                    <IonButton
+                                        fill="outline"
+                                        color="danger"
+                                        onClick={() => setShowCancelAlert(true)}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        <IonIcon icon={closeCircle} slot="start" />
+                                        Cancelar Pedido
+                                    </IonButton>
+                                )}
+                            </div>
                         </div>
 
-                        <IonCard className="rounded-2xl border -1border-gray-200 shadow-sm bg-white">
-                            <IonCardHeader className="pb-8">
-                                <div className="flex flex-col md:flex-row md:items-center md:justify-between ">
+                        <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white">
+                            <IonCardHeader className="pb-4">
+                                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                                     <IonBadge
                                         color={
                                             pedidoSeleccionado.estado === 'entregado' ? 'success' :
                                                 pedidoSeleccionado.estado === 'cancelado' ? 'danger' :
                                                     pedidoSeleccionado.estado === 'incompleto' ? 'warning' : 'primary'
                                         }
-                                        className="mt-4 md:mt-2 "
+                                        className="mt-2 md:mt-0 self-start"
                                     >
                                         {pedidoSeleccionado.estado.charAt(0).toUpperCase() + pedidoSeleccionado.estado.slice(1)}
                                     </IonBadge>
                                 </div>
 
                                 {/* Barra de progreso */}
-                                <div className="relative mt-3">
+                                <div className="relative mt-6">
                                     <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 rounded-full -translate-y-1/2" />
                                     <div
                                         className="absolute top-1/2 left-0 h-1 bg-green-500 rounded-full -translate-y-1/2 transition-all duration-500"
                                         style={{ width: `${getProgressValue(getOrderStatus(pedidoSeleccionado)) * 100}%` }}
                                     />
                                     <div className="flex justify-between relative z-10">
-                                        {getOrderStatus(pedidoSeleccionado).map(step => (
-                                            <div key={step.status} className="flex flex-col items-center w-1/4 text-center">
+                                        {getOrderStatus(pedidoSeleccionado).map((step, index) => (
+                                            <div key={step.status} className="flex flex-col items-center flex-1 text-center">
                                                 <div
                                                     className={cn(
-                                                        "w-10 h-10 rounded-full flex items-center justify-center border-2 text-xl mb-4 shadow-sm",
+                                                        "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 text-sm md:text-xl mb-2 shadow-sm",
                                                         step.completed
-                                                            ? "bg-green-100 border-green-400 text-white"
+                                                            ? "bg-green-500 border-green-500 text-white"
                                                             : step.active
-                                                                ? "bg-purple-300 border-purple-500 text-white"
+                                                                ? "bg-purple-500 border-purple-500 text-white"
                                                                 : "bg-white border-gray-300 text-gray-400"
                                                     )}
                                                 >
@@ -560,9 +680,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                 </div>
                                                 <p
                                                     className={cn(
-                                                        "text-xs font-medium",
+                                                        "text-xs font-medium px-1",
                                                         step.active
-                                                            ? "text-purple-700 "
+                                                            ? "text-purple-700"
                                                             : step.completed
                                                                 ? "text-green-600"
                                                                 : "text-gray-400"
@@ -571,7 +691,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                     {step.status}
                                                 </p>
                                                 {step.time && (
-                                                    <p className="text-[12px] text-gray-500 mt-1">{step.time}</p>
+                                                    <p className="text-[10px] md:text-[12px] text-gray-500 mt-1">{step.time}</p>
                                                 )}
                                             </div>
                                         ))}
@@ -581,9 +701,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </IonCard>
 
                         {/* BentoGrid */}
-                        <div className="grid gap-1  md:grid-cols-2 ">
+                        <div className="grid gap-4 md:grid-cols-2">
                             {/* Recoger en tienda */}
-                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white mt-1 mb-1">
+                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white">
                                 <IonCardHeader>
                                     <IonCardTitle className="flex items-center text-lg font-semibold">
                                         <IonIcon icon={location} className="mr-2 text-purple-600" />
@@ -621,7 +741,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             </IonCard>
 
                             {/* Resumen del pedido */}
-                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white mt-1 mb-1">
+                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white">
                                 <IonCardHeader>
                                     <IonCardTitle className="flex items-center text-lg font-semibold">
                                         <IonIcon icon={receipt} className="mr-2 text-purple-600" />
@@ -633,16 +753,12 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                         <p className="text-gray-500">
                                             Subtotal ({orderItems.length} productos)
                                         </p>
-                                        <p>{formatCurrency(pedidoSeleccionado.total)}</p>
-                                    </div>
-                                    <div className="flex justify-between py-2">
-                                        <p className="text-gray-500">Tarifa de servicio</p>
-                                        <p>{formatCurrency(orderSummary.serviceFee)}</p>
+                                        <p>{formatValue(pedidoSeleccionado.total, "currency")}</p>
                                     </div>
                                     <div className="border-t border-gray-200 pt-3 mt-2 flex justify-between items-center">
                                         <p className="font-bold text-lg">Total</p>
                                         <p className="font-bold text-xl text-purple-600">
-                                            {formatCurrency(pedidoSeleccionado.total + orderSummary.serviceFee)}
+                                            {formatValue(pedidoSeleccionado.total * 0.02 + pedidoSeleccionado.total, "currency")}
                                         </p>
                                     </div>
                                 </IonCardContent>
@@ -650,35 +766,68 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </div>
 
                         {/* Productos del pedido */}
-                        <div className="space-y-12">
-                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white mt-1">
+                        <div className="space-y-4">
+                            <IonCard className="rounded-2xl border border-gray-200 shadow-sm bg-white">
                                 <IonCardHeader>
                                     <IonCardTitle className="text-xl font-semibold">
                                         Productos del Pedido
                                     </IonCardTitle>
                                 </IonCardHeader>
                                 <IonCardContent className="space-y-4">
-                                    {orderItems.map(item => (
-                                        <div
-                                            key={item.id}
-                                            className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-                                        >
-                                            <div className="flex items-center space-x-4">
-                                                <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                                                    <IconLiz fill="#9CA3AF" width={32} />
+                                    {orderItems.length > 0 ? (
+                                        orderItems.map(item => {
+                                            const discountPercentage = calculateDiscountPercentage(item.precioRegular || item.price, item.descuento);
+
+                                            return (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                                                >
+                                                    <div className="flex items-center space-x-4">
+                                                        <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                                            <IconLiz fill="#9CA3AF" width={32} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="font-semibold text-gray-900">{item.name}</p>
+                                                            <p className="text-sm text-gray-500">
+                                                                {item.quantity} {item.unit}
+                                                            </p>
+                                                            {/* Badge de descuento igual que en el card */}
+                                                            {discountPercentage > 0 && (
+                                                                <div className="w-fit mt-1 text-center border-2 bg-red-100 border-red-600 text-red-600 text-xs font-semibold px-2 py-1 rounded-md">
+                                                                    -{discountPercentage}%
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col items-end">
+                                                        {/* Precios igual que en el card */}
+                                                        {item.descuento ? (
+                                                            <>
+                                                                <span className="text-base font-semibold text-purple-600 leading-none">
+                                                                    {formatValue(item.descuento, "currency")}
+                                                                </span>
+                                                                <span className="text-[11px] text-gray-500 line-through leading-none">
+                                                                    {formatValue(item.precioRegular || item.price, "currency")}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-base font-semibold text-purple-600 leading-none">
+                                                                {formatValue(item.price, "currency")}
+                                                            </span>
+                                                        )}
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Total: {formatValue(item.price * parseInt(item.quantity), "currency")}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold text-gray-900">{item.name}</p>
-                                                    <p className="text-sm text-gray-500">
-                                                        {item.quantity} {item.unit}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <p className="font-bold text-purple-600 text-lg">
-                                                {formatCurrency(item.price)}
-                                            </p>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-8">
+                                            <IonText color="medium">No hay productos en este pedido</IonText>
                                         </div>
-                                    ))}
+                                    )}
                                 </IonCardContent>
                             </IonCard>
                         </div>

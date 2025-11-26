@@ -47,7 +47,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
 
     return (
-        <section className={cn("relative w-[70%] ml-[17%]", isScrolled ? "mt-12 shadow-sm border-gray-300" : "mt-4")}>
+        <section className={cn("relative w-[70%] ml-[20%]", isScrolled ? "mt-12 shadow-sm border-gray-300" : "mt-4")}>
             <IonSearchbar
                 className={cn("w-full", isScrolled && "custom-search-barr")}
                 color={isScrolled ? "" : "light"}

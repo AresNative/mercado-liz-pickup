@@ -104,8 +104,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
 
     // --- REFERENCIAS ---
-    const userFormRef = useRef<any>(null);
-    const paymentFormRef = useRef<any>(null);
+    const userFormRef = useRef<{
+        getFormData: () => any;
+        submitForm: () => Promise<any>;
+        getLiveValues: () => any; // ✅ Añade esta línea
+    }>(null);
+
+    const paymentFormRef = useRef<{
+        getFormData: () => any;
+        submitForm: () => Promise<any>;
+        getLiveValues: () => any; // ✅ Añade esta línea
+    }>(null);
 
     // --- HOOKS ---
     const dispatch = useAppDispatch();
@@ -265,9 +274,27 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
     };
 
+    // --- ESTADOS ADICIONALES ---
+    const [formValues, setFormValues] = useState<{
+        userValues: any;
+        paymentValues: any;
+    }>({ userValues: {}, paymentValues: {} });
+
+    // --- EFECTO PARA OBTENER VALORES EN TIEMPO REAL ---
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const userValues = userFormRef.current?.getLiveValues?.() || {};
+            const paymentValues = paymentFormRef.current?.getLiveValues?.() || {};
+
+            setFormValues({ userValues, paymentValues });
+        }, 500); // Actualiza cada 500ms
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // --- isConfirmButtonEnabled ACTUALIZADO ---
     const isConfirmButtonEnabled = useCallback((): boolean => {
-        const userValues = userFormRef.current?.getLiveValues?.() || {};
-        const paymentValues = paymentFormRef.current?.getLiveValues?.() || {};
+        const { userValues, paymentValues } = formValues;
 
         const hasUserData = Boolean(
             userValues.telefono &&
@@ -288,7 +315,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
         return isValid;
-    }, [selectedDate, selectedTime, items.length, userInfo, paymentInfo]);
+    }, [selectedDate, selectedTime, items.length, formValues]); // ✅ Depende de formValues
 
     // --- FUNCIONES INTELISIS (SIN MODIFICAR DATOS) ---
     const getLastSaleInfo = async () => {
@@ -351,7 +378,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             CostoTotal: subtotal * 0.6,
             PrecioTotal: subtotal,
             ServicioExpress: true,
-            Sucursal: 1
+            Sucursal: 4
         };
 
         const saleResult = await PostInt({
@@ -379,7 +406,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Usuario: INTELISIS_CONFIG.usuario,
-            Sucursal: 1
+            Sucursal: 4
         };
 
         const movResult = await PostInt({
@@ -445,7 +472,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Unidad: "servicio",
             Factor: 1,
             FechaRequerida: date,
-            Sucursal: 1,
+            Sucursal: 4,
             TipoImpuesto1: 'IVA8',
         };
 
@@ -472,7 +499,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 RenglonTipo: "N",
                 Cantidad: quantity,
                 Almacen: INTELISIS_CONFIG.almacen,
-                Codigo: String(item.id || ""),
+                Codigo: String(item.codigo || ""),
                 Articulo: String(item.articulo || ""),
                 Precio: unitPrice,
                 PrecioSugerido: unitPrice,
@@ -485,7 +512,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 Factor: 1,
                 CantidadInventario: quantity,
                 FechaRequerida: date,
-                Sucursal: 1,
+                Sucursal: 4,
                 TipoImpuesto1: item.tipoImpuesto1,
                 TipoImpuesto2: item.tipoImpuesto2
             };
@@ -584,6 +611,30 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         setLocalStorageItem("user", clientId);
 
+        // Crear array_lista que incluye los productos + servicio pick-up
+        const itemsWithPickupService = [
+            // Servicio pick-up como primer item
+            {
+                id: "servicio-pickup",
+                codigo: "SPICKUP",
+                articulo: "Servicio Pick-Up",
+                nombre: `Servicio de recogida para ${selectedDate} ${selectedTime}`,
+                precio: serviceFee,
+                quantity: 1,
+                unidad: "servicio",
+                impuesto1: 8,
+                tipoImpuesto1: "IVA8",
+                esServicio: true,
+                fecha_servicio: selectedDate,
+                hora_servicio: selectedTime
+            },
+            // Items del carrito
+            ...items.map(item => ({
+                ...item,
+                esServicio: false
+            }))
+        ];
+
         // Crear lista de pickup
         await PostData({
             url: "v1/pickup/listas",
@@ -595,7 +646,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 servicio: "Pickup",
                 fecha_creacion: new Date().toISOString(),
                 estado: "nuevo",
-                array_lista: JSON.stringify(items)
+                array_lista: JSON.stringify(itemsWithPickupService),
             }
         });
 
@@ -607,10 +658,15 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 listaId: `${selectedDate} ${selectedTime}`,
                 clientId,
                 fecha: selectedDate,
-                hora: selectedTime
+                hora: selectedTime,
+                servicio: "pickup",
+                costoServicio: serviceFee,
+                totalItems: itemsWithPickupService.length
             });
         }
-    }, [GetData, PostData, items, selectedDate, selectedTime, isConnected, connection, notificarCambioLista]);
+
+        console.log("✅ Servicio pick-up agregado al array_lista correctamente");
+    }, [GetData, PostData, items, selectedDate, selectedTime, isConnected, connection, notificarCambioLista, serviceFee, totalWithService, subtotal]);
 
     const confirmCompleteAppointment = async (): Promise<void> => {
         setIsProcessing(true);

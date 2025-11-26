@@ -62,7 +62,6 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
         isFavorite,
         onDismiss: () => dismiss(),
     });
-    console.log(producto);
 
     const handleCardClick = () => {
         present({
@@ -115,6 +114,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
     // Función para formatear el stock según la unidad
     const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
+        // Para unidades como Kilogramo, mostrar con decimales
         if (/kilo|kg/i.test(unidad)) {
             return unidad !== 'Pieza'
                 ? (factor ? (cantidad / factor).toFixed(2) : cantidad.toFixed(2))
@@ -125,6 +125,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 : Math.trunc(cantidad);
         }
     };
+
 
     return (
         <motion.article

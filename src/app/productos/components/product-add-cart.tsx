@@ -114,6 +114,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                             className="w-12 h-8 text-center text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-md"
                             min="0"
                             max={cantidad}
+                            disabled
                             aria-label="Cantidad"
                         />
 
