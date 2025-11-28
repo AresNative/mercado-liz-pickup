@@ -309,7 +309,6 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         gradient: "bg-gradient-to-r from-orange-500 to-red-500",
                         content: {
                             title: "🎯 Promociones Destacadas",
-                            subtitle: "Hasta 50% de descuento",
                             description: "Aprovecha nuestras mejores ofertas de la temporada",
                             position: "left",
                             textColor: "text-white",
@@ -336,7 +335,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </button>
                     ))}
                     <a href="/productos" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
-                        <Badge color="gray" text="ver todos" />
+                        <Badge color="gray" text="Ver todos" />
                     </a>
                 </section>
 

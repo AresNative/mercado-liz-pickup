@@ -2,7 +2,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { Producto } from "@/utils/types/page";
 import { cn } from "@/utils/functions/cn";
 import { motion } from "framer-motion";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import { useCallback } from "react";
 import { addToCart, removeFromCart } from "@/hooks/slices/cart";
 
@@ -59,6 +59,12 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
         }
     }, [producto, id, quantity, dispatch]);
 
+    // Función para eliminar rápidamente el producto del carrito
+    const handleRemoveFromCart = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        dispatch(removeFromCart(id));
+    }, [id, dispatch]);
+
     const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const newQuantity = parseInt(e.target.value) || 0;
 
@@ -86,12 +92,12 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         onClick={handleAddToCart}
                         disabled={!canAddToCart}
                         className={cn(
-                            "p-2.5 rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                            "p-2.5 min-w-20 gap-2 flex items-center justify-between rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
                             canAddToCart
                                 ? "bg-purple-600 hover:bg-purple-700 text-white"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         )}
-                    >
+                    > Agregar
                         <ShoppingCart className="w-4 h-4" />
                     </motion.button>
                 ) : (
@@ -99,6 +105,15 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         className="flex items-center gap-1 bg-gray-50 rounded-xl p-1"
                         layout
                     >
+
+                        {/* Botón para eliminar rápidamente */}
+                        <button
+                            onClick={handleRemoveFromCart}
+                            className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 hover:text-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ml-1"
+                            aria-label="Eliminar producto del carrito"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
                         <button
                             onClick={handleDecrement}
                             className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"

@@ -330,7 +330,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </button>
                     ))}
                     <a href="/ofertas" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
-                        <Badge color="gray" text="solo ofertas" />
+                        <Badge color="gray" text="Solo ofertas" />
                     </a>
                 </section>
 

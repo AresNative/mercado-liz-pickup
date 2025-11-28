@@ -1,5 +1,5 @@
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonButton } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonButton, IonAlert } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
@@ -102,6 +102,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [authLoading, setAuthLoading] = useState<boolean>(false);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
+    const [showPasswordAlert, setShowPasswordAlert] = useState<boolean>(false);
 
     // --- REFERENCIAS ---
     const userFormRef = useRef<{
@@ -218,9 +219,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 console.error("❌ Datos insuficientes para autenticar:", userData);
                 return false;
             }
-
             console.log("🔐 Datos para login:", userData);
-
+            // ✅ Mostrar alerta informativa antes del registro
+            if (!isAuthenticated) {
+                setShowPasswordAlert(true);
+                await new Promise(resolve => setTimeout(resolve, 100)); // Pequeña pausa para mostrar la alerta
+            }
             const loginPayload = {
                 Email: userData.correo,
                 Password: userData.telefono
@@ -644,7 +648,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 sucursal_id: 1,
                 nombre_lista: `${selectedDate} ${selectedTime}`,
                 servicio: "Pickup",
-                fecha_creacion: new Date().toISOString(),
+                fecha_creacion: new Date(),
                 estado: "nuevo",
                 array_lista: JSON.stringify(itemsWithPickupService),
             }
@@ -717,6 +721,20 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
+            {/* ✅ Alerta informativa sobre la contraseña */}
+            <IonAlert
+                isOpen={showPasswordAlert}
+                onDidDismiss={() => setShowPasswordAlert(false)}
+                header={'Información importante'}
+                message={'Tu número de teléfono será tu contraseña para futuros accesos. Guárdalo para poder ingresar a tu cuenta.'}
+                buttons={[
+                    {
+                        text: 'Entendido',
+                        role: 'confirm',
+                        cssClass: 'primary'
+                    }
+                ]}
+            />
 
             <section className="flex flex-col-reverse md:flex-row-reverse gap-4 px-4 my-16 md:my-6 max-w-6xl mx-auto">
                 {/* RESUMEN DEL PEDIDO */}

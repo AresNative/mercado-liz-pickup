@@ -141,6 +141,15 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />) :
                     (<IconLiz fill="#DBDBDB" />)}
+
+                {/* ---- BOTÓN ADD TO CART ---- */}
+                <div className="absolute bottom-2 right-2">
+                    <AddToCartButton
+                        id={producto.id}
+                        cantidad={formatearStock(producto.cantidad, producto.unidad, producto.factor)}
+                        producto={producto}
+                    />
+                </div>
             </section>
 
             <section className="p-4 min-h-24 bg-white">
@@ -180,6 +189,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     </button>
                 </ul>
 
+
                 <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                     <Barcode className="size-3 text-purple-800" />
@@ -199,13 +209,12 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             </section>
 
             <footer className="mt-auto w-full bg-white border-t border-gray-100">
-                <div className="flex items-center justify-between px-4 py-2 gap-2">
-
+                <div className="flex flex-col justify-between px-4 py-4 gap-2">
                     {/* ---- PRECIO ---- */}
-                    <div className="flex flex-col max-w-[90px] overflow-hidden">
+                    <div className="flex flex-col overflow-hidden">
                         {producto.descuento ? (
                             <>
-                                <span className="text-base font-semibold text-purple-600 leading-none truncate">
+                                <span className="text-lg font-semibold text-purple-600 leading-none truncate">
                                     {formatValue(producto.descuento, "currency")}
                                 </span>
                                 <span className="text-[11px] text-gray-500 line-through truncate leading-none">
@@ -213,19 +222,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                                 </span>
                             </>
                         ) : (
-                            <span className="text-base font-semibold text-purple-600 leading-none truncate">
+                            <span className="text-lg font-semibold text-purple-600 leading-none truncate">
                                 {formatValue(producto.precio, "currency")}
                             </span>
                         )}
-                    </div>
-
-                    {/* ---- BOTÓN ADD TO CART ---- */}
-                    <div className="flex-shrink-0">
-                        <AddToCartButton
-                            id={producto.id}
-                            cantidad={formatearStock(producto.cantidad, producto.unidad, producto.factor)}
-                            producto={producto}
-                        />
                     </div>
                 </div>
             </footer>

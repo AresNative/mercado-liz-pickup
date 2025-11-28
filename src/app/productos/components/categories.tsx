@@ -2,12 +2,17 @@ import React, { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import categorias from "@/utils/constants/categorias";
 import { clearFilters, dataFilter } from "@/hooks/reducers/filter";
-import { useAppDispatch } from "@/hooks/selector";
+import { useAppDispatch, useAppSelector } from "@/hooks/selector";
+import { RootState } from "@/hooks/store";
+import { cn } from "@/utils/functions/cn";
 
 const CategorySlider: React.FC = () => {
     const sliderRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(true);
+    const cat = useAppSelector((state: RootState) => state.filterData);
+    const categoria = cat?.key?.value || '';
+
     const dispatch = useAppDispatch();
 
     const todoCategory = categorias.find((c) => c.name === "TODO");
@@ -98,13 +103,21 @@ const CategorySlider: React.FC = () => {
                                     })
                                 )
                             }
-                            className="
+                            className={cn(categoria === category.name
+                                ? `
                                 snap-start flex flex-col items-center justify-center
                                  w-[90px] h-[82px] flex-shrink-0
-                                bg-purple-200 border border-gray-200 rounded-xl
+                                bg-purple-50 border-2 border-purple-700 rounded-xl
+                                shadow-md
+                                transition-all duration-200
+                            `
+                                : `
+                                snap-start flex flex-col items-center justify-center
+                                 w-[90px] h-[82px] flex-shrink-0
+                                bg-purple-200 border-2 border-gray-200 rounded-xl
                                 shadow-sm hover:shadow-md hover:bg-gray-50
                                 transition-all duration-200
-                            "
+                            `)}
                         >
                             <category.icon className="h-5 w-5 text-violet-600 mb-1" />
                             <span className="

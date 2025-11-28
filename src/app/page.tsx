@@ -191,7 +191,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4 max-w-2xl mx-auto">
                         {features.map((feature, index) => (
                             <div key={index} className="text-center">
-                                <div className="bg-white/20 rounded-full p-3 inline-flex mb-2">
+                                <div className="rounded-full p-3 inline-flex mb-2">
                                     {feature.icon}
                                 </div>
                                 <p className="text-sm font-medium">{feature.title}</p>

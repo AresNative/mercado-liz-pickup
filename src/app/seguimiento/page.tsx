@@ -758,7 +758,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     <div className="border-t border-gray-200 pt-3 mt-2 flex justify-between items-center">
                                         <p className="font-bold text-lg">Total</p>
                                         <p className="font-bold text-xl text-purple-600">
-                                            {formatValue(pedidoSeleccionado.total * 0.02 + pedidoSeleccionado.total, "currency")}
+                                            {formatValue(pedidoSeleccionado.total, "currency")}
                                         </p>
                                     </div>
                                 </IonCardContent>
