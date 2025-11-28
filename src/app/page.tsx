@@ -73,7 +73,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }],
                     Selects: [
                         { key: "cb.Codigo" },
-                        { key: "cb.Cuenta" },
+                        { key: "art.Articulo" },
                         { key: "art.Grupo" },
                         { key: "art.Descripcion1" },
                         { key: "lpu.Unidad" },
@@ -101,7 +101,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
                         id: item.Codigo + "-" + item.Unidad,
                         codigo: item.Codigo || "0000",
-                        articulo: item.Cuenta || "Cuenta",
+                        articulo: item.Articulo || "Articulo",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",
                         unidad: item.Unidad || "Unidad",
@@ -211,7 +211,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </a>
 
                         <a
-                            href="#ofertas"
+                            href="/ofertas"
                             className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl backdrop-blur-sm transition-all border border-white/20 hover:border-white/30 flex items-center gap-2"
                         >
                             <Star className="size-5" />
@@ -442,7 +442,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             {products.length > 4 && (
                                 <div className="text-center">
                                     <a
-                                        href="/productos"
+                                        href="/ofertas"
                                         className="inline-flex items-center gap-3 bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-all hover:scale-105 hover:shadow-lg"
                                     >
                                         <ShoppingCart className="size-5" />

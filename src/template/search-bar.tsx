@@ -17,22 +17,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
     onSearchChange
 }) => {
     const dispatch = useAppDispatch();
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
     // Manejar cambio en el término de búsqueda
     const handleSearchChange = useCallback((value: string) => {
         setSearchTerm(value);
         onSearchChange?.(value);
-
-        // Debounce para actualizar el reducer
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
-
-        searchTimeoutRef.current = setTimeout(() => {
-            dispatch(searchData(value));
-        }, 300);
+        dispatch(searchData(value));
     }, [dispatch, onSearchChange]);
 
     // Limpiar búsqueda

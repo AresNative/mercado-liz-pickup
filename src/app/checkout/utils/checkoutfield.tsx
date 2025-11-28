@@ -1,7 +1,10 @@
+import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import { Field } from "@/utils/types/interfaces";
 import { Mails, Phone, User } from "lucide-react";
 
 export function CheckOutField(): Field[] {
+
+    const userData = getLocalStorageItem("user-data");
     return [
         {
             type: "Flex",
@@ -18,6 +21,7 @@ export function CheckOutField(): Field[] {
                         placeholder: "Nombre(s)",
                         require: false,
                         icon: <User />,
+                        valueDefined: userData ? userData.Nombre : "",
                     },
                     {
                         id: 1,
@@ -27,6 +31,7 @@ export function CheckOutField(): Field[] {
                         placeholder: "Apellido(s)",
                         require: false,
                         icon: <User />,
+                        valueDefined: userData ? userData.APELLIDOS : "",
                     },
                 ]
         },
@@ -38,6 +43,7 @@ export function CheckOutField(): Field[] {
             placeholder: "correo@electrónico.com",
             require: false,
             icon: <Mails />,
+            valueDefined: userData ? userData.correo : "",
         },
         {
             id: 3,
@@ -47,6 +53,7 @@ export function CheckOutField(): Field[] {
             placeholder: "646 123 45 67",
             require: false,
             icon: <Phone />,
+            valueDefined: userData ? userData.telefono : "",
         },
     ];
 }

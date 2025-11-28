@@ -230,7 +230,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                 Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
                 Selects: [
                     { key: "cb.Codigo" },
-                    { key: "cb.Cuenta" },
+                    { key: "art.Articulo" },
                     { key: "art.Grupo" },
                     { key: "art.Descripcion1" },
                     { key: "lpu.Unidad" },
@@ -257,7 +257,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
             if (apiData && apiData.length > 0) {
                 const mappedItems: Producto[] = apiData.map((item: any) => ({
                     id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
-                    articulo: item.Cuenta || "Cuenta",
+                    articulo: item.Articulo || "Articulo",
                     nombre: item.Descripcion1 || "Sin nombre",
                     categoria: item.Grupo || "Sin categoría",
                     unidad: item.Unidad || "Unidad",

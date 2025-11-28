@@ -44,7 +44,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const mapApiItemToProducto = (item: any): Producto => ({
         id: item.Codigo + "-" + item.Unidad,
         codigo: item.Codigo || "0000",
-        articulo: item.Cuenta || "Cuenta",
+        articulo: item.Articulo || "Cuenta",
         nombre: item.Descripcion1 || "Sin nombre",
         categoria: item.Grupo || "Sin categoría",
         unidad: item.Unidad || "Unidad",
@@ -100,7 +100,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     "Filtros": [],
                     "Selects": [
                         { "key": "cb.Codigo" },
-                        { "key": "cb.Cuenta" },
                         { "key": "art.Articulo" },
                         { "key": "art.Grupo" },
                         { "key": "art.Descripcion1" },

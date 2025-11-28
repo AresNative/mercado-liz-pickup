@@ -46,6 +46,7 @@ const App: React.FC = () => {
 
                 <Route path="/home" render={() => <Layout />} exact />
                 <Route path="/productos" render={() => <LayoutProductos />} exact />
+                <Route path="/ofertas" render={() => <LayoutProductos />} exact />
                 <Route path="/carrito" render={() => <LayoutCarrito />} exact />
                 <Route path="/checkout" render={() => <LayoutCheckout />} exact />
                 <Route path="/seguimiento" render={() => <LayoutSeguimiento />} exact />

@@ -23,7 +23,7 @@ interface ApiResponse {
     data: any[];
 }
 
-const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const cat = useAppSelector((state: RootState) => state.filterData);
     const categoria = cat?.key?.value || '';
 
@@ -90,8 +90,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
                     INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND (ad.DispMenosApartado / au.Factor) > 0
-                    LEFT JOIN (
-                                    SELECT *,
+                    INNER JOIN (
+                                    SELECT *, 
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
                                 ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
@@ -100,7 +100,13 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 pageSize: 10,
                 page: currentPage,
                 filtros: {
-                    "Filtros": [],
+                    "Filtros": [
+                        {
+                            "Key": "ofrd.Precio",
+                            "Operator": ">",
+                            "Value": 0
+                        }
+                    ],
                     "Selects": [
                         { "key": "cb.Codigo" },
                         { "key": "art.Articulo" },
@@ -125,7 +131,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     ],
                     "Order": [
                         {
-                            "Key": "art.Descripcion1",
+                            "Key": "ofrd.Precio",
                             "Direction": "ASC"
                         }
                     ]
@@ -278,7 +284,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 className="custom-toolbar h-fit absolute -top-0"
             >
                 <IonToolbar>
-                    <a className='decoration-none cursor-pointer' href='/productos'>
+                    <a className='decoration-none cursor-pointer' href='/ofertas'>
                         <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
                     </a>
                 </IonToolbar>
@@ -288,23 +294,23 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 <PromoBanner items={[
                     {
                         id: "1",
-                        backgroundColor: "bg-blue-600",
+                        backgroundColor: "bg-red-600",
                         content: {
-                            title: "Bienvenido a nuestra tienda",
-                            description: "Descubre nuestros productos exclusivos",
+                            title: "🔥 Ofertas Especiales",
+                            description: "Descuentos exclusivos por tiempo limitado",
                             position: "center",
                             textColor: "text-white",
                             buttonColor: "bg-white",
-                            buttonTextColor: "text-blue-600"
+                            buttonTextColor: "text-red-600"
                         }
                     },
                     {
                         id: "2",
-                        gradient: "bg-gradient-to-r from-purple-500 to-pink-500",
+                        gradient: "bg-gradient-to-r from-orange-500 to-red-500",
                         content: {
-                            title: "Nuevas Funcionalidades",
-                            subtitle: "Actualización de temporada",
-                            description: "Hemos añadido nuevas características para mejorar tu experiencia",
+                            title: "🎯 Promociones Destacadas",
+                            subtitle: "Hasta 50% de descuento",
+                            description: "Aprovecha nuestras mejores ofertas de la temporada",
                             position: "left",
                             textColor: "text-white",
                             buttonColor: "bg-yellow-400",
@@ -315,7 +321,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 <section className="sticky top-2 flex aling-center gap-2 overflow-x-auto scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-2 px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">
                     {[
-                        { key: null, label: "Productos", count: totalRecords },
+                        { key: null, label: "Ofertas", count: totalRecords },
                         { key: 'Favoritos', label: "Favoritos", count: favoriteCount }
                     ].map((section) => (
                         <button
@@ -329,8 +335,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             />
                         </button>
                     ))}
-                    <a href="/ofertas" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
-                        <Badge color="gray" text="solo ofertas" />
+                    <a href="/productos" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
+                        <Badge color="gray" text="ver todos" />
                     </a>
                 </section>
 
@@ -347,13 +353,13 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 {isLoading && (
                     <div className="text-center py-4">
-                        <p>Cargando más productos...</p>
+                        <p>Cargando más ofertas...</p>
                     </div>
                 )}
 
                 {items.length === 0 && !isLoading && (
                     <div className="text-center py-8">
-                        <p>No se encontraron productos</p>
+                        <p>No se encontraron ofertas</p>
                     </div>
                 )}
 
@@ -363,7 +369,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     disabled={!hasMore || isLoading || activeSection === "Favoritos"}
                 >
                     <IonInfiniteScrollContent
-                        loadingText={hasMore ? "Cargando más productos..." : "No hay más productos"}
+                        loadingText={hasMore ? "Cargando más ofertas..." : "No hay más ofertas"}
                     ></IonInfiniteScrollContent>
                 </IonInfiniteScroll>
             </section>
@@ -371,4 +377,4 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     );
 }
 
-export default Productos;
+export default Ofertas;

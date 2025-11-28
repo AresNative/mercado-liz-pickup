@@ -234,10 +234,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 return true;
             } catch {
                 console.log("⚠ Login falló, intentando registro...");
-
+                setLocalStorageItem("user-data", userData);
                 const registerPayload = {
                     email: userData.correo,
-                    password: userData.telefono,
+                    password: userData.telefono.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'),
                     nombre: userData.nombre || "Cliente",
                     rol: "cliente"
                 };
