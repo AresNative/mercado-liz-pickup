@@ -787,6 +787,23 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         console.log("🔍 Buscando cliente existente...");
 
+        // Función para obtener fecha/hora local en formato ISO
+        const getLocalISOString = () => {
+            const date = new Date();
+            const offset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+            return localDate.toISOString().slice(0, -1); // Remover la Z final
+        };
+
+        // Función para obtener solo la fecha local (sin hora)
+        const getLocalDateString = () => {
+            const date = new Date();
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
         // Buscar cliente por email
         const clientResponse = await safeCall(() => GetData({
             url: "v1/pickup/clientes",
@@ -806,14 +823,14 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         } else {
             console.log("🔍 Cliente no encontrado, creando nuevo cliente...");
 
-            // Crear nuevo cliente
+            // Crear nuevo cliente con hora local
             const createResponse = await safeCall(() => PostData({
                 url: "v1/pickup/clientes",
                 data: {
                     nombre: `${user.Nombre || user.nombre} ${user.Apellidos || ""}`.trim(),
                     telefono: user.telefono,
                     email: user.correo,
-                    fecha_registro: new Date().toISOString(),
+                    fecha_registro: getLocalISOString(), // ← CORREGIDO
                     usuario_id: userId
                 }
             }), "crear cliente");
@@ -924,7 +941,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         console.log("📋 Creando lista de pickup con items:", itemsWithPickupService.length);
 
-        // Crear lista de pickup
+        // Crear lista de pickup con hora local
         const listaResponse = await safeCall(() => PostData({
             url: "v1/pickup/listas",
             data: {
@@ -933,7 +950,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 sucursal_id: 1,
                 nombre_lista: `Pedido ${selectedDate} ${selectedTime}`,
                 servicio: "Pickup",
-                fecha_creacion: new Date().toISOString(),
+                fecha_creacion: getLocalISOString(), // ← CORREGIDO
                 estado: "nuevo",
                 array_lista: JSON.stringify(itemsWithPickupService),
             }
