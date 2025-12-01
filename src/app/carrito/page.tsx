@@ -1,5 +1,5 @@
 import { PageProps } from "@/utils/types/page";
-import { IonButton, IonContent, IonHeader, IonToolbar } from "@ionic/react";
+import { IonBackButton, IonButton, IonContent, IonHeader, IonToolbar } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
@@ -36,6 +36,11 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
+
+            <section className="flex">
+                <IonBackButton color={"tertiary"} text={"Regresar"} defaultHref="/productos" />
+            </section>
+
             <section className="flex flex-col mt-4 relative md:flex-row-reverse px-4 max-w-6xl w-full h-fit mx-auto mb-20 md:mb-0 gap-2">
                 <article className={cn(onScroll ? "backdrop-blur-sm bg-white/70" : " bg-white", "sticky top-2 mb-5 z-50 h-fit w-full md:w-2/3 border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md justify-between")}>
                     <label className="text-lg font-bold">Resumen del pedido</label>

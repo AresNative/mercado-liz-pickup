@@ -513,6 +513,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </a>
                     </IonToolbar>
                 </IonHeader>
+
                 <div className="flex flex-col justify-center items-center min-h-screen px-4 text-center">
                     <IconLiz fill="#7927F5" width={80} className="mb-4" />
                     <IonText className="text-lg font-semibold text-gray-700 mb-2">

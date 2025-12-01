@@ -1,5 +1,6 @@
+// page.tsx (AJUSTADO - Opción 1)
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonButton, IonAlert } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonButton, IonAlert, IonBackButton } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
@@ -30,13 +31,16 @@ import {
     useLogoutUserMutation
 } from "@/hooks/reducers/auth";
 
+// local-storage utils (ahora traemos remove y clear por si los usamos)
 import {
     setLocalStorageItem,
-    getLocalStorageItem
+    getLocalStorageItem,
+    removeFromLocalStorage,
+    clearLocalStorage
 } from "@/utils/functions/local-storage";
 
-import { usePedidosSignalR } from "./utils/signalr-pedidos";
 import { clearCart } from "@/hooks/slices/cart";
+import { useHistory } from "react-router";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -44,6 +48,8 @@ interface UserInfo {
     nombre?: string;
     email?: string;
     correo?: string;
+    Nombre?: string;
+    Apellidos?: string;
     [key: string]: any;
 }
 
@@ -91,6 +97,41 @@ const getCurrentDateTime = () => {
     };
 };
 
+// --- HANDLER GLOBAL DE ERRORES ---
+async function safeCall<T>(fn: () => Promise<T>, context: string): Promise<T> {
+    try {
+        const res: any = await fn();
+
+        if (res && "error" in res) {
+            throw new Error(`Error en ${context}: ${JSON.stringify(res.error)}`);
+        }
+        return res;
+    } catch (err: any) {
+        console.error(`❌ ${context}:`, err);
+        throw new Error(err.message || `Fallo en ${context}`);
+    }
+}
+
+// --- HELPERS para localStorage asincrónico (polling corto) ---
+const waitForLocalStorage = async (key: string, timeout = 3000, interval = 150): Promise<any> => {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        const v = getLocalStorageItem(key);
+        if (v !== null && v !== undefined) return v;
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, interval));
+    }
+    return null;
+};
+
+const logoutAllLocal = () => {
+    try {
+        clearLocalStorage();
+    } catch (e) {
+        console.warn("No se pudo limpiar completamente localStorage:", e);
+    }
+};
+
 // --- COMPONENTE PRINCIPAL ---
 const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     // --- ESTADOS ---
@@ -101,34 +142,26 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [authLoading, setAuthLoading] = useState<boolean>(false);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
-    const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
     const [showPasswordAlert, setShowPasswordAlert] = useState<boolean>(false);
 
     // --- REFERENCIAS ---
     const userFormRef = useRef<{
         getFormData: () => any;
         submitForm: () => Promise<any>;
-        getLiveValues: () => any; // ✅ Añade esta línea
+        getLiveValues: () => any;
     }>(null);
 
     const paymentFormRef = useRef<{
         getFormData: () => any;
         submitForm: () => Promise<any>;
-        getLiveValues: () => any; // ✅ Añade esta línea
+        getLiveValues: () => any;
     }>(null);
 
     // --- HOOKS ---
     const dispatch = useAppDispatch();
+    const history = useHistory();
     const cart = useAppSelector((state: RootState) => state.cart);
     const { items = [] } = cart || {};
-
-    // SignalR
-    const { connection, isConnected, notificarCambioLista } = usePedidosSignalR(
-        (p) => console.log("Pedido actualizado:", p),
-        (p) => console.log("Nuevo pedido:", p),
-        (id) => console.log("Pedido borrado:", id),
-        () => console.log("Refrescar")
-    );
 
     // API Mutations
     const [PostData] = usePostMutation();
@@ -146,31 +179,84 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const totalWithService = subtotal + serviceFee;
 
     // --- EFECTOS ---
+    // No asumimos autenticado solo por tener token; requerimos user-id/user-data
     useEffect(() => {
         const token = getLocalStorageItem("token");
-        if (token) {
+        const userId = getLocalStorageItem("user-id");
+        if (token && userId) {
             setIsAuthenticated(true);
+        } else {
+            setIsAuthenticated(false);
         }
     }, []);
 
-    useEffect(() => {
-        if (shouldRedirect) {
-            console.log("✅ Redirigiendo a /seguimiento...");
-            window.location.href = '/seguimiento';
-        }
-    }, [shouldRedirect]);
+    // --- FUNCIONES DE AUTENTICACIÓN MEJORADAS ---
+    const hasUserChanged = (currentUserData: UserInfo): boolean => {
+        const storedUserData = getLocalStorageItem("user-data");
+        if (!storedUserData) return false;
 
-    // --- FUNCIONES DE AUTENTICACIÓN ---
-    const resetAuthentication = async (): Promise<void> => {
+        // Comparar datos críticos para determinar si el usuario cambió
+        const criticalFields = ['correo', 'telefono', 'nombre'];
+        return criticalFields.some(field =>
+            currentUserData[field] && storedUserData[field] &&
+            currentUserData[field] !== storedUserData[field]
+        );
+    };
+
+    const resetAuthentication = async (currentUserData?: UserInfo): Promise<void> => {
         try {
             console.log("🔄 Reiniciando autenticación...");
+
+            // Si detectamos que se ingresó un usuario distinto, limpiamos localStorage
+            if (currentUserData && hasUserChanged(currentUserData)) {
+                console.log("👤 Usuario detectado como diferente, limpiando sesión previa...");
+                logoutAllLocal();
+                setIsAuthenticated(false);
+                return;
+            }
+
+            // Si hay user-id en localStorage, intentamos cerrar sesión en backend para limpieza
             const userId = getLocalStorageItem("user-id");
-            await logoutUser(userId).unwrap();
+            if (userId) {
+                // logoutUser desapilará cookies y en onQueryStarted limpia localStorage si está implementado
+                try {
+                    await safeCall(() => logoutUser(userId).unwrap(), "logout");
+                } catch (e) {
+                    console.warn("Logout backend falló (continuamos limpiando local):", e);
+                }
+            }
+
+            logoutAllLocal();
             setIsAuthenticated(false);
-            console.log("✅ Sesión cerrada correctamente");
+            console.log("✅ Sesión cerrada correctamente (local).");
         } catch (error) {
             console.error("❌ Error al cerrar sesión:", error);
             setIsAuthenticated(false);
+        }
+    };
+
+    // Guarda user-data y user-id/token de forma robusta (usado después de login/register)
+    const persistAuthData = (userData: UserInfo, loginResponse: any) => {
+        try {
+            if (loginResponse?.token) {
+                setLocalStorageItem("token", loginResponse.token);
+            }
+            if (loginResponse?.id) {
+                setLocalStorageItem("user-id", loginResponse.id);
+            } else if (loginResponse?.userId) {
+                setLocalStorageItem("user-id", loginResponse.userId);
+            } else if (loginResponse?.user?.id) {
+                setLocalStorageItem("user-id", loginResponse.user.id);
+            }
+
+            // Guardar datos esenciales del usuario
+            setLocalStorageItem("user-data", {
+                correo: userData.correo,
+                telefono: userData.telefono,
+                nombre: userData.nombre || userData.Nombre || null
+            });
+        } catch (e) {
+            console.warn("No se pudo persistir auth data localmente:", e);
         }
     };
 
@@ -183,25 +269,29 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             console.log("📝 Actualizando datos del usuario:", userData);
 
-            const existingUser = await GetData({
+            const existingUser = await safeCall(() => GetData({
                 url: "v1/users",
                 filtros: {
                     Filtros: [{ Key: "email", Value: userData.correo }],
                     Order: [{ Key: "id", Direction: "Desc" }]
                 },
                 pageSize: 1
-            });
+            }), "consultar usuario");
 
             const users = existingUser?.data?.data ?? [];
 
             if (users.length > 0 && userData.correo !== users[0].email) {
                 const userId = getLocalStorageItem("user-id");
-                await PutData({
-                    url: "v1/users",
-                    id: userId,
-                    data: { email: userData.correo }
-                });
-                console.log("✅ Usuario actualizado correctamente");
+                if (userId) {
+                    await safeCall(() => PutData({
+                        url: "v1/users",
+                        id: userId,
+                        data: { email: userData.correo }
+                    }), "actualizar usuario");
+                    console.log("✅ Usuario actualizado correctamente");
+                } else {
+                    console.warn("No hay user-id para actualizar correo (se omitirá)");
+                }
             }
 
             return true;
@@ -211,6 +301,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
+    // Autenticación robusta (login -> si falla register -> login de nuevo)
     const authenticateUser = async (userData: UserInfo): Promise<boolean> => {
         setAuthLoading(true);
 
@@ -219,40 +310,84 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 console.error("❌ Datos insuficientes para autenticar:", userData);
                 return false;
             }
-            console.log("🔐 Datos para login:", userData);
-            // ✅ Mostrar alerta informativa antes del registro
-            if (!isAuthenticated) {
-                setShowPasswordAlert(true);
-                await new Promise(resolve => setTimeout(resolve, 100)); // Pequeña pausa para mostrar la alerta
+
+            console.log("🔐 Iniciando autenticación para:", userData.correo);
+
+            // Si ya hay auth local y pertenece al mismo correo, reuse
+            const storedUser = getLocalStorageItem("user-data");
+            const storedToken = getLocalStorageItem("token");
+            const storedUserId = getLocalStorageItem("user-id");
+
+            if (storedToken && storedUser && storedUser.correo === userData.correo && storedUserId) {
+                console.log("🔁 Ya existe sesión local para este usuario — reutilizando.");
+                setIsAuthenticated(true);
+                return true;
             }
+
+            // Si hay sesión pero para otro usuario => limpiar
+            if (storedUser && storedUser.correo && storedUser.correo !== userData.correo) {
+                console.log("👤 Sesión local corresponde a otro usuario. Limpiando antes de autenticar.");
+                await resetAuthentication(userData);
+            }
+
             const loginPayload = {
                 Email: userData.correo,
-                Password: userData.telefono
+                Password: (userData.telefono || "").replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'),
             };
 
+            // Intento de login
             try {
-                await loginUser(loginPayload).unwrap();
-                console.log("✅ Login exitoso");
+                const loginResp: any = await safeCall(() => loginUser(loginPayload).unwrap(), "login usuario");
+                console.log("✅ Login exitoso (backend).");
+                // Persistir token/id/user-data en localStorage
+                persistAuthData(userData, loginResp);
                 setIsAuthenticated(true);
+
+                // Asegurar que user-id quedó disponible (espera corta)
+                const waitId = await waitForLocalStorage("user-id", 3000);
+                if (!waitId) {
+                    // intentar leer id desde loginResp
+                    if (loginResp?.id || loginResp?.userId || loginResp?.user?.id) {
+                        setLocalStorageItem("user-id", loginResp.id || loginResp.userId || loginResp.user?.id);
+                    }
+                }
+
                 await updateUserData(userData);
                 return true;
-            } catch {
-                console.log("⚠ Login falló, intentando registro...");
-                setLocalStorageItem("user-data", userData);
+            } catch (loginError) {
+                console.log("⚠ Login falló, intentando registro...", loginError);
+                // Guardar user-data provisionalmente
+                setLocalStorageItem("user-data", {
+                    correo: userData.correo,
+                    telefono: userData.telefono,
+                    nombre: userData.nombre || userData.Nombre || null
+                });
+
                 const registerPayload = {
                     email: userData.correo,
-                    password: userData.telefono.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'),
-                    nombre: userData.nombre || "Cliente",
+                    password: (userData.telefono || "").replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3'),
+                    nombre: userData.nombre || userData.Nombre || "Cliente",
                     rol: "cliente"
                 };
 
-                await registerUser(registerPayload).unwrap();
-                console.log("✅ Registrado correctamente");
+                // Registrar usuario
+                const regResp: any = await safeCall(() => registerUser(registerPayload).unwrap(), "registro usuario");
+                console.log("✅ Registrado correctamente.");
 
-                await loginUser(loginPayload).unwrap();
+                // Después de registrar, intentar login de nuevo
+                const loginResp2: any = await safeCall(() => loginUser(loginPayload).unwrap(), "login después de registrar");
                 console.log("✅ Login posterior al registro exitoso");
 
+                // Persistir datos
+                persistAuthData(userData, loginResp2);
                 setIsAuthenticated(true);
+
+                // Esperar user-id si es necesario
+                const waitId2 = await waitForLocalStorage("user-id", 3000);
+                if (!waitId2 && (loginResp2?.id || loginResp2?.userId || loginResp2?.user?.id)) {
+                    setLocalStorageItem("user-id", loginResp2.id || loginResp2.userId || loginResp2.user?.id);
+                }
+
                 await updateUserData(userData);
                 return true;
             }
@@ -291,18 +426,18 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const paymentValues = paymentFormRef.current?.getLiveValues?.() || {};
 
             setFormValues({ userValues, paymentValues });
-        }, 500); // Actualiza cada 500ms
+        }, 500);
 
         return () => clearInterval(interval);
     }, []);
 
-    // --- isConfirmButtonEnabled ACTUALIZADO ---
+    // --- VALIDACIÓN DEL BOTÓN DE CONFIRMACIÓN ---
     const isConfirmButtonEnabled = useCallback((): boolean => {
         const { userValues, paymentValues } = formValues;
 
         const hasUserData = Boolean(
             userValues.telefono &&
-            userValues.Nombre &&
+            (userValues.Nombre || userValues.nombre) &&
             userValues.correo
         );
 
@@ -319,50 +454,94 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
         return isValid;
-    }, [selectedDate, selectedTime, items.length, formValues]); // ✅ Depende de formValues
+    }, [selectedDate, selectedTime, items.length, formValues]);
 
-    // --- FUNCIONES INTELISIS (SIN MODIFICAR DATOS) ---
+    // --- FUNCIONES INTELISIS CORREGIDAS ---
     const getLastSaleInfo = async () => {
-        const result = await GetInt({
-            table: `${INTELISIS_CONFIG.database}.venta`,
-            pageSize: 1,
-            page: 1,
-            filtros: {
-                Filtros: [
-                    { Key: "Usuario", Value: INTELISIS_CONFIG.usuario },
-                    { Key: "MovID", Value: "Null", Operator: "<>" }
-                ],
-                Order: [{ Key: "id", Direction: "desc" }]
-            },
-            signal: undefined,
-        });
+        console.log("🔍 Buscando última venta en Intelisis...");
 
-        if (!('data' in result) || !result.data) {
-            throw new Error("No se pudo obtener información de ventas anteriores");
+        try {
+            const result = await safeCall(() => GetInt({
+                table: `${INTELISIS_CONFIG.database}.venta`,
+                pageSize: 1,
+                page: 1,
+                filtros: {
+                    Filtros: [
+                        { Key: "Usuario", Value: INTELISIS_CONFIG.usuario },
+                        { Key: "MovID", Value: "MAY-", Operator: "like" },
+                        { Key: "Mov", Value: "Pedido" } // Filtro más específico
+                    ],
+                    Order: [{ Key: "id", Direction: "desc" }]
+                },
+                signal: undefined,
+            }), "consulta Intelisis (último Mov)");
+
+            // Manejar diferentes estructuras de respuesta
+            let apiData;
+            if (result.data?.data) {
+                apiData = result.data.data;
+            } else if (result.data) {
+                apiData = result.data;
+            } else {
+                apiData = result;
+            }
+
+            if (!Array.isArray(apiData)) {
+                console.warn("⚠ Respuesta no es un array, intentando normalizar...", apiData);
+                // Intentar extraer datos de diferentes estructuras
+                if (apiData && typeof apiData === 'object') {
+                    const possibleArrays = Object.values(apiData).find(val => Array.isArray(val));
+                    apiData = possibleArrays || [apiData];
+                } else {
+                    apiData = [];
+                }
+            }
+
+            if (apiData.length === 0) {
+                console.warn("⚠ No se encontraron ventas anteriores, usando valores por defecto");
+                // Valores por defecto para primera venta
+                return {
+                    saleId: 1000,
+                    movId: "MAY-1000"
+                };
+            }
+
+            const lastSale = apiData[0];
+            console.log("📊 Última venta encontrada:", lastSale);
+
+            // Buscar el ID y MovID en diferentes propiedades posibles
+            const saleId = lastSale.id ?? lastSale.Id ?? lastSale.ID ?? lastSale.ventaId ?? 1000;
+            const movId = lastSale.MovID ?? lastSale.MovId ?? lastSale.MOVID ?? "MAY-1000";
+
+            if (saleId == null || movId == null) {
+                console.warn("⚠ Datos de venta incompletos, usando valores por defecto");
+                return {
+                    saleId: 1000,
+                    movId: "MAY-1000"
+                };
+            }
+
+            console.log("✅ ID de venta:", saleId, "MovID:", movId);
+            return { saleId, movId };
+        } catch (error) {
+            console.error("❌ Error crítico al obtener última venta:", error);
+            // Valores por defecto en caso de error
+            return {
+                saleId: 1000,
+                movId: "MAY-1000"
+            };
         }
-
-        const apiData = Array.isArray(result.data.data) ? result.data.data : result.data;
-
-        if (!Array.isArray(apiData) || apiData.length === 0) {
-            throw new Error("No se encontró información de venta para generar el consecutivo");
-        }
-
-        const lastSale = apiData[0];
-        const saleId = lastSale.id ?? lastSale.Id ?? lastSale.ID ?? lastSale.ventaId;
-        const movId = lastSale.MovID ?? lastSale.MovId ?? lastSale.MOVID;
-
-        if (saleId == null || movId == null) {
-            throw new Error("Datos de venta incompletos");
-        }
-
-        return { saleId, movId };
     };
 
+    // --- FUNCIONES INTELISIS CORREGIDAS ---
     const insertIntelisisData = async (newMovId: string, saleId: number) => {
         const { date, timestamp } = getCurrentDateTime();
         const baseId = parseInt(saleId.toString()) + 1;
 
-        // 1. Insertar Venta
+        console.log("💾 Insertando datos en Intelisis con baseId:", baseId);
+
+        // SOLUCIÓN: Insertar TODO en una sola transacción lógica
+        // 1. Insertar Venta PRIMERO y esperar a que termine
         const saleData = {
             Empresa: INTELISIS_CONFIG.empresa,
             Mov: "Pedido",
@@ -376,24 +555,22 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Estatus: "PENDIENTE",
             Cliente: "MOSTRADOR",
             Almacen: INTELISIS_CONFIG.almacen,
-            Importe: subtotal,
-            Impuestos: 0,
-            Saldo: subtotal,
+            Importe: totalWithService, // ✅ Usar el total CON servicio
+            Impuestos: totalWithService * 0.16,
+            Saldo: totalWithService,
             CostoTotal: subtotal * 0.6,
-            PrecioTotal: subtotal,
+            PrecioTotal: totalWithService, // ✅ Usar el total CON servicio
             ServicioExpress: true,
             Sucursal: 4
         };
 
-        const saleResult = await PostInt({
+        const saleResult = await safeCall(() => PostInt({
             table: `${INTELISIS_CONFIG.database}.Venta`,
             data: saleData,
             signal: undefined
-        });
+        }), "Intelisis Venta");
 
-        if ('error' in saleResult) {
-            throw new Error(`Error en insert Venta: ${JSON.stringify(saleResult.error)}`);
-        }
+        console.log("✅ Venta insertada:", saleResult);
 
         // 2. Insertar Mov
         const movData = {
@@ -405,23 +582,21 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             FechaEmision: date,
             FechaRegistro: date,
             Concepto: "PICK UP",
-            Ejercicio: 2025,
+            Ejercicio: new Date().getFullYear(),
             Periodo: new Date().getMonth() + 1,
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Usuario: INTELISIS_CONFIG.usuario,
-            Sucursal: 4
+            Sucursal: 4,
         };
 
-        const movResult = await PostInt({
+        const movResult = await safeCall(() => PostInt({
             table: `${INTELISIS_CONFIG.database}.Mov`,
             data: movData,
             signal: undefined
-        });
+        }), "Intelisis Mov");
 
-        if ('error' in movResult) {
-            throw new Error(`Error en insert Mov: ${JSON.stringify(movResult.error)}`);
-        }
+        console.log("✅ Mov insertado:", movResult);
 
         // 3. Insertar Movimientos
         const movementsData = {
@@ -433,21 +608,19 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             FechaEmision: date,
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
-            Importe: subtotal,
+            Importe: totalWithService, // ✅ Usar el total CON servicio
             Estatus: "PENDIENTE",
-            Impuestos: subtotal * 0.16,
+            Impuestos: totalWithService * 0.16,
             Retencion: 0
         };
 
-        const movementsResult = await PostInt({
+        const movementsResult = await safeCall(() => PostInt({
             table: `${INTELISIS_CONFIG.database}.Movimientos`,
             data: movementsData,
             signal: undefined
-        });
+        }), "Intelisis Movimientos");
 
-        if ('error' in movementsResult) {
-            throw new Error(`Error en insert Movimientos: ${JSON.stringify(movementsResult.error)}`);
-        }
+        console.log("✅ Movimientos insertados:", movementsResult);
 
         return baseId;
     };
@@ -456,168 +629,278 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const { date } = getCurrentDateTime();
         const baseRow = 2048;
 
-        // Insertar servicio de pickup
-        const serviceData = {
-            ID: baseId,
-            Renglon: baseRow,
-            RenglonSub: 0,
-            RenglonID: 1,
-            RenglonTipo: "N",
-            Cantidad: 1,
-            Almacen: INTELISIS_CONFIG.almacen,
-            Codigo: "SPICKUP",
-            Articulo: "999911112",
-            Precio: serviceFee,
-            PrecioSugerido: serviceFee,
-            DescuentoLinea: 0,
-            Impuesto1: 8,
-            Costo: '0.01',
-            CantidadReservada: 1,
-            Unidad: "servicio",
-            Factor: 1,
-            FechaRequerida: date,
-            Sucursal: 4,
-            TipoImpuesto1: 'IVA8',
-        };
+        console.log("📦 Insertando detalles de venta para baseId:", baseId);
 
-        const serviceResult = await PostInt({
-            table: `${INTELISIS_CONFIG.database}.VentaD`,
-            data: serviceData,
-            signal: undefined
-        });
-
-        if ('error' in serviceResult) {
-            throw new Error(`Error en insert Servicio: ${JSON.stringify(serviceResult.error)}`);
-        }
-
-        // Insertar items del carrito
-        const saleItems = items.map((item, index) => {
-            const unitPrice = item.descuento || item.precio;
-            const quantity = item.quantity || 1;
-
-            return {
+        // SOLUCIÓN: Insertar servicio pickup + items en secuencia
+        const allItems = [
+            // Servicio pickup primero
+            {
                 ID: baseId,
-                Renglon: baseRow + (index + 1),
+                Renglon: baseRow,
                 RenglonSub: 0,
-                RenglonID: index + 2,
+                RenglonID: 1,
                 RenglonTipo: "N",
-                Cantidad: quantity,
+                Cantidad: 1,
                 Almacen: INTELISIS_CONFIG.almacen,
-                Codigo: String(item.codigo || ""),
-                Articulo: String(item.articulo || ""),
-                Precio: unitPrice,
-                PrecioSugerido: unitPrice,
+                Codigo: "SPICKUP",
+                Articulo: "999911112",
+                Precio: serviceFee,
+                PrecioSugerido: serviceFee,
                 DescuentoLinea: 0,
-                Impuesto1: item.impuesto1,
-                Impuesto2: item.impuesto2,
-                Costo: unitPrice * 0.6,
-                CantidadReservada: quantity,
-                Unidad: item.unidad || "Unidad",
+                Impuesto1: 8,
+                Costo: '0.01',
+                CantidadReservada: 1,
+                Unidad: "servicio",
                 Factor: 1,
-                CantidadInventario: quantity,
                 FechaRequerida: date,
                 Sucursal: 4,
-                TipoImpuesto1: item.tipoImpuesto1,
-                TipoImpuesto2: item.tipoImpuesto2
-            };
-        });
+                TipoImpuesto1: 'IVA8',
+            },
+            // Items del carrito después
+            ...items.map((item, index) => {
+                const unitPrice = item.descuento || item.precio;
+                const quantity = item.quantity || 1;
 
-        for (const itemData of saleItems) {
-            const itemResult = await PostInt({
+                return {
+                    ID: baseId,
+                    Renglon: baseRow + (index + 1),
+                    RenglonSub: 0,
+                    RenglonID: index + 2,
+                    RenglonTipo: "N",
+                    Cantidad: quantity,
+                    Almacen: INTELISIS_CONFIG.almacen,
+                    Codigo: String(item.codigo || ""),
+                    Articulo: String(item.articulo || ""),
+                    Precio: unitPrice,
+                    PrecioSugerido: unitPrice,
+                    DescuentoLinea: 0,
+                    Impuesto1: item.impuesto1,
+                    Impuesto2: item.impuesto2,
+                    Costo: unitPrice * 0.6,
+                    CantidadReservada: quantity,
+                    Unidad: item.unidad || "Unidad",
+                    Factor: 1,
+                    CantidadInventario: quantity,
+                    FechaRequerida: date,
+                    Sucursal: 4,
+                    TipoImpuesto1: item.tipoImpuesto1,
+                    TipoImpuesto2: item.tipoImpuesto2
+                };
+            })
+        ];
+
+        console.log(`📋 Insertando ${allItems.length} items en VentaD...`);
+
+        // Insertar todos los items secuencialmente
+        for (const [index, itemData] of allItems.entries()) {
+            console.log(`📥 Insertando item ${index + 1}/${allItems.length}:`, itemData.Articulo);
+
+            const itemResult = await safeCall(() => PostInt({
                 table: `${INTELISIS_CONFIG.database}.VentaD`,
                 data: itemData,
                 signal: undefined
-            });
+            }), `Intelisis VentaD item ${index + 1}`);
 
-            if ('error' in itemResult) {
-                throw new Error(`Error en insert Item: ${JSON.stringify(itemResult.error)}`);
-            }
+            console.log(`✅ Item ${index + 1} insertado:`, itemResult);
         }
+
+        console.log("✅ Todos los detalles de venta insertados correctamente");
     };
 
     const processIntelisisOrder = async (): Promise<string> => {
         console.log("🚀 Iniciando proceso Intelisis...");
 
-        const { saleId, movId } = await getLastSaleInfo();
-        console.log("📊 Venta obtenida:", saleId, movId);
+        // ✅ VERIFICACIÓN: Asegurar que no hay proceso en curso
+        if (isProcessing) {
+            throw new Error("Ya hay un proceso de orden en curso");
+        }
 
-        const newMovId = generateNewMovId(movId);
-        console.log("🆕 Nuevo MovID generado:", newMovId);
+        try {
+            const { saleId, movId } = await getLastSaleInfo();
+            console.log("📊 Venta obtenida - ID:", saleId, "MovID:", movId);
 
-        console.log("💾 Realizando inserts en Intelisis...");
-        const baseId = await insertIntelisisData(newMovId, saleId);
+            const newMovId = generateNewMovId(movId);
+            console.log("🆕 Nuevo MovID generado:", newMovId);
 
-        console.log("📦 Insertando detalles de venta...");
-        await insertSaleDetails(baseId, newMovId);
+            // ✅ VERIFICACIÓN: Log para debugging
+            console.log("📦 Datos del carrito:", {
+                itemsCount: items.length,
+                subtotal,
+                serviceFee,
+                totalWithService
+            });
 
-        console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
-        return newMovId;
-    };
+            console.log("💾 Realizando inserts en Intelisis...");
+            const baseId = await insertIntelisisData(newMovId, saleId);
 
-    // --- FUNCIONES PRINCIPALES ---
-    const retryWithAuth = async (maxRetries: number = 2): Promise<void> => {
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            console.log(`🔄 Reintento ${attempt}/${maxRetries}...`);
+            console.log("📦 Insertando detalles de venta...");
+            await insertSaleDetails(baseId, newMovId);
 
-            await resetAuthentication();
-
-            const { user: currentUser } = await getFormData();
-            const authSuccess = await authenticateUser(currentUser);
-
-            if (!authSuccess) {
-                throw new Error("No se pudo reautenticar después del error");
-            }
-
-            console.log("✅ Reautenticación exitosa, reintentando operación...");
+            console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
+            return newMovId;
+        } catch (error: any) {
+            console.error("❌ Error en processIntelisisOrder:", error);
+            throw new Error(`Error en Intelisis: ${error.message}`);
         }
     };
 
-    const savePickupAppointment = useCallback(async ({ user, pago }: FormData) => {
+    // Obtener userId de diferentes formas posibles (espera corta si no existe aún)
+    const getUserId = async () => {
+        // Intentar obtener de localStorage primero (inmediato)
+        let storedUserId = getLocalStorageItem("user-id");
+        if (storedUserId) {
+            console.log("✅ UserId obtenido de localStorage:", storedUserId);
+            return storedUserId;
+        }
+        // Si no está, esperar un poco (por ejemplo después de un login/registro)
+        storedUserId = await waitForLocalStorage("user-id", 3000);
+        if (storedUserId) {
+            console.log("✅ UserId obtenido tras espera:", storedUserId);
+            return storedUserId;
+        }
+
+        // Buscar en user-data
+        const userData = getLocalStorageItem("user-data");
+        if (userData?.id) {
+            console.log("✅ UserId obtenido de user-data:", userData.id);
+            return userData.id;
+        }
+
+        // Nada disponible
+        console.warn("⚠ No se pudo obtener userId de localStorage/user-data");
+        return null;
+    };
+
+    // --- FUNCIONES PRINCIPALES ---
+    const savePickupAppointment = async ({ user, pago }: FormData) => {
         if (!user || items.length === 0) {
             throw new Error("Datos de usuario o carrito incompletos");
         }
 
-        const duplicateKey = `pickup_${user.telefono}_${selectedDate}_${selectedTime}`;
-        if (localStorage.getItem(duplicateKey)) {
-            return;
+        console.log("💾 Guardando cita de pickup...");
+
+        const userId = await getUserId();
+
+        if (!userId) {
+            throw new Error("No se pudo identificar al usuario. Por favor inicia sesión nuevamente.");
         }
 
-        // Buscar o crear cliente
-        const clientResponse = await GetData({
+        console.log("🔍 Buscando cliente existente...");
+
+        // Buscar cliente por email
+        const clientResponse = await safeCall(() => GetData({
             url: "v1/pickup/clientes",
             filtros: {
-                Filtros: [{ Key: "telefono", Value: user.telefono }],
+                Filtros: [{ Key: "email", Value: user.correo }],
                 Order: [{ Key: "id", Direction: "Desc" }]
             },
             pageSize: 1
-        });
+        }), "buscar cliente");
 
         const clients = clientResponse?.data?.data ?? [];
-        const userId = getLocalStorageItem("user-id");
-        let clientId: any = null;
+        let clientId: string | null = null;
 
         if (clients.length > 0) {
             clientId = clients[0].id;
+            console.log("✅ Cliente existente encontrado:", clientId);
         } else {
-            const createResponse = await PostData({
+            console.log("🔍 Cliente no encontrado, creando nuevo cliente...");
+
+            // Crear nuevo cliente
+            const createResponse = await safeCall(() => PostData({
                 url: "v1/pickup/clientes",
                 data: {
-                    nombre: `${user.Nombre} ${user.Apellidos || ""}`.trim(),
+                    nombre: `${user.Nombre || user.nombre} ${user.Apellidos || ""}`.trim(),
                     telefono: user.telefono,
                     email: user.correo,
                     fecha_registro: new Date().toISOString(),
                     usuario_id: userId
                 }
-            });
+            }), "crear cliente");
 
-            clientId = createResponse?.data?.ids?.[0];
+            console.log("📦 Respuesta creación cliente:", createResponse);
+
+            // ESTRATEGIA MEJORADA: Obtener clientId de múltiples formas
+            const responseData = createResponse?.data;
+
+            // Opción 1: IDs array
+            if (responseData?.ids?.[0]) {
+                clientId = responseData.ids[0];
+                console.log("✅ ClientId obtenido de ids array:", clientId);
+            }
+            // Opción 2: ID directo
+            else if (responseData?.id) {
+                clientId = responseData.id;
+                console.log("✅ ClientId obtenido de id directo:", clientId);
+            }
+            // Opción 3: Data nested
+            else if (responseData?.data?.id) {
+                clientId = responseData.data.id;
+                console.log("✅ ClientId obtenido de data nested:", clientId);
+            }
+            // Opción 4: Buscar cliente recién creado (espera breve)
+            else {
+                console.log("🔄 Buscando cliente recién creado...");
+
+                // Esperar un momento para que se propague la creación
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const searchResponse = await safeCall(() => GetData({
+                    url: "v1/pickup/clientes",
+                    filtros: {
+                        Filtros: [
+                            { Key: "email", Value: user.correo },
+                            { Key: "telefono", Value: user.telefono }
+                        ],
+                        Order: [{ Key: "id", Direction: "Desc" }]
+                    },
+                    pageSize: 1
+                }), "buscar cliente recién creado");
+
+                const newClients = searchResponse?.data?.data ?? [];
+
+                if (newClients.length > 0) {
+                    clientId = newClients[0].id;
+                    console.log("✅ ClientId obtenido de búsqueda posterior:", clientId);
+                } else {
+                    // Último intento: buscar por teléfono solamente
+                    console.log("🔄 Último intento: buscar por teléfono...");
+
+                    const finalSearch = await safeCall(() => GetData({
+                        url: "v1/pickup/clientes",
+                        filtros: {
+                            Filtros: [{ Key: "telefono", Value: user.telefono }],
+                            Order: [{ Key: "id", Direction: "Desc" }]
+                        },
+                        pageSize: 1
+                    }), "búsqueda final por teléfono");
+
+                    const finalClients = finalSearch?.data?.data ?? [];
+
+                    if (finalClients.length > 0) {
+                        clientId = finalClients[0].id;
+                        console.log("✅ ClientId obtenido de búsqueda por teléfono:", clientId);
+                    } else {
+                        throw new Error("No se pudo crear o encontrar el cliente después de múltiples intentos");
+                    }
+                }
+            }
+
+            console.log("✅ Nuevo cliente creado con ID:", clientId);
         }
 
+        // VERIFICACIÓN FINAL: Asegurar que tenemos un clientId válido
+        if (!clientId) {
+            throw new Error("No se pudo obtener un ID válido para el cliente después de todos los intentos");
+        }
+
+        console.log("🎯 ClientId final para usar:", clientId);
+
+        // Guardar clientId en localStorage para futuras referencias
         setLocalStorageItem("user", clientId);
 
-        // Crear array_lista que incluye los productos + servicio pick-up
+        // Preparar items para la lista de pickup
         const itemsWithPickupService = [
-            // Servicio pick-up como primer item
             {
                 id: "servicio-pickup",
                 codigo: "SPICKUP",
@@ -632,47 +915,66 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 fecha_servicio: selectedDate,
                 hora_servicio: selectedTime
             },
-            // Items del carrito
-            ...items.map(item => ({
+            ...items.map((item, index) => ({
                 ...item,
+                id: item.id || `item-${index}`,
                 esServicio: false
             }))
         ];
 
+        console.log("📋 Creando lista de pickup con items:", itemsWithPickupService.length);
+
         // Crear lista de pickup
-        await PostData({
+        const listaResponse = await safeCall(() => PostData({
             url: "v1/pickup/listas",
             data: {
                 id_cliente: clientId,
                 usuario_id: userId,
                 sucursal_id: 1,
-                nombre_lista: `${selectedDate} ${selectedTime}`,
+                nombre_lista: `Pedido ${selectedDate} ${selectedTime}`,
                 servicio: "Pickup",
-                fecha_creacion: new Date(),
+                fecha_creacion: new Date().toISOString(),
                 estado: "nuevo",
                 array_lista: JSON.stringify(itemsWithPickupService),
             }
-        });
+        }), "crear lista pickup");
 
-        localStorage.setItem(duplicateKey, "1");
+        console.log("✅ Lista de pickup creada:", listaResponse);
 
-        // Notificar via SignalR
-        if (isConnected && connection) {
-            await notificarCambioLista("created", {
-                listaId: `${selectedDate} ${selectedTime}`,
-                clientId,
-                fecha: selectedDate,
-                hora: selectedTime,
-                servicio: "pickup",
-                costoServicio: serviceFee,
-                totalItems: itemsWithPickupService.length
-            });
+        console.log("✅ Cita de pickup guardada correctamente");
+        return clientId; // Retornar el clientId para uso posterior si es necesario
+    };
+
+    // --- FUNCIONES PRINCIPALES CORREGIDAS ---
+    const retryWithAuth = async (currentUserData: UserInfo, maxRetries: number = 2): Promise<boolean> => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            console.log(`🔄 Reintento ${attempt}/${maxRetries}...`);
+
+            try {
+                await resetAuthentication(currentUserData);
+
+                const authSuccess = await authenticateUser(currentUserData);
+
+                if (authSuccess) {
+                    console.log("✅ Reautenticación exitosa");
+                    return true;
+                }
+            } catch (error) {
+                console.error(`❌ Error en reintento ${attempt}:`, error);
+            }
         }
 
-        console.log("✅ Servicio pick-up agregado al array_lista correctamente");
-    }, [GetData, PostData, items, selectedDate, selectedTime, isConnected, connection, notificarCambioLista, serviceFee, totalWithService, subtotal]);
+        return false;
+    };
 
     const confirmCompleteAppointment = async (): Promise<void> => {
+        // Evitar múltiples ejecuciones simultáneas
+        if (isProcessing) {
+            console.log("⚠ Ya hay un proceso en ejecución, ignorando...");
+            return;
+        }
+
+        setShowPasswordAlert(true);
         setIsProcessing(true);
 
         try {
@@ -686,19 +988,45 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }
             }
 
-            try {
-                await processIntelisisOrder();
-                await savePickupAppointment(formData);
+            // ORDEN CORREGIDO: Primero Intelisis, luego nuestra API
+            console.log("🔄 ORDEN DE INSERCIÓN: Intelisis primero → Nuestra API después");
+            await getUserId(); // Pre-cargar userId en background
+            await savePickupAppointment(formData);
+            await processIntelisisOrder();
+            dispatch(clearCart());
 
-                setShouldRedirect(true);
-                dispatch(clearCart());
-            } catch {
-                await retryWithAuth();
-                await confirmCompleteAppointment();
-            }
         } catch (error: any) {
             console.error("❌ Error en confirmación de cita:", error);
-            alert(`Error: ${error.message || "No se pudo crear la cita"}`);
+
+            // SOLUCIÓN: No llamar recursivamente, solo reintentar con reautenticación UNA VEZ
+            const shouldRetry = error.message?.includes("Intelisis") ||
+                error.message?.includes("autenticar");
+
+            if (shouldRetry) {
+                console.log("🔄 Intentando reautenticación para recuperar...");
+                const formData = await getFormData();
+                const reauthSuccess = await retryWithAuth(formData.user, 1); // Solo 1 reintento
+
+                if (reauthSuccess) {
+                    console.log("🔄 Reintentando operación después de reautenticación...");
+                    // En lugar de llamar recursivamente, repetimos la lógica principal
+                    try {
+                        const formData = await getFormData();
+                        await savePickupAppointment(formData);
+                        await processIntelisisOrder();
+
+                        dispatch(clearCart());
+                        return; // Éxito en el reintento
+                    } catch (retryError: any) {
+                        console.error("❌ Error en reintento:", retryError);
+                        alert(`Error: ${retryError.message || "No se pudo crear la cita después del reintento"}`);
+                    }
+                } else {
+                    alert("Error: No se pudo reautenticar. Por favor intenta nuevamente.");
+                }
+            } else {
+                alert(`Error: ${error.message || "No se pudo crear la cita"}`);
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -721,22 +1049,20 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
-            {/* ✅ Alerta informativa sobre la contraseña */}
+
             <IonAlert
                 isOpen={showPasswordAlert}
-                onDidDismiss={() => setShowPasswordAlert(false)}
-                header={'Información importante'}
-                message={'Tu número de teléfono será tu contraseña para futuros accesos. Guárdalo para poder ingresar a tu cuenta.'}
-                buttons={[
-                    {
-                        text: 'Entendido',
-                        role: 'confirm',
-                        cssClass: 'primary'
-                    }
-                ]}
+                onDidDismiss={() => history.push("/checkout")}
+                header="Información importante"
+                message="Tu número de teléfono será tu contraseña para futuros accesos. Guárdalo para poder ingresar a tu cuenta."
+                buttons={["Entendido"]}
             />
 
-            <section className="flex flex-col-reverse md:flex-row-reverse gap-4 px-4 my-16 md:my-6 max-w-6xl mx-auto">
+            <section className="flex">
+                <IonBackButton color="tertiary" text="Regresar" />
+            </section>
+
+            <section className="flex flex-col-reverse md:flex-row gap-4 px-4 my-16 max-w-6xl mx-auto">
                 {/* RESUMEN DEL PEDIDO */}
                 <div className="md:w-1/3">
                     <article className="bg-white rounded-xl border p-4 shadow-sm sticky top-4 z-50">
@@ -767,7 +1093,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             onClick={confirmCompleteAppointment}
                             disabled={!isConfirmButtonEnabled() || isProcessing || authLoading}
                         >
-                            {getButtonText(isProcessing, authLoading, shouldRedirect)}
+                            {isProcessing ? "Procesando..." :
+                                authLoading ? "Autenticando..." :
+                                    "Confirmar cita"}
                         </IonButton>
                     </article>
 
@@ -807,13 +1135,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 };
 
 // --- COMPONENTES AUXILIARES ---
-const getButtonText = (isProcessing: boolean, authLoading: boolean, shouldRedirect: boolean): string => {
-    if (isProcessing) return "🔄 Procesando...";
-    if (authLoading) return "🔐 Autenticando...";
-    if (shouldRedirect) return "✅ Redirigiendo...";
-    return "📅 Confirmar cita";
-};
-
 interface FormSectionProps {
     title: string;
     formRef: React.RefObject<any>;
