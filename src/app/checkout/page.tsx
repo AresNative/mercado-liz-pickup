@@ -1081,11 +1081,11 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }]}
             />
 
-            <section className="flex">
-                <IonBackButton color="tertiary" text="Regresar" />
+            <section className="flex my-2">
+                <IonBackButton color="tertiary" text="Regresar" defaultHref="/carrito" />
             </section>
 
-            <section className="flex flex-col-reverse md:flex-row gap-4 px-4 my-16 max-w-6xl mx-auto">
+            <section className="flex flex-col-reverse md:flex-row gap-4 px-4 mb-16 max-w-6xl mx-auto">
                 {/* RESUMEN DEL PEDIDO */}
                 <div className="md:w-1/3">
                     <article className="bg-white rounded-xl border p-4 shadow-sm sticky top-4 z-50">

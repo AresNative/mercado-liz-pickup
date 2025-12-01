@@ -37,7 +37,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="flex">
+            <section className="flex my-2">
                 <IonBackButton color={"tertiary"} text={"Regresar"} defaultHref="/productos" />
             </section>
 
