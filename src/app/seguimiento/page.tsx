@@ -835,7 +835,8 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </>
                 )}
             </section>
-            <Footer />
+            <section className=" md:mb-0 mb-12"><Footer /></section>
+
 
             {/* Alert para confirmar cancelación */}
             <IonAlert

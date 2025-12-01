@@ -45,13 +45,7 @@ const AppMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     const getNavigation = () => {
-        if (!userRole) return navigationDefault;
-        const navigationMap: any = {
-            admin: navigationAdmin,
-            cliente: navigationDefault,
-            // ... otros roles
-        };
-        return navigationMap[userRole];
+        return navigationDefault;
     };
 
     return (

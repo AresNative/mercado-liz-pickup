@@ -15,7 +15,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const total = items.reduce((sum, item) => {
         return sum + ((item.descuento ? item.descuento : item.precio) * item.quantity);
     }, 0)
-    const serv = total * 0.02; //->calculo del 5% de servicio
+    const serv = total * 0.05;//->calculo del 5% de servicio
     const totalConServicio = total + serv; //-> total mas servicio
     return (
         <IonContent

@@ -284,7 +284,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="px-4 py-4 max-w-6xl mx-auto">
+            <section className="px-4 py-4 max-w-6xl mx-auto md:mb-0 mb-16">
                 <PromoBanner items={[
                     {
                         id: "1",

@@ -575,7 +575,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </div>
             </section>
 
-            <Footer />
+            <section className=" md:mb-0 mb-12"><Footer /></section>
         </IonContent>
     );
 };

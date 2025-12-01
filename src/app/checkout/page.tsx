@@ -35,12 +35,12 @@ import {
 import {
     setLocalStorageItem,
     getLocalStorageItem,
-    removeFromLocalStorage,
     clearLocalStorage
 } from "@/utils/functions/local-storage";
 
 import { clearCart } from "@/hooks/slices/cart";
-import { useHistory } from "react-router";
+import { useHistory } from "react-router-dom";
+import { set } from "date-fns";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -175,7 +175,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     // --- CÁLCULOS ---
     const subtotal = calculateCartTotal(items);
-    const serviceFee = subtotal * 0.02;
+    const serviceFee = subtotal * 0.05;//->calculo del 5% de servicio
     const totalWithService = subtotal + serviceFee;
 
     // --- EFECTOS ---
@@ -990,8 +990,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             console.log("⚠ Ya hay un proceso en ejecución, ignorando...");
             return;
         }
-
-        setShowPasswordAlert(true);
         setIsProcessing(true);
 
         try {
@@ -1011,6 +1009,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             await savePickupAppointment(formData);
             await processIntelisisOrder();
             dispatch(clearCart());
+
+            setShowPasswordAlert(true);
 
         } catch (error: any) {
             console.error("❌ Error en confirmación de cita:", error);
@@ -1069,10 +1069,16 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             <IonAlert
                 isOpen={showPasswordAlert}
-                onDidDismiss={() => history.push("/checkout")}
                 header="Información importante"
                 message="Tu número de teléfono será tu contraseña para futuros accesos. Guárdalo para poder ingresar a tu cuenta."
-                buttons={["Entendido"]}
+                buttons={[{
+                    text: "Entendido",
+                    handler: () => {
+                        console.log("Botón presionado, navegando...");
+                        history.push("/seguimiento");
+                        setShowPasswordAlert(false);
+                    }
+                }]}
             />
 
             <section className="flex">
