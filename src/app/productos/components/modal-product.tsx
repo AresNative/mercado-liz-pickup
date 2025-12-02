@@ -26,6 +26,10 @@ import { IconLiz } from "./ionc-liz";
 import { useEffect, useMemo, useState } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import ProductPreviewModal from "./modal-recomendado";
+import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
+import { EnvConfig } from "@/utils/constants/env.config";
+
+const { hubs: apiUrl } = EnvConfig();
 
 interface ProductModalProps {
     producto: Producto;
@@ -77,11 +81,11 @@ const sampleComments = [
 
 const ModalProd: React.FC<ProductModalProps> = ({
     producto,
-    image,
     handleFavoriteToggle,
     isFavorite,
     onDismiss
 }) => {
+    const [image, setImage] = useState("");
     const [recomendados, setrecomendados] = useState<Producto[]>([])
     const [recomendadosselect, setrecomendadosselect] = useState()
     const [unidades, setUnidades] = useState<Unidad[]>([]);
@@ -95,6 +99,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
     });
 
     const [getWithFilter] = useGetWithFiltersGeneralInIntelisisMutation();
+    const [getWithFilterImg] = useGetWithFiltersGeneralMutation();
     const isLowStock = unidadSeleccionada.cantidad > 0 && unidadSeleccionada.cantidad <= 10;
     const isOutOfStock = unidadSeleccionada.cantidad <= 0;
 
@@ -111,6 +116,8 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     // Calcular rating promedio
     const averageRating = sampleComments.reduce((acc, comment) => acc + comment.rating, 0) / sampleComments.length;
+
+
 
     // Renderizar estrellas
     const renderStars = (rating: number) => {
@@ -203,76 +210,39 @@ const ModalProd: React.FC<ProductModalProps> = ({
     }
 
     async function LoadImage() {
-        const response = await getWithFilter({
-            table: `
-                CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
-                    INNER JOIN ListaPreciosDUnidad AS lpu
-                        ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
-                        AND lpu.Lista = '(Precio Lista)'
-                        AND lpu.Precio > 0
-                    INNER JOIN ArtUnidad AS au
-                        ON art.Articulo = au.Articulo
-                        AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
-                    LEFT JOIN (
-                                    SELECT *,
-                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                                    FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
-                `,
-            pageSize: 4,
+        const response = await getWithFilterImg({
+            table: `imagenes
+                    left join articulos on articulos.id = imagenes.id_ref`,
+            pageSize: 10,
             page: 1,
+            tag: 'Productos',
             filtros: {
-                Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
-                Selects: [
-                    { key: "cb.Codigo" },
-                    { key: "art.Articulo" },
-                    { key: "art.Grupo" },
-                    { key: "art.Descripcion1" },
-                    { key: "lpu.Unidad" },
-                    { key: "lpu.Precio" },
-                    { key: "ofrd.Precio", alias: "Descuento" },
-                    { key: "au.Unidad", alias: "UnidadFactor" },
-                    { key: "au.Factor" },
-                ],
-                Agregaciones: [
+                "Filtros": [
                     {
-                        Key: "ad.DispMenosApartado",
-                        Operation: "SUM",
-                        Alias: "Cantidad",
+                        "Key": "articulo",
+                        "Value": producto.articulo,
+                        "Operator": "="
                     },
+                    {
+                        "Key": "tabla",
+                        "Value": "articulos",
+                        "Operator": "="
+                    }
                 ],
-                Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
-            },
-            signal: undefined,
+                "Selects": [
+                    { key: "articulos.id" },
+                    { key: "articulos.nombre" },
+                    { key: "articulos.descripcion" },
+                    { key: "articulos.precio" },
+                    { key: "imagenes.url" }
+                ]
+            }
         }).unwrap();
 
         if (response && response.data) {
-            const apiData: any = response.data;
-
-            if (apiData && apiData.length > 0) {
-                const mappedItems: Producto[] = apiData.map((item: any) => ({
-                    id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
-                    articulo: item.Articulo || "Articulo",
-                    nombre: item.Descripcion1 || "Sin nombre",
-                    categoria: item.Grupo || "Sin categoría",
-                    unidad: item.Unidad || "Unidad",
-                    precio: item.Precio || 0,
-                    cantidad: item.Cantidad || 1,
-                    factor: item.Factor || 1,
-                    impuesto1: item.Impuesto1 || 0,
-                    impuesto2: item.Impuesto2 || 0,
-                    tipoImpuesto1: item.TipoImpuesto1 || 0,
-                    tipoImpuesto2: item.TipoImpuesto2 || 0,
-                    descuento: item.Descuento || 0,
-                }));
-
-                setrecomendados(mappedItems);
-            }
+            response.data.map((item: any) => {
+                setImage(apiUrl.slice(0, -1) + item.url);
+            });
         }
     }
 

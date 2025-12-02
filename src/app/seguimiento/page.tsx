@@ -730,11 +730,11 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             >
                                 <IonSegmentButton value="activos" className="text-xs sm:text-sm">
                                     <span className="hidden xs:inline">Activos</span>
-                                    <span className="xs:hidden">Act</span>
+                                    <span className="xs:hidden">Activos</span>
                                 </IonSegmentButton>
                                 <IonSegmentButton value="todos" className="text-xs sm:text-sm">
                                     <span className="hidden xs:inline">Todos</span>
-                                    <span className="xs:hidden">All</span>
+                                    <span className="xs:hidden">Todos</span>
                                 </IonSegmentButton>
                             </IonSegment>
                         </div>
@@ -1069,7 +1069,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 </IonCard>
 
                                 {/* Grid de información responsive con estadísticas */}
-                                <IonGrid className="px-0">
+                                <IonGrid className="px-0 gap-2">
                                     <IonRow>
                                         <IonCol size="12" sizeMd="4">
                                             <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white h-full">
@@ -1218,7 +1218,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                     {servicios.map(servicio => (
                                                         <div key={servicio.id} className="flex justify-between py-2">
                                                             <div className="flex-1">
-                                                                <p className="text-gray-900 font-medium text-sm truncate">{servicio.name}</p>
+                                                                <p className="text-gray-900 font-medium text-sm truncate">Pick-Up</p>
                                                                 <p className="text-xs text-gray-500">Servicio</p>
                                                             </div>
                                                             <p className="font-semibold text-sm sm:text-base">{formatValue(servicio.price, "currency")}</p>
@@ -1244,140 +1244,144 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                 </IonCardContent>
                                             </IonCard>
                                         </IonCol>
+                                        <IonCol size="12" sizeMd="12">
+                                            <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
+                                                <IonCardHeader>
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                        <IonCardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                                                            <Package className="size-4 sm:size-5" />
+                                                            Productos ({productos.length})
+                                                            {estadisticas && (
+                                                                <div className="flex items-center gap-2 ml-2">
+                                                                    <IonBadge color="success" className="text-xs">
+                                                                        <IonIcon icon={checkmark} className="mr-1" />
+                                                                        {estadisticas.recolectados}
+                                                                    </IonBadge>
+                                                                    <IonBadge color="danger" className="text-xs">
+                                                                        <IonIcon icon={close} className="mr-1" />
+                                                                        {estadisticas.noEncontrados}
+                                                                    </IonBadge>
+                                                                </div>
+                                                            )}
+                                                        </IonCardTitle>
+
+                                                        <IonSegment
+                                                            value={mostrarFiltroProductos}
+                                                            onIonChange={e => setMostrarFiltroProductos(e.detail.value as any)}
+                                                            className="segment-responsive text-xs"
+                                                        >
+                                                            <IonSegmentButton value="todos" className="text-xs">
+                                                                Todos
+                                                            </IonSegmentButton>
+                                                            <IonSegmentButton value="recolectados" className="text-xs">
+                                                                Recolectados
+                                                            </IonSegmentButton>
+                                                            <IonSegmentButton value="no_encontrados" className="text-xs">
+                                                                No encontrados
+                                                            </IonSegmentButton>
+                                                        </IonSegment>
+                                                    </div>
+                                                </IonCardHeader>
+                                                <IonCardContent className="space-y-3">
+                                                    {productosFiltrados.length > 0 ? (
+                                                        productosFiltrados.map(item => {
+                                                            const discountPercentage = calculateDiscountPercentage(item.precioRegular || item.price, item.descuento);
+                                                            const isRecolectado = item.recolectado === true;
+                                                            const isNoEncontrado = item.noEncontrado === true;
+
+                                                            return (
+                                                                <div
+                                                                    key={item.id}
+                                                                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${isRecolectado ? 'bg-green-50 border border-green-200' : isNoEncontrado ? 'bg-red-50 border border-red-200' : 'bg-gray-50 hover:bg-gray-100'}`}
+                                                                >
+                                                                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                                                        <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecolectado ? 'bg-green-100' : isNoEncontrado ? 'bg-red-100' : 'bg-gradient-to-br from-purple-100 to-pink-100'}`}>
+                                                                            {isRecolectado ? (
+                                                                                <CheckCheck className="text-green-600 size-6" />
+                                                                            ) : isNoEncontrado ? (
+                                                                                <XCircle className="text-red-600 size-6" />
+                                                                            ) : (
+                                                                                <IconLiz fill="#7927F5" width={24} className="sm:w-8" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex items-start justify-between">
+                                                                                <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{item.name}</p>
+                                                                                <div className="flex items-center gap-1 ml-2">
+                                                                                    {isRecolectado && (
+                                                                                        <IonBadge color="success" className="text-xs">
+                                                                                            <IonIcon icon={checkmark} className="mr-1" />
+                                                                                            Recolectado
+                                                                                        </IonBadge>
+                                                                                    )}
+                                                                                    {isNoEncontrado && (
+                                                                                        <IonBadge color="danger" className="text-xs">
+                                                                                            <IonIcon icon={close} className="mr-1" />
+                                                                                            No encontrado
+                                                                                        </IonBadge>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                            <p className="text-xs sm:text-sm text-gray-500">
+                                                                                {item.quantity} {item.unit}
+                                                                            </p>
+                                                                            {discountPercentage > 0 && (
+                                                                                <div className="w-fit mt-1 text-center border bg-gradient-to-r from-red-100 to-pink-100 border-red-500 text-red-600 text-xs font-bold px-2 py-0.5 rounded">
+                                                                                    -{discountPercentage}%
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex flex-col items-end flex-shrink-0 ml-2">
+                                                                        {item.descuento ? (
+                                                                            <>
+                                                                                <span className="text-base sm:text-lg font-bold text-purple-600 leading-none">
+                                                                                    {formatValue(item.descuento, "currency")}
+                                                                                </span>
+                                                                                <span className="text-xs sm:text-sm text-gray-500 line-through leading-none">
+                                                                                    {formatValue(item.precioRegular || item.price, "currency")}
+                                                                                </span>
+                                                                            </>
+                                                                        ) : (
+                                                                            <span className="text-base sm:text-lg font-bold text-purple-600 leading-none">
+                                                                                {formatValue(item.price, "currency")}
+                                                                            </span>
+                                                                        )}
+                                                                        <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2 font-medium">
+                                                                            Total: {formatValue(item.price * parseInt(item.quantity), "currency")}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <div className="text-center py-8">
+                                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                                                <IonIcon icon={search} className="text-gray-400 text-2xl" />
+                                                            </div>
+                                                            <IonText color="medium" className="block mb-2">
+                                                                No hay productos {mostrarFiltroProductos === 'recolectados' ? 'recolectados' : mostrarFiltroProductos === 'no_encontrados' ? 'no encontrados' : ''}
+                                                            </IonText>
+                                                            {mostrarFiltroProductos !== 'todos' && (
+                                                                <IonButton
+                                                                    size="small"
+                                                                    fill="clear"
+                                                                    onClick={() => setMostrarFiltroProductos('todos')}
+                                                                >
+                                                                    Mostrar todos los productos
+                                                                </IonButton>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </IonCardContent>
+                                            </IonCard>
+                                        </IonCol>
                                     </IonRow>
+
                                 </IonGrid>
 
                                 {/* Productos del pedido con filtros */}
-                                <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
-                                    <IonCardHeader>
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <IonCardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                                                <Package className="size-4 sm:size-5" />
-                                                Productos ({productos.length})
-                                                {estadisticas && (
-                                                    <div className="flex items-center gap-2 ml-2">
-                                                        <IonBadge color="success" className="text-xs">
-                                                            <IonIcon icon={checkmark} className="mr-1" />
-                                                            {estadisticas.recolectados}
-                                                        </IonBadge>
-                                                        <IonBadge color="danger" className="text-xs">
-                                                            <IonIcon icon={close} className="mr-1" />
-                                                            {estadisticas.noEncontrados}
-                                                        </IonBadge>
-                                                    </div>
-                                                )}
-                                            </IonCardTitle>
 
-                                            <IonSegment
-                                                value={mostrarFiltroProductos}
-                                                onIonChange={e => setMostrarFiltroProductos(e.detail.value as any)}
-                                                className="segment-responsive text-xs"
-                                            >
-                                                <IonSegmentButton value="todos" className="text-xs">
-                                                    Todos
-                                                </IonSegmentButton>
-                                                <IonSegmentButton value="recolectados" className="text-xs">
-                                                    Recolectados
-                                                </IonSegmentButton>
-                                                <IonSegmentButton value="no_encontrados" className="text-xs">
-                                                    No encontrados
-                                                </IonSegmentButton>
-                                            </IonSegment>
-                                        </div>
-                                    </IonCardHeader>
-                                    <IonCardContent className="space-y-3">
-                                        {productosFiltrados.length > 0 ? (
-                                            productosFiltrados.map(item => {
-                                                const discountPercentage = calculateDiscountPercentage(item.precioRegular || item.price, item.descuento);
-                                                const isRecolectado = item.recolectado === true;
-                                                const isNoEncontrado = item.noEncontrado === true;
-
-                                                return (
-                                                    <div
-                                                        key={item.id}
-                                                        className={`flex items-center justify-between p-3 rounded-lg transition-colors ${isRecolectado ? 'bg-green-50 border border-green-200' : isNoEncontrado ? 'bg-red-50 border border-red-200' : 'bg-gray-50 hover:bg-gray-100'}`}
-                                                    >
-                                                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                                            <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${isRecolectado ? 'bg-green-100' : isNoEncontrado ? 'bg-red-100' : 'bg-gradient-to-br from-purple-100 to-pink-100'}`}>
-                                                                {isRecolectado ? (
-                                                                    <CheckCheck className="text-green-600 size-6" />
-                                                                ) : isNoEncontrado ? (
-                                                                    <XCircle className="text-red-600 size-6" />
-                                                                ) : (
-                                                                    <IconLiz fill="#7927F5" width={24} className="sm:w-8" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <div className="flex items-start justify-between">
-                                                                    <p className="font-semibold text-gray-900 text-sm sm:text-base truncate">{item.name}</p>
-                                                                    <div className="flex items-center gap-1 ml-2">
-                                                                        {isRecolectado && (
-                                                                            <IonBadge color="success" className="text-xs">
-                                                                                <IonIcon icon={checkmark} className="mr-1" />
-                                                                                Recolectado
-                                                                            </IonBadge>
-                                                                        )}
-                                                                        {isNoEncontrado && (
-                                                                            <IonBadge color="danger" className="text-xs">
-                                                                                <IonIcon icon={close} className="mr-1" />
-                                                                                No encontrado
-                                                                            </IonBadge>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                <p className="text-xs sm:text-sm text-gray-500">
-                                                                    {item.quantity} {item.unit}
-                                                                </p>
-                                                                {discountPercentage > 0 && (
-                                                                    <div className="w-fit mt-1 text-center border bg-gradient-to-r from-red-100 to-pink-100 border-red-500 text-red-600 text-xs font-bold px-2 py-0.5 rounded">
-                                                                        -{discountPercentage}%
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex flex-col items-end flex-shrink-0 ml-2">
-                                                            {item.descuento ? (
-                                                                <>
-                                                                    <span className="text-base sm:text-lg font-bold text-purple-600 leading-none">
-                                                                        {formatValue(item.descuento, "currency")}
-                                                                    </span>
-                                                                    <span className="text-xs sm:text-sm text-gray-500 line-through leading-none">
-                                                                        {formatValue(item.precioRegular || item.price, "currency")}
-                                                                    </span>
-                                                                </>
-                                                            ) : (
-                                                                <span className="text-base sm:text-lg font-bold text-purple-600 leading-none">
-                                                                    {formatValue(item.price, "currency")}
-                                                                </span>
-                                                            )}
-                                                            <p className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-2 font-medium">
-                                                                Total: {formatValue(item.price * parseInt(item.quantity), "currency")}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="text-center py-8">
-                                                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                                    <IonIcon icon={search} className="text-gray-400 text-2xl" />
-                                                </div>
-                                                <IonText color="medium" className="block mb-2">
-                                                    No hay productos {mostrarFiltroProductos === 'recolectados' ? 'recolectados' : mostrarFiltroProductos === 'no_encontrados' ? 'no encontrados' : ''}
-                                                </IonText>
-                                                {mostrarFiltroProductos !== 'todos' && (
-                                                    <IonButton
-                                                        size="small"
-                                                        fill="clear"
-                                                        onClick={() => setMostrarFiltroProductos('todos')}
-                                                    >
-                                                        Mostrar todos los productos
-                                                    </IonButton>
-                                                )}
-                                            </div>
-                                        )}
-                                    </IonCardContent>
-                                </IonCard>
                             </div>
                         )}
                     </>
