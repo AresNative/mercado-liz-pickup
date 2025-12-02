@@ -32,7 +32,7 @@ import { TagInputComponent as TagInput } from "./tag-input"
 import { useLoginUserMutation } from "@/hooks/reducers/auth";
 import { useAppDispatch } from "@/hooks/selector";
 import { openAlertReducer } from "@/hooks/reducers/drop-down";
-import { usePostImgMutation, usePostMutation } from "@/hooks/reducers/api";
+import { usePostGeneralMutation, usePostImgMutation, usePostMutation } from "@/hooks/reducers/api";
 
 export const MainForm = React.forwardRef(({
   message_button,
@@ -45,7 +45,8 @@ export const MainForm = React.forwardRef(({
   onSuccess,
   formName,
   modelName,
-  iconButton
+  iconButton,
+  table
 }: MainFormProps, ref: any) => {
   const dispatch = useAppDispatch()
   const [page, setPage] = useState(0);
@@ -116,6 +117,7 @@ export const MainForm = React.forwardRef(({
 
   const [postUserLogin] = useLoginUserMutation();
   const [post] = usePostMutation();
+  const [postGeneral] = usePostGeneralMutation();
   const [postImg] = usePostImgMutation(); // Hook para subir imágenes
 
   async function getMutationFunction(actionType: string, data: FormData | any) {
@@ -124,6 +126,12 @@ export const MainForm = React.forwardRef(({
     switch (actionType) {
       case "post-login":
         return await postUserLogin(data).unwrap();
+      case "post-general":
+        return await postGeneral({
+          table: table,
+          data: data,
+          signal: new AbortController().signal,
+        }).unwrap();
       case "post":
         return await post({
           url: actionType,
