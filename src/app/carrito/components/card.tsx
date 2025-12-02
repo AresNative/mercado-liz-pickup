@@ -177,7 +177,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     (<img
                         src={image ? image : "/logo.jpg"}
                         alt="Product Image"
-                        className="size-11/12 min-h-52 object-cover transition-transform duration-300"
+                        className="size-11/12 min-h-52 mx-auto object-cover transition-transform duration-300"
                     />) :
                     (<div className="size-11/12 min-h-52 flex items-center justify-center">
                         <IconLiz
