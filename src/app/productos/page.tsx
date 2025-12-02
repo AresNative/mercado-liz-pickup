@@ -89,7 +89,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND (ad.DispMenosApartado / au.Factor) > 0
+                    INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND (ad.DispMenosApartado / au.Factor) > 0
                     LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn

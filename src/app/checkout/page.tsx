@@ -67,7 +67,7 @@ interface FormData {
 
 // --- CONSTANTES ---
 const INTELISIS_CONFIG = {
-    database: "[TC032841E].dbo",//TC032841E || TC032841E_Pruebas
+    database: "[TC032841E_Pruebas].dbo",//TC032841E || TC032841E_Pruebas
     empresa: "SMM",
     almacen: "ALMMAYO",
     usuario: "SISTEMAS02",
@@ -634,28 +634,28 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         // SOLUCIÓN: Insertar servicio pickup + items en secuencia
         const allItems = [
             // Servicio pickup primero
-            {
-                ID: baseId,
-                Renglon: baseRow,
-                RenglonSub: 0,
-                RenglonID: 1,
-                RenglonTipo: "N",
-                Cantidad: 1,
-                Almacen: INTELISIS_CONFIG.almacen,
-                Codigo: "SPICKUP",
-                Articulo: "999911112",
-                Precio: serviceFee,
-                PrecioSugerido: serviceFee,
-                DescuentoLinea: 0,
-                Impuesto1: 8,
-                Costo: '0.01',
-                CantidadReservada: 1,
-                Unidad: "servicio",
-                Factor: 1,
-                FechaRequerida: date,
-                Sucursal: 4,
-                TipoImpuesto1: 'IVA8',
-            },
+            /* {
+                 ID: baseId,
+                 Renglon: baseRow,
+                 RenglonSub: 0,
+                 RenglonID: 1,
+                 RenglonTipo: "N",
+                 Cantidad: 1,
+                 Almacen: INTELISIS_CONFIG.almacen,
+                 Codigo: "SPICKUP",
+                 Articulo: "999911112",
+                 Precio: serviceFee,
+                 PrecioSugerido: serviceFee,
+                 DescuentoLinea: 0,
+                 Impuesto1: 8,
+                 Costo: '0.01',
+                 CantidadReservada: 1,
+                 Unidad: "servicio",
+                 Factor: 1,
+                 FechaRequerida: date,
+                 Sucursal: 4,
+                 TipoImpuesto1: 'IVA8',
+             }, */
             // Items del carrito después
             ...items.map((item, index) => {
                 const unitPrice = item.descuento || item.precio;

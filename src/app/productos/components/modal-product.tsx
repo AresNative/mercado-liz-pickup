@@ -259,7 +259,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
+                    INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
                     LEFT JOIN (
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
@@ -422,18 +422,18 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
                                 {discountPercentage > 0 && (
-                                    <div className="w-full text-center border-2 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                                    <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
                                         -{discountPercentage}%
                                     </div>
                                 )}
                                 {isLowStock && (
-                                    <div className="w-full text-center border-2 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
-                                        Última(s) {formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)}
+                                    <div className="w-full text-center border-2 bg-yellow-100 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
+                                        última(s) {producto.cantidad}
                                     </div>
                                 )}
                                 {isOutOfStock && (
-                                    <div className="w-full text-center border-2 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
-                                        Agotado
+                                    <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
+                                        agotado
                                     </div>
                                 )}
                             </li>
