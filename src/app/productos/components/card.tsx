@@ -138,7 +138,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     (<img
                         src={image ? image : "/logo.jpg"}
                         alt="Product Image"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="size-11/12 min-h-52 mx-auto object-cover group-hover:scale-105 transition-transform duration-300"
                     />) :
                     (<IconLiz fill="#DBDBDB" />)}
 

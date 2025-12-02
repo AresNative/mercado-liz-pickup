@@ -67,7 +67,7 @@ interface FormData {
 
 // --- CONSTANTES ---
 const INTELISIS_CONFIG = {
-    database: "[TC032841E_Pruebas].dbo",
+    database: "[TC032841E].dbo",//TC032841E || TC032841E_Pruebas
     empresa: "SMM",
     almacen: "ALMMAYO",
     usuario: "SISTEMAS02",

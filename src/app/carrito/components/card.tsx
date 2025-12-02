@@ -137,11 +137,11 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             className="flex group relative w-full min-h-60 md:min-w-52 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden cursor-pointer">
 
             <section
-                className="relative border-r border-gray-200 my-auto overflow-hidden size-64 h-full">
-                <ul className="p-1 flex justify-between items-center">
+                className="relative border-r border-gray-200 my-auto overflow-hidden size-64 ">
+                <ul className="absolute -top-0 w-[90%] py-2 px-4 flex md:flex-row flex-col justify-between items-center">
                     <li className="flex flex-col gap-1">
                         {discountPercentage > 0 && (
-                            <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600 text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
                                 -{discountPercentage}%
                             </div>
                         )}
@@ -177,11 +177,14 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     (<img
                         src={image ? image : "/logo.jpg"}
                         alt="Product Image"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="size-11/12 min-h-52 object-cover transition-transform duration-300"
                     />) :
-                    (<IconLiz
-                        fill="#DBDBDB"
-                    />)
+                    (<div className="size-11/12 min-h-52 flex items-center justify-center">
+                        <IconLiz
+                            fill="#DBDBDB"
+
+                        />
+                    </div>)
                 }
             </section>
             <div className="w-full h-56 flex flex-col justify-between">

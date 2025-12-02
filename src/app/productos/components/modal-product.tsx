@@ -245,9 +245,82 @@ const ModalProd: React.FC<ProductModalProps> = ({
             });
         }
     }
+    async function LoadRecomendados() {
+        const response = await getWithFilter({
+            table: `
+                CB AS cb
+                    INNER JOIN Art AS art
+                        ON cb.Cuenta = art.Articulo
+                    INNER JOIN ListaPreciosDUnidad AS lpu
+                        ON art.Articulo = lpu.Articulo
+                        AND cb.Unidad = lpu.Unidad
+                        AND lpu.Lista = '(Precio Lista)'
+                        AND lpu.Precio > 0
+                    INNER JOIN ArtUnidad AS au
+                        ON art.Articulo = au.Articulo
+                        AND lpu.Unidad = au.Unidad
+                    INNER JOIN ArtDisponible AS ad On Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
+                    LEFT JOIN (
+                                    SELECT *,
+                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
+                                    FROM OfertaD
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
+                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
+                `,
+            pageSize: 4,
+            page: 1,
+            filtros: {
+                Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
+                Selects: [
+                    { key: "cb.Codigo" },
+                    { key: "art.Articulo" },
+                    { key: "art.Grupo" },
+                    { key: "art.Descripcion1" },
+                    { key: "lpu.Unidad" },
+                    { key: "lpu.Precio" },
+                    { key: "ofrd.Precio", alias: "Descuento" },
+                    { key: "au.Unidad", alias: "UnidadFactor" },
+                    { key: "au.Factor" },
+                ],
+                Agregaciones: [
+                    {
+                        Key: "ad.DispMenosApartado",
+                        Operation: "SUM",
+                        Alias: "Cantidad",
+                    },
+                ],
+                Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
+            },
+            signal: undefined,
+        }).unwrap();
 
+        if (response && response.data) {
+            const apiData: any = response.data;
+
+            if (apiData && apiData.length > 0) {
+                const mappedItems: Producto[] = apiData.map((item: any) => ({
+                    id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                    articulo: item.Articulo || "Articulo",
+                    nombre: item.Descripcion1 || "Sin nombre",
+                    categoria: item.Grupo || "Sin categoría",
+                    unidad: item.Unidad || "Unidad",
+                    precio: item.Precio || 0,
+                    cantidad: item.Cantidad || 1,
+                    factor: item.Factor || 1,
+                    impuesto1: item.Impuesto1 || 0,
+                    impuesto2: item.Impuesto2 || 0,
+                    tipoImpuesto1: item.TipoImpuesto1 || 0,
+                    tipoImpuesto2: item.TipoImpuesto2 || 0,
+                    descuento: item.Descuento || 0,
+                }));
+
+                setrecomendados(mappedItems);
+            }
+        }
+    }
     useEffect(() => {
         LoadImage();
+        LoadRecomendados();
         cargarUnidades();
     }, [producto]);
 
