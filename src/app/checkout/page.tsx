@@ -609,7 +609,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Importe: totalWithService, // ✅ Usar el total CON servicio
-            Estatus: "PENDIENTE",
+            Estatus: "",
             Impuestos: totalWithService * 0.16,
             Retencion: 0
         };
@@ -650,6 +650,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 Impuesto1: 8,
                 Costo: '0.01',
                 CantidadReservada: 1,
+                CantidadInventario: 1,
                 Unidad: "servicio",
                 Factor: 1,
                 FechaRequerida: date,
