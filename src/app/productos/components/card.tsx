@@ -122,7 +122,11 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 : Math.trunc(cantidad);
         }
     };
-
+    const stok = formatearStock(producto.cantidad, producto.unidad, producto.factor);
+    const stokNumeric = Number(stok);
+    if (!isNaN(stokNumeric) && stokNumeric <= 0 && !isOutOfStock) {
+        return null; // No renderizar la tarjeta si el stock es 0 o menos
+    }
     return (
         <motion.article
             initial={{ opacity: 0, scale: 0.9 }}

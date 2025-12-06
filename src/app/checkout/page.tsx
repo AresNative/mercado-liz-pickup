@@ -544,7 +544,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         // 1. Insertar Venta PRIMERO y esperar a que termine
         const saleData = {
             Empresa: INTELISIS_CONFIG.empresa,
-            Mov: "Pedido",
+            Mov: "Pick Up",
             MovID: newMovId,
             FechaEmision: date,
             UltimoCambio: timestamp,
@@ -577,7 +577,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ID: baseId,
             Empresa: INTELISIS_CONFIG.empresa,
             Modulo: "VTAS",
-            Mov: "Pedido",
+            Mov: "Pick Up",
             MovID: newMovId,
             FechaEmision: date,
             FechaRegistro: date,
@@ -603,13 +603,13 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ID: baseId,
             Empresa: INTELISIS_CONFIG.empresa,
             Modulo: "VTAS",
-            Mov: "Pedido",
+            Mov: "Pick Up",
             MovID: newMovId,
             FechaEmision: date,
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Importe: totalWithService, // ✅ Usar el total CON servicio
-            Estatus: "",
+            Estatus: "PENDIENTE",
             Impuestos: totalWithService * 0.16,
             Retencion: 0
         };
