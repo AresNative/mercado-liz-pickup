@@ -251,9 +251,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             // Guardar datos esenciales del usuario
             setLocalStorageItem("user-data", {
+                Nombre: userData.nombre || userData.Nombre || null,
+                APELLIDOS: userData.aPELLIDOS || userData.APELLIDOS || null,
                 correo: userData.correo,
                 telefono: userData.telefono,
-                nombre: userData.nombre || userData.Nombre || null
             });
         } catch (e) {
             console.warn("No se pudo persistir auth data localmente:", e);
@@ -467,9 +468,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 page: 1,
                 filtros: {
                     Filtros: [
-                        { Key: "Usuario", Value: INTELISIS_CONFIG.usuario },
+                        /* { Key: "Usuario", Value: INTELISIS_CONFIG.usuario }, 
                         { Key: "MovID", Value: "MAY-", Operator: "like" },
-                        { Key: "Mov", Value: "Pedido" } // Filtro más específico
+                        { Key: "Mov", Value: "Pedido" } */
                     ],
                     Order: [{ Key: "id", Direction: "desc" }]
                 },
@@ -534,34 +535,46 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
-    const insertIntelisisData = async (newMovId: string, saleId: number) => {
+    const insertIntelisisData = async (saleId: number) => {
         const { date, timestamp } = getCurrentDateTime();
         const baseId = parseInt(saleId.toString()) + 1;
 
         console.log("💾 Insertando datos en Intelisis con baseId:", baseId);
 
         // SOLUCIÓN: Insertar TODO en una sola transacción lógica
+        const totalProductTaxes = items.reduce((sum, item) => {
+            const qty = item.quantity || 1;
+            const tax1 = Number(item.impuesto1 || 0);
+            const tax2 = Number(item.impuesto2 || 0);
+            return sum + ((tax1 + tax2) * qty);
+        }, 0);
         // 1. Insertar Venta PRIMERO y esperar a que termine
         const saleData = {
             Empresa: INTELISIS_CONFIG.empresa,
-            Mov: "Pick Up",
-            MovID: newMovId,
+            Mov: "Pedido",
             FechaEmision: date,
             UltimoCambio: timestamp,
             Concepto: "PICK UP",
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Usuario: INTELISIS_CONFIG.usuario,
-            Estatus: "PENDIENTE",
+            Estatus: "SINAFECTAR",
             Cliente: "MOSTRADOR",
             Almacen: INTELISIS_CONFIG.almacen,
             Importe: totalWithService, // ✅ Usar el total CON servicio
-            Impuestos: totalWithService * 0.16,
+            Impuestos: totalProductTaxes, // suma de impuestos de los productos
             Saldo: totalWithService,
             CostoTotal: subtotal * 0.6,
             PrecioTotal: totalWithService, // ✅ Usar el total CON servicio
             ServicioExpress: true,
-            Sucursal: 4
+            Condicion: "CONTADO",
+            Vencimiento: date,
+            ZonaImpuesto: "Frontera",
+            FormaPagoTipo: "Efectivo",
+            Sucursal: 4,
+            SucursalVenta: 4,
+            SucursalOrigen: 4,
+            ListaPreciosEsp: "(Precio Lista)"
         };
 
         const saleResult = await safeCall(() => PostInt({
@@ -577,8 +590,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ID: baseId,
             Empresa: INTELISIS_CONFIG.empresa,
             Modulo: "VTAS",
-            Mov: "Pick Up",
-            MovID: newMovId,
+            Mov: "Pedido",
             FechaEmision: date,
             FechaRegistro: date,
             Concepto: "PICK UP",
@@ -603,15 +615,14 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ID: baseId,
             Empresa: INTELISIS_CONFIG.empresa,
             Modulo: "VTAS",
-            Mov: "Pick Up",
-            MovID: newMovId,
+            Mov: "Pedido",
             FechaEmision: date,
             Moneda: INTELISIS_CONFIG.moneda,
             TipoCambio: 1,
             Importe: totalWithService, // ✅ Usar el total CON servicio
-            Estatus: "PENDIENTE",
-            Impuestos: totalWithService * 0.16,
-            Retencion: 0
+            Estatus: "SINAFECTAR",
+            Impuestos: totalProductTaxes, // suma de impuestos de los productos
+            Retencion: 0,
         };
 
         const movementsResult = await safeCall(() => PostInt({
@@ -625,13 +636,69 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return baseId;
     };
 
-    const insertSaleDetails = async (baseId: number, newMovId: string) => {
+    const insertSaleDetails = async (baseId: number) => {
         const { date } = getCurrentDateTime();
         const baseRow = 2048;
 
         console.log("📦 Insertando detalles de venta para baseId:", baseId);
 
         // SOLUCIÓN: Insertar servicio pickup + items en secuencia
+        // Procesar items de forma asincrónica primero
+        const processedItems = await Promise.all(
+            items.map(async (item, index) => {
+                const unitPrice = item.descuento || item.precio;
+                const quantity = item.quantity || 1;
+
+                // Obtener el costo más reciente de compras en Intelisis
+                const costResult = await safeCall(() => GetInt({
+                    table: `${INTELISIS_CONFIG.database}.CompraD`,
+                    pageSize: 1,
+                    filtros: {
+                        Filtros: [
+                            { Key: "Articulo", Value: item.articulo }
+                        ],
+                        Order: [{ Key: "id", Direction: "desc" }]
+                    },
+                    signal: undefined
+                }), `consultar costo de ${item.articulo}`);
+
+                let itemCost = unitPrice * 0.6; // Valor por defecto
+
+                if (costResult?.data?.data?.[0]?.Costo) {
+                    itemCost = costResult.data.data[0].Costo;
+                    console.log(`✅ Costo obtenido para ${item.articulo}:`, itemCost);
+                } else if (costResult?.data?.[0]?.Costo) {
+                    itemCost = costResult.data[0].Costo;
+                    console.log(`✅ Costo obtenido para ${item.articulo}:`, itemCost);
+                }
+
+                return {
+                    ID: baseId,
+                    Renglon: index * baseRow,
+                    RenglonSub: 0,
+                    RenglonID: index + 2,
+                    RenglonTipo: "N",
+                    Cantidad: quantity,
+                    Almacen: INTELISIS_CONFIG.almacen,
+                    Codigo: String(item.codigo || ""),
+                    Articulo: String(item.articulo || ""),
+                    Precio: unitPrice,
+                    PrecioSugerido: unitPrice,
+                    DescuentoLinea: 0,
+                    Impuesto1: item.impuesto1,
+                    Impuesto2: item.impuesto2,
+                    Costo: itemCost,
+                    Unidad: item.unidad || "Unidad",
+                    Factor: item.factor || 1,
+                    CantidadInventario: item.cantidad || 1,
+                    FechaRequerida: date,
+                    Sucursal: 4,
+                    TipoImpuesto1: item.tipoImpuesto1,
+                    TipoImpuesto2: item.tipoImpuesto2
+                };
+            })
+        );
+
         const allItems = [
             // Servicio pickup primero
             {
@@ -658,36 +725,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 TipoImpuesto1: 'IVA8',
             },
             // Items del carrito después
-            ...items.map((item, index) => {
-                const unitPrice = item.descuento || item.precio;
-                const quantity = item.quantity || 1;
-
-                return {
-                    ID: baseId,
-                    Renglon: baseRow + (index + 1),
-                    RenglonSub: 0,
-                    RenglonID: index + 2,
-                    RenglonTipo: "N",
-                    Cantidad: quantity,
-                    Almacen: INTELISIS_CONFIG.almacen,
-                    Codigo: String(item.codigo || ""),
-                    Articulo: String(item.articulo || ""),
-                    Precio: unitPrice,
-                    PrecioSugerido: unitPrice,
-                    DescuentoLinea: 0,
-                    Impuesto1: item.impuesto1,
-                    Impuesto2: item.impuesto2,
-                    Costo: unitPrice * 0.6,
-                    CantidadReservada: quantity,
-                    Unidad: item.unidad || "Unidad",
-                    Factor: 1,
-                    CantidadInventario: quantity,
-                    FechaRequerida: date,
-                    Sucursal: 4,
-                    TipoImpuesto1: item.tipoImpuesto1,
-                    TipoImpuesto2: item.tipoImpuesto2
-                };
-            })
+            ...processedItems
         ];
 
         console.log(`📋 Insertando ${allItems.length} items en VentaD...`);
@@ -732,10 +770,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             });
 
             console.log("💾 Realizando inserts en Intelisis...");
-            const baseId = await insertIntelisisData(newMovId, saleId);
+            const baseId = await insertIntelisisData(saleId);
 
             console.log("📦 Insertando detalles de venta...");
-            await insertSaleDetails(baseId, newMovId);
+            await insertSaleDetails(baseId);
 
             console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
             return newMovId;
@@ -794,15 +832,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const offset = date.getTimezoneOffset();
             const localDate = new Date(date.getTime() - (offset * 60 * 1000));
             return localDate.toISOString().slice(0, -1); // Remover la Z final
-        };
-
-        // Función para obtener solo la fecha local (sin hora)
-        const getLocalDateString = () => {
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
         };
 
         // Buscar cliente por email

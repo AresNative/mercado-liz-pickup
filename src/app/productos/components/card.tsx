@@ -236,6 +236,6 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
         </motion.article >
     );
-}
-/* bodka gray goose 700 */
+};
+
 export default Card;
