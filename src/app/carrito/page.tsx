@@ -15,8 +15,8 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const total = items.reduce((sum, item) => {
         return sum + ((item.descuento ? item.descuento : item.precio) * item.quantity);
     }, 0)
-    const serv = total * 0.05;//->calculo del 5% de servicio
-    const totalConServicio = total + serv; //-> total mas servicio
+    /* const serv = total * 0.05; *///->calculo del 5% de servicio
+    const totalConServicio = total /* + serv */; //-> total mas servicio
     return (
         <IonContent
             role="feed"
@@ -46,7 +46,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     <label className="text-lg font-bold">Resumen del pedido</label>
                     <div className="mt-10">
                         <p className="flex justify-between"><span className="text-gray-500">Subtotal</span> {total > 0 && (formatValue(total, "currency"))}</p>
-                        <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span>{formatValue(serv, "currency")}</p>
+                        {/* <p className="flex justify-between"><span className="text-gray-500">Tarifa de servicio</span>{formatValue(serv, "currency")}</p> */}
                         <section className="mx-auto border-t border-gray-200">
                             <p className="flex mt-5 justify-between font-semibold"><span>Total</span> {formatValue(totalConServicio, "currency")}</p>
                         </section>

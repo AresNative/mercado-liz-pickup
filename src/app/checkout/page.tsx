@@ -40,7 +40,6 @@ import {
 
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router-dom";
-import { set } from "date-fns";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -67,7 +66,7 @@ interface FormData {
 
 // --- CONSTANTES ---
 const INTELISIS_CONFIG = {
-    database: "[TC032841E_Pruebas].dbo",//TC032841E || TC032841E_Pruebas
+    database: "[TC032841E].dbo",//TC032841E || TC032841E_Pruebas
     empresa: "SMM",
     almacen: "ALMMAYO",
     usuario: "SISTEMAS02",
@@ -175,8 +174,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     // --- CÁLCULOS ---
     const subtotal = calculateCartTotal(items);
-    const serviceFee = subtotal * 0.05;//->calculo del 5% de servicio
-    const totalWithService = subtotal + serviceFee;
+    /* const serviceFee = subtotal * 0.05;//->calculo del 5% de servicio */
+    const totalWithService = subtotal /* + serviceFee */;
 
     // --- EFECTOS ---
     // No asumimos autenticado solo por tener token; requerimos user-id/user-data
@@ -701,29 +700,29 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         const allItems = [
             // Servicio pickup primero
-            {
-                ID: baseId,
-                Renglon: baseRow,
-                RenglonSub: 0,
-                RenglonID: 1,
-                RenglonTipo: "N",
-                Cantidad: 1,
-                Almacen: INTELISIS_CONFIG.almacen,
-                Codigo: "SPICKUP",
-                Articulo: "999911112",
-                Precio: serviceFee,
-                PrecioSugerido: serviceFee,
-                DescuentoLinea: 0,
-                Impuesto1: 8,
-                Costo: '0.01',
-                CantidadReservada: 1,
-                CantidadInventario: 1,
-                Unidad: "servicio",
-                Factor: 1,
-                FechaRequerida: date,
-                Sucursal: 4,
-                TipoImpuesto1: 'IVA8',
-            },
+            /*  {
+                 ID: baseId,
+                 Renglon: baseRow,
+                 RenglonSub: 0,
+                 RenglonID: 1,
+                 RenglonTipo: "N",
+                 Cantidad: 1,
+                 Almacen: INTELISIS_CONFIG.almacen,
+                 Codigo: "SPICKUP",
+                 Articulo: "999911112",
+                 Precio: serviceFee,
+                 PrecioSugerido: serviceFee,
+                 DescuentoLinea: 0,
+                 Impuesto1: 8,
+                 Costo: '0.01',
+                 CantidadReservada: 1,
+                 CantidadInventario: 1,
+                 Unidad: "servicio",
+                 Factor: 1,
+                 FechaRequerida: date,
+                 Sucursal: 4,
+                 TipoImpuesto1: 'IVA8',
+             }, */
             // Items del carrito después
             ...processedItems
         ];
@@ -756,16 +755,16 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         try {
             const { saleId, movId } = await getLastSaleInfo();
-            console.log("📊 Venta obtenida - ID:", saleId, "MovID:", movId);
+            //console.log("📊 Venta obtenida - ID:", saleId, "MovID:", movId);
 
-            const newMovId = generateNewMovId(movId);
-            console.log("🆕 Nuevo MovID generado:", newMovId);
+            //const newMovId = generateNewMovId(movId);
+            //console.log("🆕 Nuevo MovID generado:", newMovId);
 
             // ✅ VERIFICACIÓN: Log para debugging
             console.log("📦 Datos del carrito:", {
                 itemsCount: items.length,
                 subtotal,
-                serviceFee,
+                /* serviceFee, */
                 totalWithService
             });
 
@@ -776,7 +775,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             await insertSaleDetails(baseId);
 
             console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
-            return newMovId;
+            return "✅ Todos los inserts en Intelisis realizados exitosamente"; //newMovId;
         } catch (error: any) {
             console.error("❌ Error en processIntelisisOrder:", error);
             throw new Error(`Error en Intelisis: ${error.message}`);
@@ -948,7 +947,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         // Preparar items para la lista de pickup
         const itemsWithPickupService = [
-            {
+            /* {
                 id: "servicio-pickup",
                 codigo: "SPICKUP",
                 articulo: "Servicio Pick-Up",
@@ -961,7 +960,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 esServicio: true,
                 fecha_servicio: selectedDate,
                 hora_servicio: selectedTime
-            },
+            }, */
             ...items.map((item, index) => ({
                 ...item,
                 id: item.id || `item-${index}`,
@@ -1126,10 +1125,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 <span>Subtotal</span>
                                 {formatValue(subtotal, "currency")}
                             </p>
-                            <p className="flex justify-between">
+                            {/* <p className="flex justify-between">
                                 <span>Servicio</span>
                                 {formatValue(serviceFee, "currency")}
-                            </p>
+                            </p> */}
                             <hr className="my-3" />
                             <p className="flex justify-between font-semibold">
                                 <span>Total</span>
