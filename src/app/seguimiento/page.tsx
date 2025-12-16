@@ -846,11 +846,11 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                                         color={pedido.porcentaje_recolectado === 100 ? 'success' : 'warning'}
                                                                         className="text-xs h-5"
                                                                     >
-                                                                        {pedido.productos_recolectados || 0}/{pedido.productos_totales}
+                                                                        {pedido.productos_recolectados}/{pedido.productos_totales}
                                                                     </IonChip>
-                                                                    {pedido.productos_no_encontrados && pedido.productos_no_encontrados > 0 && (
+                                                                    {Number(pedido.productos_no_encontrados) > 0 && (
                                                                         <IonBadge color="danger" className="text-xs">
-                                                                            {pedido.productos_no_encontrados} no encontrados
+                                                                            No encontrados
                                                                         </IonBadge>
                                                                     )}
                                                                 </div>
@@ -964,7 +964,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                             <IonCardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-900">
                                                 Pedido #{pedidoSeleccionado.id}
                                             </IonCardTitle>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <IonBadge
                                                     color={
                                                         pedidoSeleccionado.estado === 'entregado' ? 'success' :
