@@ -230,11 +230,12 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     }
                 }), "obtener estadísticas de usuario");
 
-                const clientData = statsResponse?.data?.data ?? [];
+                const clientData = statsResponse?.data?.data[0] ?? [];
                 const totalOrders = clientData.length;
-                const totalSavings = clientData.reduce((sum: number, order: any) => {
+                /* const totalSavings = clientData.reduce((sum: number, order: any) => {
                     return sum + (order.total_savings || 0);
-                }, 0);
+                }, 0); */
+                console.log(clientData);
 
                 // Mapear datos de la API al formato del estado
                 setUser({
@@ -245,12 +246,9 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     loyaltyPoints: userDataFromApi.loyaltyPoints ||
                         userDataFromApi.puntos_lealtad ||
                         0,
-                    memberSince: userDataFromApi.createdAt ||
-                        userDataFromApi.memberSince ||
-                        userDataFromApi.fecha_registro ||
-                        new Date().toISOString().split('T')[0],
+                    memberSince: clientData.fecha_registro,
                     totalOrders,
-                    totalSavings,
+                    totalSavings: 0,
                     role: userDataFromApi.role || userDataFromApi.rol,
                     sucursal: userDataFromApi.sucursal || userDataFromApi.sucursal_id,
                     createdAt: userDataFromApi.createdAt || userDataFromApi.fecha_creacion
@@ -480,6 +478,7 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     <IonButton
                                         fill="outline"
                                         size="small"
+                                        color={'danger'}
                                         onClick={() => setShowLogoutAlert(true)}
                                         className="mt-2 sm:mt-0"
                                     >
@@ -547,11 +546,12 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                                 {!isEditing ? (
                                     <IonButton
-                                        fill="outline"
+                                        fill="clear"
+                                        color={"medium"}
                                         onClick={() => setIsEditing(true)}
-                                        className="min-w-[120px]"
+                                        className="min-w-16"
                                     >
-                                        <Edit2 className="h-4 w-4 mr-2" /> Editar
+                                        <Edit2 className="size-4 mr-2" />
                                     </IonButton>
                                 ) : (
                                     <div className="flex gap-2 w-full sm:w-auto">
