@@ -27,6 +27,11 @@ import { IconLiz } from "./productos/components/ionc-liz";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
 import { useEffect, useState } from "react";
 import { cn } from "@/utils/functions/cn";
+import { Sucursales } from "@/utils/data/sucursales";
+import { setLocalStorageItem } from "@/utils/functions/local-storage";
+import { setSucursal } from "@/hooks/slices/app";
+import { useHistory } from "react-router";
+import { useAppDispatch } from "@/hooks/selector";
 
 interface ApiResponse {
     totalRecords: number;
@@ -39,6 +44,9 @@ interface ApiResponse {
 const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
     const [products, setproducts] = useState<Producto[]>([]);
+
+    const dispatch = useAppDispatch()
+    const history = useHistory()
 
     useEffect(() => {
         LoadOffers();
@@ -146,6 +154,17 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             description: "Transacciones 100% protegidas"
         }
     ];
+    const handleSelectBranch = async (branch: (typeof Sucursales)[0]) => {
+        let branchData = {
+            id: branch.id,
+            name: branch.name,
+            address: branch.address,
+            precio: branch.precio
+        };
+        await setLocalStorageItem("sucursal", branchData);
+        dispatch(setSucursal(branchData));
+        history.push("/productos");
+    };
 
     return (
         <IonContent
@@ -233,61 +252,30 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                        {
-                            id: "mayoreo",
-                            name: "Sucursal Mayoreo",
-                            status: "active",
-                            badge: "✅ Disponible",
-                            description: "Tu pedido listo en 30 min",
-                            features: ["Recogida inmediata", "++2,000 productos", "Ofertas exclusivas"]
-                        },
-                        {
-                            id: "guadalupe",
-                            name: "Valle de Guadalupe",
-                            status: "coming",
-                            badge: "🔜 Próximamente",
-                            description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio"]
-                        },
-                        {
-                            id: "palmas",
-                            name: "Valle de las Palmas",
-                            status: "coming",
-                            badge: "🔜 Próximamente",
-                            description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio"]
-                        },
-                        {
-                            id: "testerazo",
-                            name: "Testerazo",
-                            status: "coming",
-                            badge: "🔜 Próximamente",
-                            description: "En preparación",
-                            features: ["Muy pronto", "Mismo servicio"]
-                        },
-                    ].map((sucursal, index) => (
+                <div id="sucursales" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Sucursales.map((sucursal) => (
                         <div
                             key={sucursal.id}
+                            onClick={() => handleSelectBranch(sucursal)}
+
                             className={cn(`
-                    relative p-4 rounded-xl border-2 transition-all duration-300
-                    group cursor-pointer
-                `,
+                                    relative p-4 rounded-xl border-2 transition-all duration-300
+                                    group cursor-pointer
+                                `,
                                 sucursal.status === "active"
                                     ? `
-                            border-green-300 dark:border-green-700
-                            bg-green-50 dark:bg-green-900/20
-                            hover:bg-green-100 dark:hover:bg-green-900/30
-                            hover:shadow-lg hover:scale-105
-                            ring-2 ring-green-200 dark:ring-green-800
-                        `
+                                    border-green-300 dark:border-green-700
+                                    bg-green-50 dark:bg-green-900/20
+                                    hover:bg-green-100 dark:hover:bg-green-900/30
+                                    hover:shadow-lg hover:scale-105
+                                    ring-2 ring-green-200 dark:ring-green-800
+                                `
                                     : `
-                            border-gray-200 dark:border-gray-700
-                            bg-gray-50 dark:bg-gray-800/50
-                            opacity-80 grayscale
-                            cursor-not-allowed
-                        `
+                                    border-gray-200 dark:border-gray-700
+                                    bg-gray-50 dark:bg-gray-800/50
+                                    opacity-80 grayscale
+                                    cursor-not-allowed
+                                `
                             )}
                         >
                             {/* Badge de estado */}

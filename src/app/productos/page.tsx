@@ -9,10 +9,14 @@ import CategorySlider from "./components/categories";
 import PromoBanner from "./components/banner";
 import Badge from "@/components/badge";
 import { formatValue } from "@/utils/constants/format-values";
-import { getLocalStorageItem } from "@/utils/functions/local-storage";
+import { getLocalStorageItem, removeFromLocalStorage } from "@/utils/functions/local-storage";
 import { Producto } from "@/utils/types/page";
-import { useAppSelector } from "@/hooks/selector";
+import { useAppDispatch, useAppSelector } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
+import { Sucursales } from "@/utils/data/sucursales";
+import { clearAll } from "@/hooks/slices/app";
+import { clearCart } from "@/hooks/slices/cart";
+import { useHistory } from "react-router";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {
@@ -24,11 +28,24 @@ interface ApiResponse {
 }
 
 const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
+    const dispatch = useAppDispatch()
+    const history = useHistory()
     const cat = useAppSelector((state: RootState) => state.filterData);
     const categoria = cat?.key?.value || '';
+    const sucursal = getLocalStorageItem("sucursal") ?? useAppSelector((state: any) => state.app.sucursal)
 
+    // Estado local sincronizado con Redux
+    const [selectedBranch, setSelectedBranch] = useState<(typeof Sucursales)[0] | null>(
+        () => Sucursales.find(b => b.id === sucursal?.id) || null
+    )
     const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
-
+    // Cambiar sucursal
+    const changeBranch = async () => {
+        await removeFromLocalStorage("sucursal") // Limpiar localStorage
+        dispatch(clearAll()) // Limpiar Redux
+        dispatch(clearCart()) // Limpiar Redux
+        history.push('/') // Redirigir a selección
+    }
     //gestion de data
     const [items, setItems] = useState<Producto[]>([]);
     const [hasMore, setHasMore] = useState(true);
@@ -283,7 +300,6 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </a>
                 </IonToolbar>
             </IonHeader>
-
             <section className="px-4 py-4 max-w-6xl mx-auto md:mb-0 mb-16">
                 <PromoBanner items={[
                     {
@@ -332,6 +348,19 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     <a href="/ofertas" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
                         <Badge color="gray" text="Solo ofertas" />
                     </a>
+                    <label className="flex flex-1 justify-end items-center gap-4">
+                        {selectedBranch && (
+                            <div className="flex items-center">
+                                {/* <selectedBranch.icon className="h-5 w-5 text-purple-700 mr-2" /> */}
+                                <span className="text-sm font-medium text-purple-800">
+                                    Almecen: <strong className="text-gray-500">{selectedBranch.name}</strong>
+                                </span>
+                            </div>
+                        )}
+                        <button onClick={changeBranch} className="text-xs text-purple-700 underline">
+                            Cambiar
+                        </button>
+                    </label>
                 </section>
 
                 <IonList className="bg-transparent">

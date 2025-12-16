@@ -533,7 +533,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
                     {/* Resto del código se mantiene igual */}
                     {/* Sección de Puntuación y Comentarios */}
-                    <section className="bg-gray-50 rounded-lg p-4">
+                    {/* <section className="bg-gray-50 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-4">
                             <IonText>
                                 <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -550,8 +550,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                                 </IonText>
                             </div>
                         </div>
-
-                        {/* Lista de comentarios */}
+                        
                         <div className="space-y-4">
                             {sampleComments.map((comment) => (
                                 <div key={comment.id} className="border-b border-gray-200 pb-4 last:border-b-0">
@@ -590,7 +589,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                                 </div>
                             ))}
                         </div>
-                    </section>
+                    </section> */}
 
                     {/* Sección de Productos Recomendados */}
                     <div className="bg-white rounded-lg p-4 border border-gray-200">
