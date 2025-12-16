@@ -329,38 +329,46 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
                 <CategorySlider />
 
-                <section className="sticky top-2 flex aling-center gap-2 overflow-x-auto scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-2 px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">
-                    {[
-                        { key: null, label: "Productos", count: totalRecords },
-                        { key: 'Favoritos', label: "Favoritos", count: favoriteCount }
-                    ].map((section) => (
-                        <button
-                            key={section.key || 'ofertas'}
-                            onClick={() => handleSectionChange(section.key!)}
-                            className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none"
+                <section className="sticky top-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-3 px-4 sm:py-2 sm:px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                        {[
+                            { key: null, label: "Productos", count: totalRecords },
+                            { key: 'Favoritos', label: "Favoritos", count: favoriteCount }
+                        ].map((section) => (
+                            <button
+                                key={section.key || 'ofertas'}
+                                onClick={() => handleSectionChange(section.key!)}
+                                className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0"
+                            >
+                                <Badge
+                                    color={activeSection === section.key ? "purple" : "gray"}
+                                    text={`${section.label} ${section.count > 0 ? `(${formatValue(section.count, "number")})` : ''}`}
+                                />
+                            </button>
+                        ))}
+                        <a
+                            href="/ofertas"
+                            className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0"
                         >
-                            <Badge
-                                color={activeSection === section.key ? "purple" : "gray"}
-                                text={`${section.label} ${section.count > 0 ? `(${formatValue(section.count, "number")})` : ''}`}
-                            />
-                        </button>
-                    ))}
-                    <a href="/ofertas" className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none">
-                        <Badge color="gray" text="Solo ofertas" />
-                    </a>
-                    <label className="flex flex-1 justify-end items-center gap-4">
+                            <Badge color="gray" text="Solo ofertas" />
+                        </a>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-4 flex-shrink-0 sm:ml-auto">
                         {selectedBranch && (
-                            <div className="flex items-center">
-                                {/* <selectedBranch.icon className="h-5 w-5 text-purple-700 mr-2" /> */}
-                                <span className="text-sm font-medium text-purple-800">
-                                    Almecen: <strong className="text-gray-500">{selectedBranch.name}</strong>
+                            <div className="sm:flex items-center">
+                                <span className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                                    Almacén: <strong className="text-gray-700 dark:text-gray-300 ml-1">{selectedBranch.name}</strong>
                                 </span>
                             </div>
                         )}
-                        <button onClick={changeBranch} className="text-xs text-purple-700 underline">
+                        <button
+                            onClick={changeBranch}
+                            className="text-xs sm:text-sm text-purple-700 dark:text-purple-400 underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors whitespace-nowrap"
+                        >
                             Cambiar
                         </button>
-                    </label>
+                    </div>
                 </section>
 
                 <IonList className="bg-transparent">
