@@ -2,17 +2,26 @@ import {
     IonCard,
     IonCardContent,
     IonInput,
-    IonItem,
     IonContent,
     IonHeader,
     IonToolbar,
     IonButton,
     IonBackButton,
     IonAlert,
-    IonLoading
+    IonLoading,
+    IonBadge,
+    IonChip,
+    IonProgressBar,
+    IonSkeletonText
 } from "@ionic/react";
 import { useState, useEffect } from "react";
-import { User, Mail, Phone, Calendar, Package, TrendingDown, Edit2, Save, X, CreditCard, MapPin, Settings } from "lucide-react";
+import {
+    User, Mail, Phone, Calendar, IdCard,
+    Package, TrendingDown, Edit2, Save, X,
+    Sparkles, Box, DollarSign, Award,
+    CalendarDays, BarChart3, ChevronRight,
+    Shield, CreditCard, History, Star
+} from "lucide-react";
 import { PageProps } from "@/utils/types/page";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector } from "@/hooks/selector";
@@ -36,354 +45,252 @@ import {
     getLocalStorageItem,
     setLocalStorageItem
 } from "@/utils/functions/local-storage";
+import { safeCall } from "@/hooks/use-debounce";
+import { BentoGrid, BentoItem } from "@/components/bento-grid";
+import Badge from "@/components/badge";
 
-// Safe call utility
-async function safeCall<T>(fn: () => Promise<T>, context: string): Promise<T> {
-    try {
-        const res: any = await fn();
-        if (res && "error" in res) {
-            throw new Error(`Error en ${context}: ${JSON.stringify(res.error)}`);
-        }
-        return res;
-    } catch (err: any) {
-        console.error(`❌ ${context}:`, err);
-        throw new Error(err.message || `Fallo en ${context}`);
-    }
-}
-
-interface UserProfile {
+interface UserData {
     id?: string;
-    name: string;
-    email: string;
-    phone: string;
-    employeeNumber: string;
-    loyaltyPoints: number;
-    memberSince: string;
-    totalOrders: number;
-    totalSavings: number;
-    role?: string;
-    sucursal?: number;
-    createdAt?: string;
+    usuario_id?: string;
+    nombre?: string;
+    email?: string;
+    telefono?: string;
+    rol?: string;
+    fecha_registro?: string;
+    [key: string]: any;
 }
 
-// Componente Skeleton para loading
-const ProfileSkeleton = () => (
-    <div className="space-y-6 p-4">
-        <div className="space-y-2">
-            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        </div>
-        <div className="h-48 bg-gray-200 rounded-lg"></div>
-        <div className="grid gap-4 md:grid-cols-3">
-            {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-20 bg-gray-200 rounded"></div>
-            ))}
-        </div>
-        <div className="space-y-4">
-            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-            <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-16 bg-gray-200 rounded"></div>
-                ))}
-            </div>
-        </div>
-    </div>
-);
+interface ResumenData {
+    totalAhorro: string;
+    totalPedidos: number;
+    fechasMasSolicitadas: Array<{ fecha: string; pedidos: number }>;
+    pedidosPorEstado: Record<string, number>;
+    promedioPedidosPorDia?: number;
+}
 
 const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
-    // --- Estados ---
-    const [user, setUser] = useState<UserProfile>({
-        name: "",
-        email: "",
-        phone: "",
-        employeeNumber: "",
-        loyaltyPoints: 0,
-        memberSince: new Date().toISOString().split('T')[0],
-        totalOrders: 0,
-        totalSavings: 0
-    });
-
-    const [isEditing, setIsEditing] = useState(false);
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-    });
-
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showSuccessAlert, setShowSuccessAlert] = useState(false);
-    const [showErrorAlert, setShowErrorAlert] = useState(false);
-    const [showLogoutAlert, setShowLogoutAlert] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [loadError, setLoadError] = useState<string | null>(null);
-
-    // --- Hooks ---
-    const history = useHistory();
-    const cart = useAppSelector((state: RootState) => state.cart);
-    const [GetDataGeneral] = useGetWithFiltersGeneralMutation(); // Cambiado a GetWithFiltersGeneral
-    const [PutData] = usePutMutation();
+    const [getDataUserPerfil] = useGetWithFiltersGeneralMutation();
+    const [putDataUserPerfil] = usePutMutation();
     const [logoutUser] = useLogoutUserMutation();
 
-    // --- Efectos ---
-    useEffect(() => {
-        const userId = getLocalStorageItem("user-id");
-        if (userId) {
-            loadUserData();
-        } else {
-            setUser({
-                name: "Invitado",
-                email: "invitado@example.com",
-                phone: "000-000-0000",
-                employeeNumber: "EMP-0000",
-                loyaltyPoints: 0,
-                memberSince: new Date().toISOString().split('T')[0],
-                totalOrders: 0,
-                totalSavings: 0
-            });
-            setIsLoading(false);
-        }
-    }, []);
+    const [dataUser, setDataUser] = useState<UserData>({});
+    const [resumen, setResumen] = useState<ResumenData>({
+        totalAhorro: "0",
+        totalPedidos: 0,
+        fechasMasSolicitadas: [],
+        pedidosPorEstado: {}
+    });
+    const [loading, setLoading] = useState(true);
+    const [editMode, setEditMode] = useState(false);
+    const [tempUserData, setTempUserData] = useState<UserData>({});
+    const history = useHistory();
 
-    useEffect(() => {
-        if (user.name) {
-            setFormData({
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-            });
-        }
-    }, [user]);
-
-    // --- Funciones ---
-    const validateForm = () => {
-        const errors: string[] = [];
-
-        if (!formData.name.trim()) errors.push("El nombre es obligatorio");
-        if (!formData.email.trim()) errors.push("El correo electrónico es obligatorio");
-        if (!formData.phone.trim()) errors.push("El teléfono es obligatorio");
-
-        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            errors.push("El correo electrónico no es válido");
-        }
-
-        return errors;
+    // Función para calcular nivel de usuario
+    const calcularNivel = (totalPedidos: number) => {
+        if (totalPedidos >= 50) return { nivel: "Élite", color: "from-purple-600 to-pink-600", icon: <Award className="size-5" /> };
+        if (totalPedidos >= 20) return { nivel: "Avanzado", color: "from-blue-600 to-purple-600", icon: <Star className="size-5" /> };
+        if (totalPedidos >= 5) return { nivel: "Intermedio", color: "from-green-600 to-blue-600", icon: <Star className="size-5" /> };
+        return { nivel: "Principiante", color: "from-gray-600 to-gray-400", icon: <User className="size-5" /> };
     };
 
-    const loadUserData = async () => {
-        setIsLoading(true);
-        setLoadError(null);
+    const nivelUsuario = calcularNivel(resumen.totalPedidos);
+
+    async function fetchUserData() {
+        setLoading(true);
         try {
             const userId = getLocalStorageItem("user-id");
-            const userData = getLocalStorageItem("user-data");
-            const token = getLocalStorageItem("token");
 
-            if (!userId || !token) {
-                setUser({
-                    name: "Invitado",
-                    email: "invitado@example.com",
-                    phone: "000-000-0000",
-                    employeeNumber: "EMP-0000",
-                    loyaltyPoints: 0,
-                    memberSince: new Date().toISOString().split('T')[0],
-                    totalOrders: 0,
-                    totalSavings: 0
-                });
-                setIsLoading(false);
-                return;
-            }
-
-            // Usar datos de localStorage temporalmente
-            if (userData) {
-                setUser(prev => ({
-                    ...prev,
-                    name: userData.nombre || userData.name || "",
-                    email: userData.correo || userData.email || "",
-                    phone: userData.telefono || userData.phone || "",
-                }));
-            }
-
-            // CONSULTA DE USUARIO USANDO getWithFiltersGeneral
-            const userResponse = await safeCall(() => GetDataGeneral({
-                table: "usuarios", // Tabla especificada
-                page: 1,
-                pageSize: 1,
+            const existingUser = await safeCall(() => getDataUserPerfil({
+                table: "usuarios",
                 filtros: {
-                    Filtros: [{ Key: "id", Value: userId }],
+                    Filtros: [{ key: "id", operator: "=", value: userId }],
                     Order: [{ Key: "id", Direction: "Desc" }]
-                }
-            }), "obtener datos de usuario");
+                },
+                pageSize: 1
+            }), "getDataUser");
 
-            const users = userResponse?.data?.data ?? [];
-
+            const users = existingUser?.data?.data ?? [];
             if (users.length > 0) {
-                const userDataFromApi = users[0];
-
-                // CONSULTA DE ESTADÍSTICAS USANDO getWithFiltersGeneral
-                const statsResponse = await safeCall(() => GetDataGeneral({
-                    table: "clientes", // Tabla para estadísticas
-                    page: 1,
-                    pageSize: 100,
+                const user = users[0];
+                const cliente = await safeCall(() => getDataUserPerfil({
+                    table: "clientes",
                     filtros: {
-                        Filtros: [{ Key: "email", Value: userDataFromApi.email }],
-                        Order: [{ Key: "id", Direction: "Desc" }]
+                        Filtros: [{ key: "email", operator: "=", value: user.email }]
+                    },
+                    pageSize: 1
+                }), "getDataPerfil");
+
+                const userData = { ...user, ...cliente.data.data[0] };
+                setDataUser(userData);
+                setTempUserData(userData);
+
+                // Obtener pedidos del usuario
+                const pedidos = await safeCall(() => getDataUserPerfil({
+                    table: "listas left join clientes on listas.id_cliente = clientes.id",
+                    pageSize: 1000000,
+                    page: 1,
+                    tag: 'Pedidos',
+                    filtros: {
+                        Selects: [
+                            { key: "listas.nombre_lista" },
+                            { key: "listas.array_lista" },
+                            { key: "listas.fecha_creacion" },
+                            { key: "listas.estado" }
+                        ],
+                        Filtros: [
+                            { key: "listas.usuario_id", value: userId, operator: "=" },
+                        ],
+                        Order: [
+                            { Key: "listas.fecha_creacion", Direction: "Desc" }
+                        ]
                     }
-                }), "obtener estadísticas de usuario");
+                }), "getPedidos");
 
-                const clientData = statsResponse?.data?.data[0] ?? [];
-                const totalOrders = clientData.length;
-                /* const totalSavings = clientData.reduce((sum: number, order: any) => {
-                    return sum + (order.total_savings || 0);
-                }, 0); */
-                console.log(clientData);
+                const resumen = procesarResumen(pedidos);
+                setResumen(resumen);
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
-                // Mapear datos de la API al formato del estado
-                setUser({
-                    name: userDataFromApi.nombre || userDataFromApi.name || "",
-                    email: userDataFromApi.email || "",
-                    phone: userDataFromApi.telefono || userDataFromApi.phone || "",
-                    employeeNumber: `ID-${userDataFromApi.id}`,
-                    loyaltyPoints: userDataFromApi.loyaltyPoints ||
-                        userDataFromApi.puntos_lealtad ||
-                        0,
-                    memberSince: clientData.fecha_registro,
-                    totalOrders,
-                    totalSavings: 0,
-                    role: userDataFromApi.role || userDataFromApi.rol,
-                    sucursal: userDataFromApi.sucursal || userDataFromApi.sucursal_id,
-                    createdAt: userDataFromApi.createdAt || userDataFromApi.fecha_creacion
-                });
+    const procesarResumen = (pedidosData: any): ResumenData => {
+        const pedidosArray = pedidosData?.data?.data || [];
+        let totalAhorro = 0;
+        let totalPedidos = pedidosArray.length;
+        const fechaCount: Record<string, number> = {};
+        const estadoCount: Record<string, number> = {};
 
-                // Actualizar localStorage
-                setLocalStorageItem("user-data", {
-                    nombre: userDataFromApi.nombre || userDataFromApi.name,
-                    correo: userDataFromApi.email,
-                    telefono: userDataFromApi.telefono || userDataFromApi.phone,
-                    id: userId,
-                    role: userDataFromApi.role || userDataFromApi.rol,
-                    sucursal: userDataFromApi.sucursal || userDataFromApi.sucursal_id
-                });
-
-            } else {
-                console.warn("⚠ No se encontraron datos del usuario en el backend");
-                setLoadError("No se encontraron datos del perfil");
+        pedidosArray.forEach((pedido: any) => {
+            const fecha = pedido.fecha_creacion?.split('T')[0] || '';
+            if (fecha) {
+                fechaCount[fecha] = (fechaCount[fecha] || 0) + 1;
             }
 
-        } catch (error: any) {
-            console.error("❌ Error al cargar datos del usuario:", error);
-            setLoadError("No se pudieron cargar los datos del perfil. Por favor, intenta nuevamente.");
-            setErrorMessage("No se pudieron cargar los datos del perfil");
-            setShowErrorAlert(true);
-        } finally {
-            setIsLoading(false);
+            // Contar por estado
+            const estado = pedido.estado || 'PENDIENTE';
+            estadoCount[estado] = (estadoCount[estado] || 0) + 1;
+
+            // Calcular ahorro
+            try {
+                const items = JSON.parse(pedido.array_lista);
+                items.forEach((item: any) => {
+                    if (item.descuento && !isNaN(parseFloat(item.descuento))) {
+                        totalAhorro += parseFloat(item.descuento);
+                    }
+                });
+            } catch (error) {
+                console.error('Error parsing array_lista:', error);
+            }
+        });
+
+        const fechasMasSolicitadas = Object.entries(fechaCount)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([fecha, count]) => ({ fecha, pedidos: count }));
+
+        const promedioPedidosPorDia = totalPedidos > 0 ?
+            totalPedidos / Object.keys(fechaCount).length : 0;
+
+        return {
+            totalAhorro: totalAhorro.toFixed(2),
+            totalPedidos,
+            fechasMasSolicitadas,
+            pedidosPorEstado: estadoCount,
+            promedioPedidosPorDia
+        };
+    };
+
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    const formatFecha = (fecha: string) => {
+        if (!fecha) return "No disponible";
+        const date = new Date(fecha);
+        const hoy = new Date();
+        const manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);
+
+        if (date.toDateString() === hoy.toDateString()) {
+            return "Hoy";
+        } else if (date.toDateString() === manana.toDateString()) {
+            return "Mañana";
+        } else {
+            return date.toLocaleDateString('es-ES', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
         }
+    };
+
+    const handleEdit = () => {
+        setEditMode(true);
     };
 
     const handleSave = async () => {
-        const errors = validateForm();
-        if (errors.length > 0) {
-            setErrorMessage(errors.join(". "));
-            setShowErrorAlert(true);
-            return;
-        }
-
-        setIsSaving(true);
         try {
-            const userId = getLocalStorageItem("user-id");
-
-            if (!userId) {
-                throw new Error("Usuario no autenticado");
-            }
-
-            // Actualizar usuario usando el endpoint put
-            await safeCall(() => PutData({
-                url: "v1/users", // O usar putGeneral si prefieres
-                id: userId,
-                data: {
-                    nombre: formData.name,
-                    email: formData.email,
-                    telefono: formData.phone
-                }
-            }), "actualizar usuario");
-
-            // Actualizar localStorage
-            const currentUserData = getLocalStorageItem("user-data") || {};
-            setLocalStorageItem("user-data", {
-                ...currentUserData,
-                nombre: formData.name,
-                correo: formData.email,
-                telefono: formData.phone
-            });
-
-            // Actualizar estado local
-            setUser(prev => ({
-                ...prev,
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone
-            }));
-
-            setShowSuccessAlert(true);
-            setIsEditing(false);
-
-        } catch (error: any) {
-            console.error("❌ Error al guardar cambios:", error);
-            setErrorMessage(error.message || "No se pudieron guardar los cambios");
-            setShowErrorAlert(true);
-        } finally {
-            setIsSaving(false);
+            // Aquí iría la lógica para guardar los cambios
+            setEditMode(false);
+        } catch (error) {
+            console.error('Error saving user data:', error);
         }
     };
 
     const handleCancel = () => {
-        setFormData({
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-        });
-        setIsEditing(false);
+        setTempUserData(dataUser);
+        setEditMode(false);
     };
 
     const handleLogout = async () => {
         try {
             const userId = getLocalStorageItem("user-id");
-            if (userId) {
-                await logoutUser(userId);
-            }
+            await logoutUser(userId).unwrap();
+            history.push('/login');
         } catch (error) {
-            console.warn("Error en logout backend:", error);
-        } finally {
-            localStorage.removeItem("user-id");
-            localStorage.removeItem("user-data");
-            localStorage.removeItem("token");
-            localStorage.removeItem("cart-items");
-            history.push("/login");
+            console.error('Error during logout:', error);
         }
     };
 
-    const handleCardClick = (route: string) => {
-        history.push(route);
+    const formatEstado = (estado: string) => {
+        const estados: Record<string, { label: string, color: string }> = {
+            'COMPLETADO': { label: 'Completado', color: 'success' },
+            'PENDIENTE': { label: 'Pendiente', color: 'warning' },
+            'CANCELADO': { label: 'Cancelado', color: 'danger' },
+            'PROCESANDO': { label: 'Procesando', color: 'primary' }
+        };
+        return estados[estado] || { label: estado, color: 'medium' };
     };
 
-    // Generar badges condicionales
-    const userBadges = [
-        { condition: user.employeeNumber, text: user.employeeNumber, color: "bg-blue-100 text-blue-800" },
-        { condition: user.role, text: user.role, color: "bg-purple-100 text-purple-800" },
-        { condition: user.sucursal, text: `Sucursal ${user.sucursal}`, color: "bg-green-100 text-green-800" },
-    ].filter(badge => badge.condition);
+    if (loading) {
+        return (
+            <IonContent>
+                <div className="p-6 space-y-6">
+                    <IonSkeletonText animated style={{ width: '60%', height: '32px' }} />
+                    <IonSkeletonText animated style={{ width: '100%', height: '200px' }} />
+                    <div className="grid grid-cols-2 gap-4">
+                        <IonSkeletonText animated style={{ width: '100%', height: '100px' }} />
+                        <IonSkeletonText animated style={{ width: '100%', height: '100px' }} />
+                    </div>
+                </div>
+            </IonContent>
+        );
+    }
 
     return (
         <IonContent
             fullscreen
             scrollEvents
             onIonScroll={(e) => {
-                const isScrolled = e.detail.scrollTop > 20;
+                const isScrolled = e.detail.scrollTop > 10;
                 onScroll?.(isScrolled);
             }}>
 
-            <IonHeader
-                collapse="condense"
-                className="custom-toolbar h-fit absolute -top-0">
+            <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/productos'>
                         <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
@@ -391,268 +298,301 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </IonToolbar>
             </IonHeader>
 
-            <section className="flex px-4 pt-2">
-                <IonBackButton color="tertiary" text="Regresar" />
+            <section className="flex my-2">
+                <IonBackButton color="tertiary" text="Regresar" defaultHref="/productos" />
             </section>
+            <div className="pt-16 pb-8 px-4 max-w-6xl mx-auto">
 
-            {isLoading ? (
-                <ProfileSkeleton />
-            ) : (
-                <section className="py-1 px-4 max-w-6xl mx-auto md:mb-0 mb-16">
-                    {/* Alertas */}
-                    <IonAlert
-                        isOpen={showSuccessAlert}
-                        header="¡Éxito!"
-                        message="Los cambios se han guardado correctamente"
-                        buttons={["Aceptar"]}
-                        onDidDismiss={() => setShowSuccessAlert(false)}
-                    />
-
-                    <IonAlert
-                        isOpen={showErrorAlert}
-                        header="Error"
-                        message={errorMessage}
-                        buttons={["Aceptar"]}
-                        onDidDismiss={() => setShowErrorAlert(false)}
-                    />
-
-                    <IonAlert
-                        isOpen={showLogoutAlert}
-                        header="Cerrar Sesión"
-                        message="¿Estás seguro de que quieres cerrar sesión?"
-                        buttons={[
-                            { text: "Cancelar", role: "cancel" },
-                            { text: "Cerrar Sesión", handler: () => handleLogout() }
-                        ]}
-                        onDidDismiss={() => setShowLogoutAlert(false)}
-                    />
-
-                    <IonLoading
-                        isOpen={isSaving}
-                        message="Guardando cambios..."
-                    />
-
-                    {/* Título con botón de recarga */}
-                    <div className="pt-4">
-                        <div className="flex justify-between items-center mb-6">
-                            <div>
-                                <h1 className="text-3xl font-bold text-black mb-1">Mi Perfil</h1>
-                                <p className="text-gray-500">Gestión de información personal</p>
-                            </div>
-                            {loadError && (
-                                <IonButton
-                                    fill="clear"
-                                    onClick={loadUserData}
-                                    size="small"
-                                    className="text-purple-600"
-                                >
-                                    Reintentar
-                                </IonButton>
-                            )}
-                        </div>
-                        {loadError && (
-                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                                <p className="text-red-600 text-sm">{loadError}</p>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Tarjeta principal del usuario */}
-                    <IonCard className="m-0 shadow-sm border mb-4">
-                        <IonCardContent className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-6">
-                            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center text-3xl shadow-md">
-                                👤
-                            </div>
-                            <div className="flex-1 text-center sm:text-left">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                    <div>
-                                        <p className="text-2xl font-bold text-black mb-1">{user.name}</p>
-                                        <div className="flex flex-wrap gap-2 mb-2">
-                                            {userBadges.map((badge, index) => (
-                                                <span key={index} className={`px-3 py-1 ${badge.color} text-xs rounded-full`}>
-                                                    {badge.text}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <IonButton
-                                        fill="outline"
-                                        size="small"
-                                        color={'danger'}
-                                        onClick={() => setShowLogoutAlert(true)}
-                                        className="mt-2 sm:mt-0"
-                                    >
-                                        Cerrar Sesión
-                                    </IonButton>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    <div>
-                                        <p className="text-sm text-gray-500">Puntos de lealtad</p>
-                                        <p className="text-xl font-bold text-black">{user.loyaltyPoints} pts</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-gray-500">Miembro desde</p>
-                                        <p className="text-sm font-medium text-black">
-                                            {user.memberSince ? new Date(user.memberSince).toLocaleDateString("es-ES", {
-                                                day: "numeric",
-                                                month: "long",
-                                                year: "numeric"
-                                            }) : "Fecha no disponible"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </IonCardContent>
-                    </IonCard>
-
-                    {/* Tres tarjetas superiores */}
-                    <div className="grid gap-2 md:grid-cols-2 mb-2">
-                        <IonCard className="m-0 shadow-sm border hover:shadow-md transition-shadow">
-                            <IonCardContent className="flex gap-4 items-center p-4">
-                                <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                    <Package className="h-6 w-6 text-blue-600" />
+                {/* Tarjeta de Perfil Principal */}
+                <div className="mb-8 relative">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${nivelUsuario.color} rounded-3xl opacity-10`} />
+                    <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xl">
+                        {/* Encabezado del perfil */}
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                                    <span className="text-2xl font-bold text-white">
+                                        {dataUser?.nombre?.charAt(0) || 'U'}
+                                    </span>
                                 </div>
                                 <div>
-                                    <p className="text-xl font-bold text-black">{user.totalOrders}</p>
-                                    <p className="text-sm text-gray-500">Pedidos realizados</p>
-                                </div>
-                            </IonCardContent>
-                        </IonCard>
-
-                        <IonCard className="m-0 shadow-sm border hover:shadow-md transition-shadow">
-                            <IonCardContent className="flex gap-4 items-center p-4">
-                                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                                    <TrendingDown className="h-6 w-6 text-green-600" />
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold text-black">
-                                        {formatValue(user.totalSavings, "currency")}
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
+                                            {dataUser?.nombre || 'Usuario'}
+                                        </h1>
+                                        <IonBadge
+                                            className={`bg-gradient-to-r ${nivelUsuario.color} text-white font-medium px-3 py-1 rounded-full`}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                {nivelUsuario.icon}
+                                                <span>{nivelUsuario.nivel}</span>
+                                            </div>
+                                        </IonBadge>
+                                    </div>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        Miembro desde {formatFecha(dataUser?.fecha_registro || '')}
                                     </p>
-                                    <p className="text-sm text-gray-500">Ahorrado en total</p>
                                 </div>
-                            </IonCardContent>
-                        </IonCard>
-                    </div>
+                            </div>
 
-                    {/* Información Personal */}
-                    <IonCard className="m-0 shadow-sm border mb-2">
-                        <IonCardContent className="p-6">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-black mb-1">Información Personal</h2>
-                                    <p className="text-sm text-gray-500">Actualiza tus datos de contacto</p>
-                                </div>
-
-                                {!isEditing ? (
-                                    <IonButton
-                                        fill="clear"
-                                        color={"medium"}
-                                        onClick={() => setIsEditing(true)}
-                                        className="min-w-16"
-                                    >
-                                        <Edit2 className="size-4 mr-2" />
-                                    </IonButton>
-                                ) : (
-                                    <div className="flex gap-2 w-full sm:w-auto">
+                            <div className="flex items-center gap-3">
+                                {editMode ? (
+                                    <>
                                         <IonButton
                                             onClick={handleSave}
-                                            disabled={isSaving}
-                                            className="flex-1 sm:flex-none"
+                                            color="success"
+                                            fill="solid"
+                                            className="gap-2"
                                         >
-                                            <Save className="h-4 w-4 mr-2" />
-                                            {isSaving ? "Guardando..." : "Guardar"}
+                                            <Save className="size-4" />
+                                            Guardar
                                         </IonButton>
                                         <IonButton
-                                            fill="outline"
                                             onClick={handleCancel}
-                                            className="flex-1 sm:flex-none"
+                                            color="medium"
+                                            fill="outline"
+                                            className="gap-2"
                                         >
-                                            <X className="h-4 w-4 mr-2" /> Cancelar
+                                            <X className="size-4" />
+                                            Cancelar
                                         </IonButton>
-                                    </div>
+                                    </>
+                                ) : (
+                                    <IonButton
+                                        onClick={handleEdit}
+                                        color="primary"
+                                        fill="outline"
+                                        className="gap-2"
+                                    >
+                                        <Edit2 className="size-4" />
+                                        Editar Perfil
+                                    </IonButton>
                                 )}
                             </div>
+                        </div>
 
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-black">
-                                        <User className="h-4 w-4 text-gray-500" />
-                                        <span className="font-medium">Nombre Completo</span>
-                                    </div>
-                                    {isEditing ? (
-                                        <IonInput
-                                            value={formData.name}
-                                            placeholder="Ingresa tu nombre completo"
-                                            onIonChange={(e) => setFormData({ ...formData, name: e.detail.value! })}
-                                            className="border rounded-lg px-3 py-2"
-                                        />
-                                    ) : (
-                                        <p className="text-black font-medium text-lg pl-6">{user.name}</p>
-                                    )}
-                                </div>
+                        {/* Información del usuario */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                            <InfoCard
+                                icon={<Mail className="size-5" />}
+                                title="Correo Electrónico"
+                                value={dataUser?.email || 'No disponible'}
+                                editable={editMode}
+                            />
+                            <InfoCard
+                                icon={<Phone className="size-5" />}
+                                title={"Teléfono" + (dataUser?.rol === "cliente" && " (Contraseña)" || "")}
+                                value={dataUser?.telefono || 'No disponible'}
+                                editable={editMode}
+                                isPhone={true}
+                            />
+                            <InfoCard
+                                icon={<Calendar className="size-5" />}
+                                title="Última Actualización"
+                                value={formatFecha(dataUser?.fecha_actualizacion || dataUser?.fecha_registro || '')}
+                            />
+                            <InfoCard
+                                icon={<IdCard className="size-5" />}
+                                title="ID de Usuario"
+                                value={((dataUser?.rol || '') + '-' + (dataUser?.id || '') + '-' + (dataUser?.usuario_id || '')).toUpperCase()}
+                                copyable={true}
+                            />
+                        </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-black">
-                                        <Mail className="h-4 w-4 text-gray-500" />
-                                        <span className="font-medium">Correo Electrónico</span>
-                                    </div>
-                                    {isEditing ? (
-                                        <IonInput
-                                            type="email"
-                                            value={formData.email}
-                                            placeholder="correo@ejemplo.com"
-                                            onIonChange={(e) => setFormData({ ...formData, email: e.detail.value! })}
-                                            className="border rounded-lg px-3 py-2"
-                                        />
-                                    ) : (
-                                        <p className="text-black font-medium text-lg pl-6">{user.email}</p>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2 text-black">
-                                        <Phone className="h-4 w-4 text-gray-500" />
-                                        <span className="font-medium">Teléfono</span>
-                                    </div>
-                                    {isEditing ? (
-                                        <IonInput
-                                            type="tel"
-                                            value={formData.phone}
-                                            placeholder="XXX-XXX-XXXX"
-                                            onIonChange={(e) => setFormData({ ...formData, phone: e.detail.value! })}
-                                            className="border rounded-lg px-3 py-2"
-                                        />
-                                    ) : (
-                                        <p className="text-black font-medium text-lg pl-6">{user.phone}</p>
-                                    )}
-                                </div>
+                        {/* Barra de progreso del nivel */}
+                        <div className="mb-6">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Progreso al siguiente nivel
+                                </span>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {resumen.totalPedidos} / 50 pedidos
+                                </span>
                             </div>
+                            <IonProgressBar
+                                value={resumen.totalPedidos / 50}
+                                className="h-2 rounded-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Estadísticas y Métricas */}
+                <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+                    Estadísticas de Compras
+                </h2>
+
+                <BentoGrid cols={3}>
+                    {/* Resumen de pedidos */}
+                    <BentoItem
+                        rowSpan={1}
+                        colSpan={1}
+                        title="Resumen de Pedidos"
+                        icon={<BarChart3 className="size-6 text-blue-500" />}
+                        className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800"
+                    >
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                                <div>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">Total de Pedidos</p>
+                                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                                        {resumen.totalPedidos}
+                                    </p>
+                                </div>
+                                <Box className="size-8 text-blue-500" />
+                            </div>
+
+                            <div className="space-y-3">
+                                <h4 className="font-semibold text-gray-900 dark:text-white">Por Estado</h4>
+                                {Object.entries(resumen.pedidosPorEstado).map(([estado, cantidad]) => {
+                                    const estadoInfo = formatEstado(estado);
+                                    return (
+                                        <div key={estado} className="flex items-center justify-between">
+                                            <Badge color="gray" text={estadoInfo.label} />
+                                            <span className="font-semibold">{cantidad}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </BentoItem>
+
+                    {/* Ahorro total */}
+                    <BentoItem
+                        colSpan={1}
+                        title="Ahorro Total"
+                        icon={<DollarSign className="size-6 text-green-500" />}
+                        className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800"
+                    >
+                        <div className="p-4">
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                                {formatValue(resumen.totalAhorro, 'currency', 2)}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Descuentos acumulados en todas tus compras
+                            </p>
+                            <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400">
+                                <TrendingDown className="size-4" />
+                                <span className="text-sm font-medium">¡Sigue ahorrando!</span>
+                            </div>
+                        </div>
+                    </BentoItem>
+
+                    {/* Actividad reciente */}
+                    <BentoItem
+                        colSpan={1}
+                        title="Días Más Activos"
+                        icon={<CalendarDays className="size-6 text-purple-500" />}
+                        className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800"
+                    >
+                        <div className="space-y-3">
+                            {resumen.fechasMasSolicitadas.length > 0 ? (
+                                resumen.fechasMasSolicitadas.map((item, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg">
+                                        <div>
+                                            <p className="font-medium text-gray-900 dark:text-white">
+                                                {formatFecha(item.fecha)}
+                                            </p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                                {item.pedidos} pedido{item.pedidos !== 1 ? 's' : ''}
+                                            </p>
+                                        </div>
+                                        <ChevronRight className="size-4 text-gray-400" />
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                                    No hay actividad registrada
+                                </p>
+                            )}
+                        </div>
+                    </BentoItem>
+
+                </BentoGrid>
+
+                {/* Información adicional */}
+                {/*  <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <IonCard className="rounded-2xl">
+                        <IonCardContent>
+                            <div className="flex items-center gap-3 mb-4">
+                                <CreditCard className="size-6 text-purple-500" />
+                                <h3 className="text-lg font-semibold">Métodos de Pago</h3>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                Gestiona tus métodos de pago guardados para una compra más rápida
+                            </p>
+                            <IonButton fill="clear" size="small">
+                                Administrar pagos
+                                <ChevronRight className="size-4 ml-1" />
+                            </IonButton>
                         </IonCardContent>
                     </IonCard>
 
-                    {/* Carrito actual */}
-                    {cart.items && cart.items.length > 0 && (
-                        <IonCard className="m-0 shadow-sm border bg-blue-50">
-                            <IonCardContent className="p-4">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-semibold text-black">Tienes {cart.items.length} items en tu carrito</p>
-                                        <p className="text-sm text-gray-500">Continúa con tu compra</p>
-                                    </div>
-                                    <IonButton
-                                        routerLink="/carrito"
-                                        className="custom-tertiary"
-                                    >
-                                        Ver Carrito
-                                    </IonButton>
-                                </div>
-                            </IonCardContent>
-                        </IonCard>
-                    )}
-                </section>
-            )}
+                    <IonCard className="rounded-2xl">
+                        <IonCardContent>
+                            <div className="flex items-center gap-3 mb-4">
+                                <Shield className="size-6 text-green-500" />
+                                <h3 className="text-lg font-semibold">Seguridad</h3>
+                            </div>
+                            <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                Actualiza tu contraseña y revisa la actividad de tu cuenta
+                            </p>
+                            <IonButton fill="clear" size="small">
+                                Gestionar seguridad
+                                <ChevronRight className="size-4 ml-1" />
+                            </IonButton>
+                        </IonCardContent>
+                    </IonCard>
+                </div> */}
+            </div>
         </IonContent>
+    );
+};
+
+// Componente auxiliar para mostrar información
+const InfoCard: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    value: string;
+    editable?: boolean;
+    copyable?: boolean;
+    isPhone?: boolean;
+}> = ({ icon, title, value, editable = false, copyable = false, isPhone = false }) => {
+    const handleCopy = () => {
+        navigator.clipboard.writeText(value);
+        // Podrías agregar un toast de confirmación aquí
+    };
+
+    return (
+        <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-2 text-gray-600 dark:text-gray-400">
+                {icon}
+                <span className="text-sm font-medium">{title}</span>
+            </div>
+            {editable ? (
+                <IonInput
+                    value={value}
+                    className="custom-input"
+                    type={isPhone ? "tel" : "text"}
+                />
+            ) : (
+                <div className="flex items-center justify-between">
+                    <p className="text-gray-900 dark:text-white font-medium break-all">
+                        {value}
+                    </p>
+                    {copyable && (
+                        <IonButton
+                            fill="clear"
+                            size="small"
+                            onClick={handleCopy}
+                            className="ml-2"
+                        >
+                            Copiar
+                        </IonButton>
+                    )}
+                </div>
+            )}
+        </div>
     );
 };
 

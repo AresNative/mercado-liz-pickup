@@ -196,10 +196,10 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         </div>
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
+                    <span className="text-4xl md:text-6xl font-bold leading-tight mb-6">
                         Tu mercado
                         <span className="block text-yellow-300">fresco y rápido</span>
-                    </h1>
+                    </span>
 
                     <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-8 leading-relaxed">
                         Productos seleccionados, ofertas activas y recogida sin filas.
@@ -241,11 +241,11 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </section>
 
             {/* SELECCIÓN DE SUCURSAL MEJORADA */}
-            <section className="max-w-6xl mx-auto px-4 mb-10">
+            <section className="max-w-6xl mx-auto px-4 my-10">
                 <div className="text-center mb-8">
-                    <h3 className="font-bold text-2xl md:text-3xl dark:text-white mb-3">
+                    <span className="font-bold text-2xl md:text-3xl dark:text-white mb-3">
                         🏪 Elige Tu Sucursal
-                    </h3>
+                    </span>
                     <p className="text-gray-600 dark:text-gray-300 text-lg">
                         Selecciona donde quieres recoger tu pedido.
                         <span className="font-semibold text-green-600"> ¡Recogida sin filas garantizada!</span>
@@ -392,14 +392,14 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             {/* OFERTAS DESTACADAS */}
             <section id="ofertas" className="bg-gray-50 dark:bg-gray-900 py-16">
                 <div className="max-w-6xl mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <div className="inline-flex items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                    <div className="text-center flex flex-col gap-2 mb-12">
+                        <div className="inline-flex w-fit mx-auto items-center gap-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-full text-sm font-semibold mb-4">
                             <Star className="size-4" />
                             OFERTAS LIMITADAS
                         </div>
-                        <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                        <span className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
                             Descuentos Especiales
-                        </h2>
+                        </span>
                         <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg">
                             Productos seleccionados con descuentos exclusivos.
                             <span className="font-semibold text-red-500"> ¡Solo por tiempo limitado!</span>
@@ -447,9 +447,9 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             {/* CATEGORÍAS DESTACADAS */}
             <section className="py-16 px-4 max-w-6xl mx-auto">
                 <div className="text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                    <span className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
                         Explora por Categoría
-                    </h2>
+                    </span>
                     <p className="text-gray-600 dark:text-gray-300 text-lg">
                         Encuentra fácilmente lo que necesitas
                     </p>
@@ -487,9 +487,9 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             <section className="bg-purple-50 dark:bg-purple-900/20 py-16">
                 <div className="max-w-6xl mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
+                        <span className="text-3xl md:text-4xl font-bold dark:text-white mb-4">
                             Compra en 3 Pasos
-                        </h2>
+                        </span>
                         <p className="text-gray-600 dark:text-gray-300 text-lg">
                             Así de fácil es hacer tu pedido
                         </p>
@@ -522,7 +522,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                         {item.step}
                                     </span>
                                 </div>
-                                <h3 className="font-bold text-lg mb-2 dark:text-white">{item.title}</h3>
+                                <span className="font-bold text-lg mb-2 dark:text-white">{item.title}</span>
                                 <p className="text-gray-600 dark:text-gray-300">{item.description}</p>
                             </div>
                         ))}
@@ -533,9 +533,9 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             {/* BANNER FINAL DE CONVERSIÓN */}
             <section className="max-w-6xl mx-auto my-16 px-4">
                 <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-12 px-8 rounded-3xl shadow-2xl text-center">
-                    <h3 className="text-3xl md:text-4xl font-bold mb-4">
+                    <span className="text-3xl md:text-4xl font-bold mb-4">
                         ¿Listo para comenzar?
-                    </h3>
+                    </span>
                     <p className="text-white/90 text-xl mb-8 max-w-2xl mx-auto">
                         Únete a miles de clientes que ya compran de forma rápida y segura
                     </p>

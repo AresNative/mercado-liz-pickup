@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
                                 {items.length > 0 && (
                                     <IonBadge
                                         color="success"
-                                        className="absolute text-purple-700 text-center -top-0 right-0 cursor-pointer"
+                                        className="absolute size-4 text-xs text-white text-center -top-0 right-0 cursor-pointer"
                                     >
                                         {items.length}
                                     </IonBadge>

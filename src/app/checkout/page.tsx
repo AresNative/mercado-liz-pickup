@@ -40,6 +40,7 @@ import {
 
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router-dom";
+import { safeCall } from "@/hooks/use-debounce";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -95,21 +96,6 @@ const getCurrentDateTime = () => {
         timestamp: now.toISOString().slice(0, 23)
     };
 };
-
-// --- HANDLER GLOBAL DE ERRORES ---
-async function safeCall<T>(fn: () => Promise<T>, context: string): Promise<T> {
-    try {
-        const res: any = await fn();
-
-        if (res && "error" in res) {
-            throw new Error(`Error en ${context}: ${JSON.stringify(res.error)}`);
-        }
-        return res;
-    } catch (err: any) {
-        console.error(`❌ ${context}:`, err);
-        throw new Error(err.message || `Fallo en ${context}`);
-    }
-}
 
 // --- HELPERS para localStorage asincrónico (polling corto) ---
 const waitForLocalStorage = async (key: string, timeout = 3000, interval = 150): Promise<any> => {

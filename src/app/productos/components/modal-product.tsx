@@ -416,7 +416,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                             (<img
                                 src={image ? image : "/logo.jpg"}
                                 alt="Product Image"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                className="size-[25rem] object-contain group-hover:scale-105 transition-transform duration-300"
                             />) :
                             (<IconLiz fill="#DBDBDB" width="300" />)}
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">

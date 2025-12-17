@@ -104,14 +104,14 @@ export default function SimpleBanner({
                 positionClasses[position]
             )}>
                 {title && (
-                    <h2 className={cn("text-2xl sm:text-4xl font-bold mb-2", textColor)}>
+                    <span className={cn("text-2xl sm:text-4xl font-bold mb-2", textColor)}>
                         {title}
-                    </h2>
+                    </span>
                 )}
                 {subtitle && (
-                    <h3 className={cn("text-lg sm:text-xl font-medium mb-3", textColor)}>
+                    <span className={cn("text-lg sm:text-xl font-medium mb-3", textColor)}>
                         {subtitle}
-                    </h3>
+                    </span>
                 )}
                 {description && (
                     <p className={cn("text-base sm:text-lg mb-4 max-w-2xl", textColor)}>
