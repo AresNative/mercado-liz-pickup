@@ -632,7 +632,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const processedItems = await Promise.all(
             items.map(async (item, index) => {
                 const unitPrice = item.descuento || item.precio;
-                const quantity = item.quantity || 1;
 
                 // Obtener el costo más reciente de compras en Intelisis
                 const costResult = await safeCall(() => GetInt({
@@ -640,7 +639,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     pageSize: 1,
                     filtros: {
                         Filtros: [
-                            { Key: "Articulo", Value: item.articulo }
+                            { Key: "Articulo", Value: item.articulo },
+                            { Key: "Unidad", Value: item.unidad },
+                            { Key: "Factor", Value: item.factor }
                         ],
                         Order: [{ Key: "id", Direction: "desc" }]
                     },
@@ -661,9 +662,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     ID: baseId,
                     Renglon: index * baseRow,
                     RenglonSub: 0,
-                    RenglonID: index + 2,
+                    RenglonID: index,
                     RenglonTipo: "N",
-                    Cantidad: quantity,
+                    Cantidad: item.quantity,
                     Almacen: INTELISIS_CONFIG.almacen,
                     Codigo: String(item.codigo || ""),
                     Articulo: String(item.articulo || ""),
