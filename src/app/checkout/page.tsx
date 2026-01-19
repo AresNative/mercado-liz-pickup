@@ -676,7 +676,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     Costo: itemCost,
                     Unidad: item.unidad || "Unidad",
                     Factor: item.factor || 1,
-                    CantidadInventario: item.cantidad || 1,
+                    CantidadInventario: item.quantity * (item.factor || 1),//1784
                     FechaRequerida: date,
                     Sucursal: 4,
                     TipoImpuesto1: item.tipoImpuesto1,

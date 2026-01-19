@@ -94,47 +94,36 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     SELECT *, 
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.Sucursal = '4' 
+                    LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
                 pageSize: 10,
                 page: currentPage,
                 filtros: {
-                    "Filtros": [
-                        {
-                            "Key": "ofrd.Precio",
-                            "Operator": ">",
-                            "Value": 0
-                        }
+                    Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }, { key: "ofr.Estatus", Operator: "=", Value: "VIGENTE" }],
+                    Selects: [
+                        { key: "cb.Codigo" },
+                        { key: "art.Articulo" },
+                        { key: "art.Grupo" },
+                        { key: "art.Descripcion1" },
+                        { key: "lpu.Unidad" },
+                        { key: "art.Impuesto1" },
+                        { key: "art.Impuesto2" },
+                        { key: "art.TipoImpuesto1" },
+                        { key: "art.TipoImpuesto2" },
+                        { key: "lpu.Precio" },
+                        { key: "ofrd.Precio", alias: "Descuento" },
+                        { key: "au.Unidad", alias: "UnidadFactor" },
+                        { key: "au.Factor" },
                     ],
-                    "Selects": [
-                        { "key": "cb.Codigo" },
-                        { "key": "art.Articulo" },
-                        { "key": "art.Grupo" },
-                        { "key": "art.Descripcion1" },
-                        { "key": "art.Impuesto1" },
-                        { "key": "art.Impuesto2" },
-                        { "key": "art.TipoImpuesto1" },
-                        { "key": "art.TipoImpuesto2" },
-                        { "key": "lpu.Unidad" },
-                        { "key": "lpu.Precio" },
-                        { "key": "ofrd.Precio", "alias": "Descuento" },
-                        { "key": "au.Unidad", "alias": "UnidadFactor" },
-                        { "key": "au.Factor" }
-                    ],
-                    "Agregaciones": [
+                    Agregaciones: [
                         {
-                            "Key": "ad.DispMenosApartado",
-                            "Operation": "SUM",
-                            "Alias": "Cantidad"
-                        }
+                            Key: "ad.DispMenosApartado",
+                            Operation: "SUM",
+                            Alias: "Cantidad",
+                        },
                     ],
-                    "Order": [
-                        {
-                            "Key": "ofrd.Precio",
-                            "Direction": "ASC"
-                        }
-                    ]
+                    Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
                 },
                 signal: undefined,
             });

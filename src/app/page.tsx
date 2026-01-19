@@ -72,13 +72,13 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.Sucursal = '4' 
+                    LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
                 pageSize: 8, // Reducido para mejor rendimiento
                 page: 1,
                 filtros: {
-                    Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }],
+                    Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }, { key: "ofr.Estatus", Operator: "=", Value: "VIGENTE" }],
                     Selects: [
                         { key: "cb.Codigo" },
                         { key: "art.Articulo" },

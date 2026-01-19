@@ -11,6 +11,7 @@
     "test.unit": "vitest",
     "lint": "eslint"
   },
+  "author": "https://github.com/AresNative",
   "dependencies": {
     "@capacitor/android": "7.1.0",
     "@capacitor/app": "7.0.0",
