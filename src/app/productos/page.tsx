@@ -93,16 +93,12 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             isFetching.current = true;
 
             const result = await getData({
-                table: `
-                CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
-                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
+                table: `art
                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
                         AND lpu.Precio > 0
+                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
@@ -111,15 +107,15 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() and ofr.FechaA > GETDATE() 
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Sucursal = '4' 
+                    LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() AND ofr.Estatus = 'VIGENTE'
                 `,
                 pageSize: 10,
                 page: currentPage,
                 filtros: {
                     "Filtros": [],
                     "Selects": [
-                        { "key": "cb.Codigo" },
+                        /* { "key": "cb.Codigo" }, */
                         { "key": "art.Articulo" },
                         { "key": "art.Grupo" },
                         { "key": "art.Descripcion1" },
@@ -162,8 +158,8 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 if (apiData.data && apiData.data.length > 0) {
                     // Mapear los datos de la API al formato de Producto
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Codigo + "-" + item.Unidad,
-                        codigo: item.Codigo || "0000",
+                        id: item.Articulo + "-" + item.Unidad,
+                        /* codigo: item.Codigo || "0000", */
                         articulo: item.Articulo || "Articulo",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",

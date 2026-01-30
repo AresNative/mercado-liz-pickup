@@ -666,7 +666,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     RenglonTipo: "N",
                     Cantidad: item.quantity,
                     Almacen: INTELISIS_CONFIG.almacen,
-                    Codigo: String(item.codigo || ""),
+                    Codigo: /* String(item.codigo || "") */ "",
                     Articulo: String(item.articulo || ""),
                     Precio: unitPrice,
                     PrecioSugerido: unitPrice,

@@ -56,12 +56,9 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         try {
             const result = await getData({
                 table: `
-                CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
+                art
                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
                         AND lpu.Precio > 0
                     INNER JOIN ArtUnidad AS au
@@ -72,7 +69,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     SELECT *,
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.Sucursal = '4' 
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Sucursal = '4' 
                     LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
                 pageSize: 8, // Reducido para mejor rendimiento
@@ -80,7 +77,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 filtros: {
                     Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }, { key: "ofr.Estatus", Operator: "=", Value: "VIGENTE" }],
                     Selects: [
-                        { key: "cb.Codigo" },
+                        /* { key: "cb.Codigo" }, */
                         { key: "art.Articulo" },
                         { key: "art.Grupo" },
                         { key: "art.Descripcion1" },
@@ -97,7 +94,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             Alias: "Cantidad",
                         },
                     ],
-                    Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
+                    Order: [{ Key: "art.Descripcion1", Direction: "ASC" }],
                 },
                 signal: undefined,
             });
@@ -107,8 +104,8 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 if (apiData.data && apiData.data.length > 0) {
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Codigo + "-" + item.Unidad,
-                        codigo: item.Codigo || "0000",
+                        id: item.Articulo + "-" + item.Unidad,
+                        /* codigo: item.Codigo || "0000", */
                         articulo: item.Articulo || "Articulo",
                         nombre: item.Descripcion1 || "Sin nombre",
                         categoria: item.Grupo || "Sin categoría",

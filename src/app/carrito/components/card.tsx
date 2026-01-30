@@ -192,10 +192,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     <article>
                         <label className="font-semibold text-sm">{producto.nombre}</label>
                         <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
+                        {/* <p className="text-xs text-gray-500 flex items-center gap-1">
                             <Barcode className="size-3 text-purple-800" />
                             CB: {producto.codigo}
-                        </p>
+                        </p> */}
                         <p className="text-xs text-gray-500 flex items-center">
                             <Hash className="size-3 text-purple-800" />
                             STOCK: {formatearStock(producto.cantidad, producto.unidad, producto.factor)}

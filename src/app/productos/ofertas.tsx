@@ -77,15 +77,12 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             const result = await getData({
                 table: `
-                CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
-                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
+                art
                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
                         AND lpu.Precio > 0
+                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
@@ -94,7 +91,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                     SELECT *, 
                                         ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
                                     FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.Sucursal = '4' 
+                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Sucursal = '4' 
                     LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
                 `,
                 pageSize: 10,
@@ -102,7 +99,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 filtros: {
                     Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }, { key: "ofr.Estatus", Operator: "=", Value: "VIGENTE" }],
                     Selects: [
-                        { key: "cb.Codigo" },
+                        /* { key: "cb.Codigo" }, */
                         { key: "art.Articulo" },
                         { key: "art.Grupo" },
                         { key: "art.Descripcion1" },
@@ -123,7 +120,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             Alias: "Cantidad",
                         },
                     ],
-                    Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
+                    Order: [{ Key: "art.Descripcion1", Direction: "DESC" }],
                 },
                 signal: undefined,
             });

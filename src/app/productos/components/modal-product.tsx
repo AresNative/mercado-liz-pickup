@@ -179,7 +179,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
             if (response && response.data) {
                 const unidadesData: Unidad[] = response.data.map((item: any) => ({
-                    id: `${producto.codigo}-${item.Unidad}`, // ID único con artículo y unidad
+                    id: `${producto.articulo}-${item.Unidad}`, // ID único con artículo y unidad
                     unidad: item.Unidad || "Unidad",
                     factor: item.Factor || 1,
                     precio: item.Precio || 0,
@@ -344,7 +344,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
         const unidadEncontrada = unidades.find(u => u.unidad === unidad);
         if (unidadEncontrada) {
             // Crear un ID único que combine el artículo y la unidad seleccionada
-            const nuevoId = `${producto.codigo}-${unidad}`;
+            const nuevoId = `${producto.articulo}-${unidad}`;
 
             setUnidadSeleccionada({
                 ...unidadEncontrada,
@@ -369,12 +369,12 @@ const ModalProd: React.FC<ProductModalProps> = ({
     // Y en el productoActualizado, asegúrate de usar el ID correcto
     const productoActualizado: Producto = useMemo(() => {
         // Usar el ID de unidadSeleccionada que ahora se actualiza correctamente
-        const idUnico = unidadSeleccionada.id || `${producto.codigo}-${unidadSeleccionada.unidad}`;
+        const idUnico = unidadSeleccionada.id || `${producto.articulo}-${unidadSeleccionada.unidad}`;
 
         return {
             ...producto,
             id: idUnico, // Usar el ID único que incluye la unidad
-            codigo: producto.codigo || producto.id,
+            /* codigo: producto.codigo || producto.id, */
             articulo: producto.articulo,
             nombre: producto.nombre,
             categoria: producto.categoria,
@@ -500,12 +500,12 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
                         {/* Detalles */}
                         <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
+                            {/* <div className="flex items-center gap-2 text-sm">
                                 <Barcode className="size-4 text-purple-600" />
                                 <IonText color="medium">
-                                    <span>Código: {producto.codigo}</span>
+                                    <span>Código: {producto.codigo ? producto.codigo : ""}</span>
                                 </IonText>
-                            </div>
+                            </div> */}
 
                             <div className="flex items-center gap-2 text-sm">
                                 <Hash className="size-4 text-purple-600" />
