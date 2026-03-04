@@ -43,7 +43,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     // Construir objetos Producto desde item API
     const mapApiItemToProducto = (item: any): Producto => ({
         id: item.Codigo + "-" + item.Unidad,
-        codigo: item.Codigo || "0000",
+        /* codigo: item.Codigo || "0000", */
         articulo: item.Articulo || "Cuenta",
         nombre: item.Descripcion1 || "Sin nombre",
         categoria: item.Grupo || "Sin categoría",
