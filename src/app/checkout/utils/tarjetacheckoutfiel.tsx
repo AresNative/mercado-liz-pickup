@@ -17,7 +17,7 @@ export function CheckOutTarjetaField(): Field[] {
                 { value: "Tarjeta Credito/Debito", label: "Pago con Tarjeta Credito/Debito" },
             ],
         },
-        {
+        /* {
             id: 1,
             type: "INPUT",
             name: "numero_tarjeta",
@@ -54,6 +54,6 @@ export function CheckOutTarjetaField(): Field[] {
                         icon: <CreditCard />,
                     }
                 ]
-        },
+        }, */
     ];
 }

@@ -11,6 +11,8 @@ const colClasses: Record<number, string> = {
     4: "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4",
     5: "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5",
     6: "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6",
+    7: "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7",
+    8: "sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8",
     12: "sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12",
 }
 
@@ -33,12 +35,33 @@ interface BentoGridProps {
     cols?: number
     rows?: number
     children: React.ReactNode
+    loading?: boolean
 }
 
-export function BentoGrid({ className, cols = 6, rows, children }: BentoGridProps) {
+export function BentoGrid({ className, cols = 6, rows, children, loading = false }: BentoGridProps) {
+    // Si está cargando, mostramos skeleton grid
+    if (loading) {
+        return (
+            <div className={cn(
+                "relative",
+                "grid gap-4 p-4",
+                "grid-cols-1",
+                colClasses[cols] ?? colClasses[6],
+                rows ? rowClasses[rows] : "auto-rows-[minmax(120px,auto)]",
+                className
+            )}>
+                {/* Mostramos 4 items de skeleton por defecto */}
+                {Array.from({ length: 4 }).map((_, index) => (
+                    <BentoItemSkeleton key={index} colSpan={1} rowSpan={1} />
+                ))}
+            </div>
+        )
+    }
+
     return (
         <div
             className={cn(
+                "relative",
                 "grid gap-4 p-4",
                 "grid-cols-1", // fallback mobile
                 colClasses[cols] ?? colClasses[6],
@@ -81,6 +104,7 @@ interface BentoItemProps {
     children?: React.ReactNode
     colSpan?: number
     rowSpan?: number
+    loading?: boolean
 }
 
 export function BentoItem({
@@ -93,11 +117,17 @@ export function BentoItem({
     children,
     colSpan = 1,
     rowSpan = 1,
+    loading = false,
 }: BentoItemProps) {
+    // Si está cargando, mostramos el skeleton
+    if (loading) {
+        return <BentoItemSkeleton className={className} colSpan={colSpan} rowSpan={rowSpan} />
+    }
+
     return (
         <div
             className={cn(
-                "group relative overflow-hidden rounded-xl border border-gray-200 bg-[var(--background)] p-4 transition-all hover:shadow-md",
+                "group relative h-fit rounded-xl border border-gray-200 bg-[var(--background)] p-4 transition-all hover:shadow-md",
                 colSpanClasses[colSpan] ?? "sm:col-span-1",
                 rowSpanClasses[rowSpan] ?? "row-span-1",
                 className
@@ -126,6 +156,80 @@ export function BentoItem({
             )}
 
             {children && <div className="mt-4">{children}</div>}
+        </div>
+    )
+}
+
+// Componente Skeleton para BentoItem
+interface BentoItemSkeletonProps {
+    className?: string
+    colSpan?: number
+    rowSpan?: number
+}
+
+function BentoItemSkeleton({ className, colSpan = 1, rowSpan = 1 }: BentoItemSkeletonProps) {
+    return (
+        <div
+            className={cn(
+                "group relative overflow-hidden rounded-xl border border-gray-200 bg-[var(--background)] p-4 animate-pulse",
+                colSpanClasses[colSpan] ?? "sm:col-span-1",
+                rowSpanClasses[rowSpan] ?? "row-span-1",
+                className
+            )}
+        >
+            {/* Skeleton para el header (si existe) */}
+            <div className="mb-2 h-4 w-20 bg-gray-300 dark:bg-zinc-700 rounded"></div>
+
+            {/* Layout del contenido skeleton */}
+            <div className="flex items-start gap-3">
+                {/* Icon skeleton */}
+                <div className="shrink-0">
+                    <div className="h-8 w-8 bg-gray-300 dark:bg-zinc-700 rounded-full"></div>
+                </div>
+
+                {/* Texto skeleton */}
+                <div className="space-y-2 flex-1">
+                    <div className="h-4 w-3/4 bg-gray-300 dark:bg-zinc-700 rounded"></div>
+                    <div className="h-3 w-full bg-gray-300 dark:bg-zinc-700 rounded"></div>
+                    <div className="h-3 w-2/3 bg-gray-300 dark:bg-zinc-700 rounded"></div>
+                </div>
+            </div>
+
+            {/* Children skeleton */}
+            <div className="mt-4 space-y-2">
+                <div className="h-3 w-full bg-gray-300 dark:bg-zinc-700 rounded"></div>
+                <div className="h-3 w-5/6 bg-gray-300 dark:bg-zinc-700 rounded"></div>
+                <div className="h-3 w-4/6 bg-gray-300 dark:bg-zinc-700 rounded"></div>
+            </div>
+        </div>
+    )
+}
+
+// Componente BentoGridSkeleton si necesitas usarlo separadamente
+interface BentoGridSkeletonProps {
+    className?: string
+    cols?: number
+    rows?: number
+    itemCount?: number
+}
+
+export function BentoGridSkeleton({
+    className,
+    cols = 6,
+    rows,
+    itemCount = 4
+}: BentoGridSkeletonProps) {
+    return (
+        <div className={cn(
+            "grid gap-4 p-4",
+            "grid-cols-1",
+            colClasses[cols] ?? colClasses[6],
+            rows ? rowClasses[rows] : "auto-rows-[minmax(120px,auto)]",
+            className
+        )}>
+            {Array.from({ length: itemCount }).map((_, index) => (
+                <BentoItemSkeleton key={index} colSpan={1} rowSpan={1} />
+            ))}
         </div>
     )
 }

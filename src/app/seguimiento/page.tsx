@@ -332,11 +332,22 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         try {
             await putGeneral({
                 table: "listas",
-                id: pedidoSeleccionado.id,
                 data: {
-                    estado: 'cancelado',
-                    fecha_actualizacion: new Date().toISOString()
-                }
+                    Data: {
+                        estado: 'cancelado',
+                        fecha_actualizacion: new Date().toISOString()
+                    },
+                    Filtros: {
+                        "Filtros": [
+                            {
+                                "Key": "ID",
+                                "Value": pedidoSeleccionado.id,
+                                "Operator": "="
+                            }
+                        ],
+
+                    }
+                },
             }).unwrap();
 
             setPedidoSeleccionado(prev => prev ? {

@@ -12,7 +12,7 @@ export function LogInField(): Field[] {
     },
     {
       id: 1,
-      type: "PASSWORD",
+      type: "PHONE",
       name: "password",
       label: "Contraseña",
       placeholder: "UseExample@123",

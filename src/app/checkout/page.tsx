@@ -428,10 +428,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         );
 
         const hasPaymentData = Boolean(
-            paymentValues.pago === "Tarjeta Credito/Debito" ? (
+            paymentValues.pago ?? /* === "Tarjeta Credito/Debito" ? (
                 paymentValues.numero_tarjeta &&
                 paymentValues.vencimiento &&
-                paymentValues.cvv) : paymentValues.pago
+                paymentValues.cvv) : */ paymentValues.pago
         );
 
         const hasDateTime = Boolean(selectedDate && selectedTime);

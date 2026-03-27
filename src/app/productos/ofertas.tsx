@@ -77,29 +77,41 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             const result = await getData({
                 table: `
-                art
+                    art
+                   art
                     INNER JOIN ListaPreciosDUnidad AS lpu
                         ON art.Articulo = lpu.Articulo
+                        AND art.Unidad = lpu.Unidad
                         AND lpu.Lista = '(Precio Lista)'
                         AND lpu.Precio > 0
                         ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
                     INNER JOIN ArtUnidad AS au
                         ON art.Articulo = au.Articulo
                         AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND (ad.DispMenosApartado / au.Factor) > 0
+                    INNER JOIN ArtDisponible AS ad
+                        on art.Articulo = ad.Articulo
+                        AND ad.DispMenosApartado > 0
+                        AND (ad.DispMenosApartado / au.Factor) > 0
                     INNER JOIN (
-                                    SELECT *, 
-                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                                    FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Sucursal = '4' 
-                    LEFT JOIN Oferta AS ofr On ofr.ID = ofrd.ID AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
+                            SELECT *, 
+                                ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
+                            FROM OfertaD
+                        ) AS ofrd
+                        ON ofrd.Articulo = art.Articulo
+                        AND ofrd.Unidad = art.Unidad 
+                        AND ofrd.Sucursal = '4' 
+                        AND ofrd.Precio > 0
+                    LEFT JOIN Oferta AS ofr
+                        ON ofr.ID = ofrd.ID
+                        AND ofr.FechaD < GETDATE()
+                        AND ofr.FechaA > GETDATE()
+                        AND ofr.Estatus = 'VIGENTE'
                 `,
                 pageSize: 10,
                 page: currentPage,
                 filtros: {
-                    Filtros: [{ key: "ofrd.Precio", Operator: ">", Value: "0" }, { key: "ofr.Estatus", Operator: "=", Value: "VIGENTE" }],
+                    Filtros: [],
                     Selects: [
-                        /* { key: "cb.Codigo" }, */
                         { key: "art.Articulo" },
                         { key: "art.Grupo" },
                         { key: "art.Descripcion1" },
@@ -110,8 +122,9 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         { key: "art.TipoImpuesto2" },
                         { key: "lpu.Precio" },
                         { key: "ofrd.Precio", alias: "Descuento" },
-                        { key: "au.Unidad", alias: "UnidadFactor" },
-                        { key: "au.Factor" },
+                        { key: "ofrd.Porcentaje" },
+                        { key: "art.Unidad", alias: "UnidadFactor" },
+                        { key: "art.Factor" },
                     ],
                     Agregaciones: [
                         {
@@ -150,7 +163,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         impuesto2: item.Impuesto2 || 0,
                         tipoImpuesto1: item.TipoImpuesto1 || 0,
                         tipoImpuesto2: item.TipoImpuesto2 || 0,
-                        descuento: item.Descuento || 0,
+                        descuento: item.Porcentaje ? item.Precio - ((item.Porcentaje / 100) * item.Precio) : item.Descuento || 0,
                     }));
                     setTotalRecords(apiData.totalRecords)
 

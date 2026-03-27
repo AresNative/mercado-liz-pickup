@@ -77,7 +77,7 @@ const AppMenu = () => {
                                 >
                                     Iniciar Sesión
                                 </IonButton>
-                                <IonButton
+                                {/*  <IonButton
                                     color="light"
                                     expand="block"
                                     fill="outline"
@@ -85,7 +85,7 @@ const AppMenu = () => {
                                     className="font-semibold"
                                 >
                                     Registrarse
-                                </IonButton>
+                                </IonButton> */}
                             </div>
                         )}
                     </IonToolbar>
