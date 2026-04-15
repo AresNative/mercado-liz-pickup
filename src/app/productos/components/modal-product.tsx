@@ -114,25 +114,6 @@ const ModalProd: React.FC<ProductModalProps> = ({
         return { discountPercentage: roundedDiscount };
     }, [unidadSeleccionada.precio, unidadSeleccionada.descuento]);
 
-    // Calcular rating promedio
-    const averageRating = sampleComments.reduce((acc, comment) => acc + comment.rating, 0) / sampleComments.length;
-
-
-
-    // Renderizar estrellas
-    const renderStars = (rating: number) => {
-        return Array.from({ length: 5 }, (_, index) => {
-            const starValue = index + 1;
-            if (starValue <= Math.floor(rating)) {
-                return <IonIcon key={index} icon={star} className="text-yellow-400" />;
-            } else if (starValue === Math.ceil(rating) && !Number.isInteger(rating)) {
-                return <IonIcon key={index} icon={starHalf} className="text-yellow-400" />;
-            } else {
-                return <IonIcon key={index} icon={starOutline} className="text-yellow-400" />;
-            }
-        });
-    };
-
     // Función para cargar las unidades disponibles del artículo
     async function cargarUnidades() {
         try {
@@ -146,14 +127,16 @@ const ModalProd: React.FC<ProductModalProps> = ({
                 LEFT JOIN ArtDisponible AS ad 
                     ON au.Articulo = ad.Articulo 
                     AND ad.Almacen = 'ALMMAYO'
-                LEFT JOIN (
-                    SELECT *, 
-                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                    FROM OfertaD
-                ) AS ofrd 
-                    ON ofrd.Articulo = au.Articulo 
-                    AND ofrd.Unidad = au.Unidad 
-                    AND ofrd.rn = 1
+                LEFT JOIN Oferta AS ofr
+                        ON ofr.Estatus = 'VIGENTE'
+                        AND ofr.FechaD < GETDATE()
+                        AND ofr.FechaA > GETDATE()
+                    LEFT JOIN OfertaD AS ofrd
+                        ON ofr.ID = ofrd.ID
+                        AND  ofrd.Articulo = art.Articulo
+                        AND ofrd.Unidad = art.Unidad
+                        AND ofrd.Sucursal = '4'
+                        AND ofrd.Precio > 0
             `,
                 pageSize: 10,
                 page: 1,
@@ -164,6 +147,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         { key: "au.Factor" },
                         { key: "lpu.Precio" },
                         { key: "ofrd.Precio", alias: "Descuento" },
+                        { key: "ofrd.Porcentaje" },
                     ],
                     Agregaciones: [
                         {
@@ -179,11 +163,11 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
             if (response && response.data) {
                 const unidadesData: Unidad[] = response.data.map((item: any) => ({
-                    id: `${producto.articulo}-${item.Unidad}`, // ID único con artículo y unidad
+                    id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
                     unidad: item.Unidad || "Unidad",
                     factor: item.Factor || 1,
                     precio: item.Precio || 0,
-                    descuento: item.Descuento || 0,
+                    Descuento: item.Porcentaje ? item.Precio - ((item.Porcentaje / 100) * item.Precio) : item.Descuento || 0,
                     cantidad: item.Cantidad || 0
                 }));
 

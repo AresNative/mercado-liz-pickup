@@ -93,69 +93,41 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             isFetching.current = true;
 
             const result = await getData({
-                table: `art
-                    INNER JOIN ListaPreciosDUnidad AS lpu
-                        ON art.Articulo = lpu.Articulo
-                        AND art.Unidad = lpu.Unidad
-                        AND lpu.Lista = '(Precio Lista)'
-                        AND lpu.Precio > 0
-                        ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''}
-                    INNER JOIN ArtUnidad AS au
-                        ON art.Articulo = au.Articulo
-                        AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad
-                        on art.Articulo = ad.Articulo
-                        AND ad.DispMenosApartado > 0
-                        AND (ad.DispMenosApartado / au.Factor) > 0
-                    INNER JOIN (
-                            SELECT *, 
-                                ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                            FROM OfertaD
-                        ) AS ofrd
-                        ON ofrd.Articulo = art.Articulo
-                        AND ofrd.Unidad = art.Unidad 
-                        AND ofrd.Sucursal = '4' 
-                        AND ofrd.Precio > 0
-                    LEFT JOIN Oferta AS ofr
-                        ON ofr.ID = ofrd.ID
-                        AND ofr.FechaD < GETDATE()
-                        AND ofr.FechaA > GETDATE()
-                        AND ofr.Estatus = 'VIGENTE'
-                `,
-                pageSize: 10,
-                page: currentPage,
+                //INNER JOIN CB AS cb ON art.Articulo = cb.Cuenta AND cb.Unidad = art.Unidad 
+                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''} INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 LEFT JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad  AND ofrd.Sucursal = '4'  AND ofrd.Precio > 0`,
                 filtros: {
-                    "Filtros": [],
-                    "Selects": [
-                        /* { "key": "cb.Codigo" }, */
-                        { "key": "art.Articulo" },
-                        { "key": "art.Grupo" },
-                        { "key": "art.Descripcion1" },
-                        { "key": "art.Impuesto1" },
-                        { "key": "art.Impuesto2" },
-                        { "key": "art.TipoImpuesto1" },
-                        { "key": "art.TipoImpuesto2" },
-                        { "key": "lpu.Unidad" },
-                        { "key": "lpu.Precio" },
-                        { "key": "ofrd.Precio", "alias": "Descuento" },
-                        { key: "ofrd.Porcentaje" },
-                        { "key": "au.Unidad", "alias": "UnidadFactor" },
-                        { "key": "au.Factor" }
+                    Selects: [
+                        /* { Key: "cb.Codigo" }, */
+                        { Key: "art.Articulo" },
+                        { Key: "art.Grupo" },
+                        { Key: "art.Descripcion1" },
+                        { Key: "art.Impuesto1" },
+                        { Key: "art.Impuesto2" },
+                        { Key: "art.TipoImpuesto1" },
+                        { Key: "art.TipoImpuesto2" },
+                        { Key: "lpu.Unidad" },
+                        { Key: "lpu.Precio" },
+                        { Key: "ofrd.Precio", Alias: "Descuento" },
+                        { Key: "ofrd.Porcentaje" },
+                        { Key: "au.Unidad", Alias: "UnidadFactor" },
+                        { Key: "au.Factor" }
                     ],
-                    "Agregaciones": [
+                    Agregaciones: [
                         {
-                            "Key": "ad.DispMenosApartado",
-                            "Operation": "SUM",
-                            "Alias": "Cantidad"
+                            Key: "ad.DispMenosApartado",
+                            Operation: "SUM",
+                            Alias: "Cantidad"
                         }
                     ],
-                    "Order": [
+                    Order: [
                         {
-                            "Key": "art.Descripcion1",
-                            "Direction": "ASC"
+                            Key: "Descripcion1",
+                            Direction: "ASC"
                         }
-                    ]
+                    ],
                 },
+                    pageSize: 10,
+                    page: currentPage,
                 signal: undefined,
             });
 
@@ -171,7 +143,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 if (apiData.data && apiData.data.length > 0) {
                     // Mapear los datos de la API al formato de Producto
                     const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Articulo + "-" + item.Unidad,
+                        id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
                         /* codigo: item.Codigo || "0000", */
                         articulo: item.Articulo || "Articulo",
                         nombre: item.Descripcion1 || "Sin nombre",

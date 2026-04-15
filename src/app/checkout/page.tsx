@@ -448,7 +448,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         try {
             const result = await safeCall(() => GetInt({
-                table: `${INTELISIS_CONFIG.database}.venta`,
+                table: `venta`,
                 pageSize: 1,
                 page: 1,
                 filtros: {
@@ -563,7 +563,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
 
         const saleResult = await safeCall(() => PostInt({
-            table: `${INTELISIS_CONFIG.database}.Venta`,
+            table: `Venta`,
             data: saleData,
             signal: undefined
         }), "Intelisis Venta");
@@ -588,7 +588,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
 
         const movResult = await safeCall(() => PostInt({
-            table: `${INTELISIS_CONFIG.database}.Mov`,
+            table: `Mov`,
             data: movData,
             signal: undefined
         }), "Intelisis Mov");
@@ -611,7 +611,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
 
         const movementsResult = await safeCall(() => PostInt({
-            table: `${INTELISIS_CONFIG.database}.Movimientos`,
+            table: `Movimientos`,
             data: movementsData,
             signal: undefined
         }), "Intelisis Movimientos");
@@ -635,7 +635,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 // Obtener el costo más reciente de compras en Intelisis
                 const costResult = await safeCall(() => GetInt({
-                    table: `${INTELISIS_CONFIG.database}.CompraD`,
+                    table: `CompraD`,
                     pageSize: 1,
                     filtros: {
                         Filtros: [
@@ -721,7 +721,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             console.log(`📥 Insertando item ${index + 1}/${allItems.length}:`, itemData.Articulo);
 
             const itemResult = await safeCall(() => PostInt({
-                table: `${INTELISIS_CONFIG.database}.VentaD`,
+                table: `VentaD`,
                 data: itemData,
                 signal: undefined
             }), `Intelisis VentaD item ${index + 1}`);
