@@ -1,6 +1,6 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, isPlatform } from "@ionic/react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
@@ -13,6 +13,7 @@ import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import { Producto } from "@/utils/types/page";
 import { useAppSelector } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
+import { cn } from "@/utils/functions/cn";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {
@@ -77,7 +78,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             const result = await getData({
                 //INNER JOIN CB AS cb ON art.Articulo = cb.Cuenta AND cb.Unidad = art.Unidad 
-                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''} INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad  AND ofrd.Sucursal = '4'  AND ofrd.Precio > 0`,
+                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''} INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad  AND ofrd.Sucursal = '4'  AND ofrd.Precio > 0`,
                 pageSize: 10,
                 page: currentPage,
                 filtros: {
@@ -251,7 +252,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         >
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar h-fit absolute -top-0"
+                className="custom-toolbar-clear h-fit absolute top-0"
             >
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/ofertas'>

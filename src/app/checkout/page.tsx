@@ -1,6 +1,6 @@
 // page.tsx (AJUSTADO - Opción 1)
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonButton, IonAlert, IonBackButton } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonButton, IonAlert, IonBackButton, isPlatform } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector, useAppDispatch } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
@@ -41,6 +41,7 @@ import {
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router-dom";
 import { safeCall } from "@/hooks/use-debounce";
+import { cn } from "@/utils/functions/cn";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -357,7 +358,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 };
 
                 // Registrar usuario
-                const regResp: any = await safeCall(() => registerUser(registerPayload).unwrap(), "registro usuario");
+                await safeCall(() => registerUser(registerPayload).unwrap(), "registro usuario");
                 console.log("✅ Registrado correctamente.");
 
                 // Después de registrar, intentar login de nuevo
@@ -876,7 +877,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 console.log("🔄 Buscando cliente recién creado...");
 
                 // Esperar un momento para que se propague la creación
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 2000));
 
                 const searchResponse = await safeCall(() => GetData({
                     url: "v1/pickup/clientes",
@@ -1075,7 +1076,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 onScroll?.(isScrolled);
             }}>
 
-            <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
+            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/productos'>
                         <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
@@ -1182,7 +1183,7 @@ interface FormSectionProps {
 }
 
 const FormSection: React.FC<FormSectionProps> = ({ title, formRef, formConfig, onSuccess }) => (
-    <div className="border-2 rounded-lg p-4">
+    <div className="z-50 border-2 rounded-lg p-4">
         <h2 className="font-bold text-lg mb-2">{title}</h2>
         <MainForm
             message_button=""

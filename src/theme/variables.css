@@ -223,6 +223,13 @@ ion-tab-button {
     --color-selected: var(--ion-color-tertiary);
     --color: var(--text-secondary);
 }
+ion-button {
+    --background: transparent;
+    --color: var(--text-primary);
+    --border-color: transparent;
+    --box-shadow: 0px 0px 0px 1px var(--border-color) inset;
+    transition: all 0.2s ease-in-out;
+}
 .custom-toolbar-clear ion-toolbar {
     --background: linear-gradient(100deg, #9333ea 0%,  #a855f7 100%, #4f46e5 100%) !important;
     --min-height: 64px;
@@ -513,10 +520,9 @@ ion-item {
 }
 
 .scanner-header {
-    position: absolute;
-    top: 0;
+    /* top: 0;
     left: 0;
-    right: 0;
+    right: 0; */
     padding: 16px;
     display: flex;
     justify-content: space-between;

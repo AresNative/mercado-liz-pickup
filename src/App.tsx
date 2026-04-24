@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, IonTabs, setupIonicReact } from '@ionic/react';
+import { IonApp, IonRouterOutlet, IonTabs, isPlatform, setupIonicReact } from '@ionic/react';
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
@@ -29,12 +29,17 @@ import LayoutSeguimiento from './app/seguimiento/layout';
 import LayoutUsuario from './app/perfil/layout';
 import Tabs from './template/tabs';
 import { IonReactRouter } from '@ionic/react-router';
+import { usePushNotifications } from './hooks/use-notifications';
 
 setupIonicReact({
   mode: 'ios',
+  rippleEffect: false,
+  animated: true,
+  hardwareBackButton: true,
 });
-const App: React.FC = () => {
 
+const App: React.FC = () => {
+ if ( isPlatform('mobile') ) usePushNotifications();
   return (
     <IonApp>
       <IonReactRouter>

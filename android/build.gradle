@@ -7,14 +7,14 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.9.1'
-        classpath 'com.google.gms:google-services:4.4.2'
-
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.google.gms:google-services:4.4.4'
+        //implementation 'com.google.firebase:firebase-messaging:23.1.0'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
-
+//apply plugin: 'com.google.gms.google-services'
 apply from: "variables.gradle"
 
 allprojects {

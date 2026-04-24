@@ -1,5 +1,5 @@
 import { PageProps } from "@/utils/types/page";
-import { IonBackButton, IonButton, IonContent, IonHeader, IonToolbar } from "@ionic/react";
+import { IonBackButton, IonButton, IonContent, IonHeader, IonToolbar, isPlatform } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { useAppSelector } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
@@ -28,7 +28,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }}>
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar h-fit absolute -top-0"
+                className="custom-toolbar-clear h-fit absolute top-0"
             >
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/productos'>

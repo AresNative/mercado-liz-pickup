@@ -4,7 +4,8 @@ import {
     IonContent, IonHeader, IonToolbar, IonCard, IonCardContent, IonCardHeader,
     IonCardTitle, IonText, IonChip, IonBadge, IonIcon, IonSegment, IonSegmentButton,
     IonButton, IonAlert, IonNote, IonRow, IonCol, IonGrid,
-    IonSkeletonText, IonLoading, IonItem, IonLabel
+    IonSkeletonText, IonLoading, IonItem, IonLabel,
+    isPlatform
 } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { cn } from "@/utils/functions/cn";
@@ -192,12 +193,12 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             return [pedidoProcesado, ...prevPedidos];
         });
 
-        if ('Notification' in window && Notification.permission === 'granted') {
+        /* if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('¡Nuevo pedido recibido!', {
                 body: `Pedido #${nuevoPedido.id} ha sido registrado`,
                 icon: '/icon.png'
             });
-        }
+        } */
     }, []);
 
     const handlePedidoBorrado = useCallback((idPedido: number) => {
@@ -574,9 +575,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     useEffect(() => {
         fetchPedidos();
 
-        if ('Notification' in window && Notification.permission === 'default') {
+        /* if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
-        }
+        } */
     }, []);
 
     useEffect(() => {
@@ -703,7 +704,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const isScrolled = e.detail.scrollTop > 10;
                 onScroll?.(isScrolled);
             }}>
-            <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
+            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
                 <IonToolbar>
                     <div className="flex items-center justify-between px-2">
                         <a className='decoration-none cursor-pointer' href='/productos'>

@@ -1,5 +1,4 @@
 // modal-search.tsx
-import { Producto } from "@/utils/types/page";
 import {
     IonPage,
     IonHeader,
@@ -34,13 +33,6 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
         setShowResults(false);
     };
 
-    const handleProductSelect = (producto: Producto) => {
-        // Aquí puedes manejar la selección de producto si es necesario
-        console.log('Producto seleccionado:', producto);
-        // Opcional: cerrar el modal después de seleccionar un producto
-        // onDismiss('product_selected', 'success');
-    };
-
     return (
         <IonPage>
             <IonHeader>
@@ -66,7 +58,6 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
                 <SearchResults
                     isVisible={true}
                     onClose={handleCloseResults}
-                    onProductSelect={handleProductSelect}
                 />
 
                 {/* Mensaje cuando no hay búsqueda */}

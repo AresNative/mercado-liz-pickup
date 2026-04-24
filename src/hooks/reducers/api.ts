@@ -172,10 +172,9 @@ export const api = createApi({
     }),
 
     putGeneral: builder.mutation({
-      query: ({ table, id, data, signal }) => ({
-        url: `v1/update/${id}`,
+      query: ({ table, data, signal }) => ({
+        url: `v1/update/${ table }`,
         method: "PUT",
-        params: { table },
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json",

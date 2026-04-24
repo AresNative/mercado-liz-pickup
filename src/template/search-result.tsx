@@ -38,7 +38,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     const [totalPages, setTotalPages] = useState(1);
 
     const resultsRef = useRef<HTMLDivElement | null>(null);
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const searchTimeoutRef = useRef<any| null>(null);
 
     // Construir objetos Producto desde item API
     const mapApiItemToProducto = (item: any): Producto => ({
@@ -72,28 +72,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             }
 
             const result = await getData({
-                table: `
-                    CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
-                     INNER JOIN ListaPreciosDUnidad AS lpu
-                        ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
-                        AND lpu.Lista = '(Precio Lista)'
-                        AND lpu.Precio > 0
-                   INNER JOIN ArtUnidad AS au
-                        ON art.Articulo = au.Articulo
-                        AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0
-                    LEFT JOIN (
-                                    SELECT *,
-                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                                    FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
-
-                    WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')
-                    `,
+                table: ` CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 LEFT JOIN Oferta AS ofr On ofr.Estatus = 'VIGENTE' AND ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()  LEFT JOIN OfertaD AS ofrd On ofrd.id = ofr.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad  WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')`,
                 pageSize: 5,
                 page: pageToFetch,
                 filtros: {
@@ -122,7 +101,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                     ],
                     "Order": [
                         {
-                            "Key": "art.Descripcion1",
+                            "Key": "Descripcion1",
                             "Direction": "ASC"
                         }
                     ]

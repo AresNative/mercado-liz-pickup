@@ -14,6 +14,7 @@ import {
     IonBackButton,
     IonBadge,
     IonItem,
+    isPlatform,
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
@@ -57,14 +58,14 @@ const Header: React.FC<HeaderProps> = ({
         <>
             <IonHeader
                 className={cn(
-                    `transition-all duration-300 safe-area-top`,
+                    `transition-all duration-300`,
                     showBackButton || isScrolled
                         ? 'bg-white/70 border-b backdrop-blur-md border-gray-200 shadow-md'
-                        : 'bg-transparent',
+                        : isPlatform('android') ? "custom-toolbar-clear" : 'bg-transparent',
                     className
                 )}
             >
-                <IonToolbar className='p-2 flex items-center relative'>
+                <IonToolbar className={cn("flex items-center relative pt-10", isPlatform('android') ? "custom-toolbar-clear" : "top-0")}>
                     {showBackButton && (
                         <IonButtons slot="start">
                             <IonBackButton

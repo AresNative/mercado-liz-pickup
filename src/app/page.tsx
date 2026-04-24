@@ -2,7 +2,7 @@
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
 import Footer from "@/template/footer";
 import { PageProps, Producto } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar } from "@ionic/react";
+import { IonButton, IonContent, IonHeader, IonToolbar, isPlatform } from "@ionic/react";
 import {
     Lock,
     Zap,
@@ -56,7 +56,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         try {
             const result = await getData({
                 //INNER JOIN CB AS cb ON art.Articulo = cb.Cuenta AND cb.Unidad = art.Unidad 
-                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad  AND ofrd.Sucursal = '4'  AND ofrd.Precio > 0`,
+                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad  AND ofrd.Sucursal = '4'  AND ofrd.Precio > 0`,
                 pageSize: 10,
                 page: 1,
                 filtros: {
@@ -163,7 +163,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         >
             <IonHeader
                 collapse="condense"
-                className="custom-toolbar-clear h-fit absolute -top-0"
+                className="custom-toolbar-clear h-fit absolute top-0"
             >
                 <IonToolbar>
                     <a className="cursor-pointer" href="/productos">
@@ -173,10 +173,10 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </IonHeader>
 
             {/* HERO PRINCIPAL MEJORADO */}
-            <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-6 md:py-24">
+            <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-10 ">
                 <div className="max-w-6xl mx-auto px-4 text-center">
-                    <div className="flex justify-center mb-6">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm">
+                    <div className="flex justify-center">
+                        <div className="bg-white/10 my-6 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2 text-sm">
                             <Sparkles className="size-4" />
                             <span>+2,000 productos frescos disponibles</span>
                         </div>
@@ -206,22 +206,29 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                     {/* CTA Principal Mejorado */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                        <a
-                            href="/productos"
-                            className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-8 py-4 rounded-2xl text-lg shadow-2xl shadow-yellow-500/25 transition-all hover:scale-105 hover:shadow-yellow-500/40 flex items-center gap-3 min-w-[200px] justify-center"
+                        <IonButton
+                            fill="clear"
+                            expand="full"
+                            routerLink="/productos"
+                            routerDirection="none"
+                            className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-8 py-1 rounded-2xl text-lg shadow-2xl shadow-yellow-500/25 transition-all hover:scale-105  min-w-[200px] justify-center"
                         >
-                            <ShoppingCart className="size-5" />
-                            Comprar Ahora
-                            <MoveRight className="size-5 group-hover:translate-x-1 transition-transform" />
-                        </a>
+                            <section className="group flex items-center gap-2 transition-all">
+                                <ShoppingCart className="size-5" />
+                                Comprar Ahora
+                                <MoveRight className="size-5 group-hover:translate-x-1 transition-transform" />
+                            </section>
+                        </IonButton>
 
-                        <a
-                            href="/ofertas"
-                            className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-2xl backdrop-blur-sm transition-all border border-white/20 hover:border-white/30 flex items-center gap-2"
+                        <IonButton
+                            fill="clear"
+                            routerLink="/ofertas"
+                            routerDirection="none"
+                            className="bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-1 rounded-2xl backdrop-blur-sm transition-all border border-white/20 hover:border-white/30 flex items-center gap-2"
                         >
                             <Star className="size-5" />
                             Ver Ofertas
-                        </a>
+                        </IonButton>
                     </div>
                 </div>
             </section>
@@ -240,10 +247,10 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 <div id="sucursales" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {Sucursales.map((sucursal) => (
-                        <div
+                        <button
                             key={sucursal.id}
                             onClick={() => handleSelectBranch(sucursal)}
-
+                            disabled={sucursal.status !== "active"}
                             className={cn(`
                                     relative p-4 rounded-xl border-2 transition-all duration-300
                                     group cursor-pointer
@@ -359,7 +366,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             {sucursal.status === "active" && (
                                 <div className="absolute inset-0 rounded-xl border-2 border-green-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                             )}
-                        </div>
+                        </button>
                     ))}
                 </div>
 
@@ -549,7 +556,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </div>
             </section>
 
-            <section className=" md:mb-0 mb-12"><Footer /></section>
+            <section className="md:mb-0 mb-12"><Footer /></section>
         </IonContent>
     );
 };

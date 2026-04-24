@@ -12,7 +12,12 @@ import {
     IonBadge,
     IonChip,
     IonProgressBar,
-    IonSkeletonText
+    IonSkeletonText,
+    isPlatform,
+    IonButtons,
+    IonModal,
+    IonTitle,
+    useIonAlert
 } from "@ionic/react";
 import { useState, useEffect } from "react";
 import {
@@ -48,6 +53,9 @@ import {
 import { safeCall } from "@/hooks/use-debounce";
 import { BentoGrid, BentoItem } from "@/components/bento-grid";
 import Badge from "@/components/badge";
+import { cn } from "@/utils/functions/cn";
+import MainForm from "@/components/form/main-form";
+import { LogInField } from "@/utils/constants/forms/logIn";
 
 interface UserData {
     id?: string;
@@ -85,6 +93,26 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [tempUserData, setTempUserData] = useState<UserData>({});
     const history = useHistory();
 
+    const [LogOutProces] = useLogoutUserMutation()
+    const [presentAlert] = useIonAlert();
+
+    const userRole = getLocalStorageItem("user-role");
+    const userId = getLocalStorageItem("user-id");
+    const user = getLocalStorageItem("token");
+
+    const logout = async () => {
+        if (!userId) {
+            console.error("No user ID found");
+            return;
+        }
+
+        try {
+            await LogOutProces(userId).unwrap(); // ✅ Envía solo el ID
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    }
+    const [isOpen, setIsOpen] = useState(false);
     // Función para calcular nivel de usuario
     const calcularNivel = (totalPedidos: number) => {
         if (totalPedidos >= 50) return { nivel: "Élite", color: "from-purple-600 to-pink-600", icon: <Award className="size-5" /> };
@@ -290,7 +318,7 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 onScroll?.(isScrolled);
             }}>
 
-            <IonHeader collapse="condense" className="custom-toolbar h-fit absolute -top-0">
+            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
                 <IonToolbar>
                     <a className='decoration-none cursor-pointer' href='/productos'>
                         <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
@@ -304,6 +332,15 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             <div className="pt-16 pb-8 px-4 max-w-6xl mx-auto">
 
                 {/* Tarjeta de Perfil Principal */}
+                <IonButton
+                    fill="solid"
+                    color="light"
+                    expand="block"
+                    onClick={() => setIsOpen(true)}
+                    className="font-semibold"
+                >
+                    Iniciar Sesión
+                </IonButton>
                 <div className="mb-8 relative">
                     <div className={`absolute inset-0 bg-gradient-to-br ${nivelUsuario.color} rounded-3xl opacity-10`} />
                     <div className="relative bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-6 shadow-xl">
@@ -545,6 +582,48 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     </IonCard>
                 </div> */}
             </div>
+            <IonModal
+                                isOpen={isOpen}
+                                onDidDismiss={() => setIsOpen(false)}
+                                className="login-modal"
+                                breakpoints={[0.25, 0.5, 0.75]}
+                                initialBreakpoint={0.75}
+                            >
+                                <IonHeader className="ion-no-border">
+                                    <IonToolbar>
+                                        <IonTitle className="text-lg font-medium font-sans">Iniciar Sesión</IonTitle>
+                                        <IonButtons slot="end">
+                                            <IonButton
+                                                onClick={() => setIsOpen(false)}
+                                                strong
+                                            >
+                                                <X className="text-purple-700" />
+                                            </IonButton>
+                                        </IonButtons>
+                                    </IonToolbar>
+                                </IonHeader>
+                                <IonContent className="ion-padding-horizontal">
+                                    <div className="max-w-sm mx-auto py-4">
+                                        <MainForm
+                                            actionType="post-login"
+                                            dataForm={LogInField()}
+                                            message_button="Iniciar Sesión"
+                                            onSuccess={() => {
+                                                try {
+                                                    setIsOpen(false);
+                                                } catch {
+                                                    presentAlert({
+                                                        header: 'Error al inicio de sesion',
+                                                        subHeader: 'Datos recibidos pero no validados',
+                                                        message: 'Intenta mas tarde, hay errores de validacion en este momento.',
+                                                        buttons: ['Ok'],
+                                                    })
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </IonContent>
+                            </IonModal>
         </IonContent>
     );
 };

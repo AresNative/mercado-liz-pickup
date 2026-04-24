@@ -48,37 +48,6 @@ interface Unidad {
     cantidad: number;
 }
 
-// Datos de ejemplo para comentarios
-const sampleComments = [
-    {
-        id: 1,
-        user: "María González",
-        avatar: "/logo.jpg",
-        rating: 5,
-        comment: "Excelente producto, muy buena calidad y llegó en perfecto estado.",
-        date: "2024-01-15",
-        likes: 12
-    },
-    {
-        id: 2,
-        user: "Carlos Rodríguez",
-        avatar: "/logo.jpg",
-        rating: 4,
-        comment: "Buen producto, cumple con lo esperado. La entrega fue rápida.",
-        date: "2024-01-10",
-        likes: 8
-    },
-    {
-        id: 3,
-        user: "Ana Martínez",
-        avatar: "/logo.jpg",
-        rating: 3,
-        comment: "Regular, esperaba algo mejor por el precio.",
-        date: "2024-01-05",
-        likes: 3
-    }
-];
-
 const ModalProd: React.FC<ProductModalProps> = ({
     producto,
     handleFavoriteToggle,
@@ -118,26 +87,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
     async function cargarUnidades() {
         try {
             const response = await getWithFilter({
-                table: `
-                ArtUnidad AS au
-                INNER JOIN ListaPreciosDUnidad AS lpu 
-                    ON au.Articulo = lpu.Articulo 
-                    AND au.Unidad = lpu.Unidad
-                    AND lpu.Lista = '(Precio Lista)'
-                LEFT JOIN ArtDisponible AS ad 
-                    ON au.Articulo = ad.Articulo 
-                    AND ad.Almacen = 'ALMMAYO'
-                LEFT JOIN Oferta AS ofr
-                        ON ofr.Estatus = 'VIGENTE'
-                        AND ofr.FechaD < GETDATE()
-                        AND ofr.FechaA > GETDATE()
-                    LEFT JOIN OfertaD AS ofrd
-                        ON ofr.ID = ofrd.ID
-                        AND  ofrd.Articulo = art.Articulo
-                        AND ofrd.Unidad = art.Unidad
-                        AND ofrd.Sucursal = '4'
-                        AND ofrd.Precio > 0
-            `,
+                table: `Art AS art INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND au.Articulo = '${producto.articulo}' INNER JOIN ListaPreciosDUnidad AS lpu ON au.Articulo = lpu.Articulo AND au.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' LEFT JOIN ArtDisponible AS ad  ON au.Articulo = ad.Articulo  AND ad.Almacen = 'ALMMAYO' LEFT JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = au.Articulo AND ofrd.Unidad = au.Unidad AND ofrd.Sucursal = '4' AND ofrd.Precio > 0`,
                 pageSize: 10,
                 page: 1,
                 filtros: {
@@ -156,7 +106,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                             Alias: "Cantidad",
                         },
                     ],
-                    Order: [{ Key: "au.Factor", Direction: "ASC" }],
+                    Order: [{ Key: "Factor", Direction: "ASC" }],
                 },
                 signal: undefined,
             }).unwrap();
@@ -195,8 +145,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     async function LoadImage() {
         const response = await getWithFilterImg({
-            table: `imagenes
-                    left join articulos on articulos.id = imagenes.id_ref`,
+            table: `imagenes left join articulos on articulos.id = imagenes.id_ref`,
             pageSize: 10,
             page: 1,
             tag: 'Productos',
@@ -231,26 +180,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
     }
     async function LoadRecomendados() {
         const response = await getWithFilter({
-            table: `
-                CB AS cb
-                    INNER JOIN Art AS art
-                        ON cb.Cuenta = art.Articulo
-                    INNER JOIN ListaPreciosDUnidad AS lpu
-                        ON art.Articulo = lpu.Articulo
-                        AND cb.Unidad = lpu.Unidad
-                        AND lpu.Lista = '(Precio Lista)'
-                        AND lpu.Precio > 0
-                    INNER JOIN ArtUnidad AS au
-                        ON art.Articulo = au.Articulo
-                        AND lpu.Unidad = au.Unidad
-                    INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo
-                    LEFT JOIN (
-                                    SELECT *,
-                                        ROW_NUMBER() OVER (PARTITION BY Articulo, Unidad ORDER BY id DESC) AS rn
-                                    FROM OfertaD
-                                ) AS ofrd On ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad AND ofrd.rn = 1
-                    LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()
-                `,
+            table: `CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd On ofr.ID = ofrd.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad `,
             pageSize: 4,
             page: 1,
             filtros: {
@@ -273,7 +203,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         Alias: "Cantidad",
                     },
                 ],
-                Order: [{ Key: "cb.Codigo", Direction: "DESC" }],
+                Order: [{ Key: "Codigo", Direction: "DESC" }],
             },
             signal: undefined,
         }).unwrap();
