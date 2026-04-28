@@ -338,16 +338,13 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         estado: 'cancelado',
                         fecha_actualizacion: new Date().toISOString()
                     },
-                    Filtros: {
-                        "Filtros": [
+                    Filtros: [
                             {
                                 "Key": "ID",
                                 "Value": pedidoSeleccionado.id,
                                 "Operator": "="
                             }
                         ],
-
-                    }
                 },
             }).unwrap();
 
