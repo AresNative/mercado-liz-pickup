@@ -1,6 +1,6 @@
 import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, isPlatform } from "@ionic/react";
+import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, isPlatform, IonButton } from "@ionic/react";
 import Card from "./components/card";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
@@ -328,12 +328,15 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                 />
                             </button>
                         ))}
-                        <a
-                            href="/ofertas"
-                            className="flex items-center gap-2 h-10 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0"
+                        <IonButton
+                            fill="clear"
+                            expand="full"
+                            routerLink="/ofertas"
+                            routerDirection="none"
+                            className="custom flex items-center gap-2 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0 flex items-center gap-2 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0"
                         >
                             <Badge color="gray" text="Solo ofertas" />
-                        </a>
+                        </IonButton>
                     </div>
 
                     <div className="flex items-center justify-end gap-4 flex-shrink-0 sm:ml-auto">

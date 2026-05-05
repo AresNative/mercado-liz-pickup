@@ -28,6 +28,7 @@ import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/ap
 import ProductPreviewModal from "./modal-recomendado";
 import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
 import { EnvConfig } from "@/utils/constants/env.config";
+import { formatValue } from "@/utils/constants/format-values";
 
 const { hubs: apiUrl } = EnvConfig();
 
@@ -60,11 +61,11 @@ const ModalProd: React.FC<ProductModalProps> = ({
     const [unidades, setUnidades] = useState<Unidad[]>([]);
     const [unidadSeleccionada, setUnidadSeleccionada] = useState<Unidad>({
         id: producto.id,
+        cantidad: producto.cantidad,
         unidad: producto.unidad,
         factor: producto.factor || 1,
         precio: producto.precio,
-        descuento: producto.descuento,
-        cantidad: producto.cantidad
+        descuento: producto.descuento
     });
 
     const [getWithFilter] = useGetWithFiltersGeneralInIntelisisMutation();
@@ -74,26 +75,25 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     // Price calculations para la unidad seleccionada
     const { discountPercentage } = useMemo(() => {
-        const precio = unidadSeleccionada.precio;
-        const descuento = unidadSeleccionada.descuento || 0;
-        const percentage = descuento > 0
-            ? ((precio - descuento) / precio) * 100
+        const percentage = producto.descuento
+            ? ((producto.precio - producto.descuento) / producto.precio) * 100
             : 0;
         let roundedDiscount = Math.round(percentage);
         return { discountPercentage: roundedDiscount };
-    }, [unidadSeleccionada.precio, unidadSeleccionada.descuento]);
+    }, [producto.precio, producto.precioRegular, producto.descuento]);
 
     // Función para cargar las unidades disponibles del artículo
     async function cargarUnidades() {
         try {
             const response = await getWithFilter({
-                table: `Art AS art INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND au.Articulo = '${producto.articulo}' INNER JOIN ListaPreciosDUnidad AS lpu ON au.Articulo = lpu.Articulo AND au.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' LEFT JOIN ArtDisponible AS ad  ON au.Articulo = ad.Articulo  AND ad.Almacen = 'ALMMAYO' LEFT JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = au.Articulo AND ofrd.Unidad = au.Unidad AND ofrd.Sucursal = '4' AND ofrd.Precio > 0`,
+                table: `Art AS art INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND au.Articulo = '${producto.articulo}' INNER JOIN ListaPreciosDUnidad AS lpu ON au.Articulo = lpu.Articulo AND au.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 LEFT JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.SucursalDestino = '4' OR ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.TodasSucursales = 'true' LEFT JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND  ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Precio > 0`,
                 pageSize: 10,
                 page: 1,
                 filtros: {
                     Filtros: [{ key: "au.Articulo", Operator: "=", Value: producto.articulo }],
                     Selects: [
                         { key: "au.Unidad" },
+                        { key: "au.Articulo" },
                         { key: "au.Factor" },
                         { key: "lpu.Precio" },
                         { key: "ofrd.Precio", alias: "Descuento" },
@@ -125,6 +125,8 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
                 // Seleccionar la unidad por defecto si existe en las unidades cargadas
                 const unidadDefault = unidadesData.find(u => u.unidad === producto.unidad) || unidadesData[0];
+                console.log(unidadDefault, producto);
+                
                 if (unidadDefault) {
                     setUnidadSeleccionada(unidadDefault);
                 }
@@ -133,7 +135,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
             console.error("Error al cargar unidades:", error);
             // En caso de error, mantener la unidad original con ID correcto
             setUnidades([{
-                id: `${producto.articulo}-${producto.unidad}`, // ID único
+                id: producto.id,
                 unidad: producto.unidad,
                 factor: producto.factor || 1,
                 precio: producto.precio,
@@ -213,7 +215,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
             if (apiData && apiData.length > 0) {
                 const mappedItems: Producto[] = apiData.map((item: any) => ({
-                    id: item.Codigo || `item-${Date.now()}-${Math.random()}`,
+                    id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
                     articulo: item.Articulo || "Articulo",
                     nombre: item.Descripcion1 || "Sin nombre",
                     categoria: item.Grupo || "Sin categoría",
@@ -258,7 +260,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
         const unidadEncontrada = unidades.find(u => u.unidad === unidad);
         if (unidadEncontrada) {
             // Crear un ID único que combine el artículo y la unidad seleccionada
-            const nuevoId = `${producto.articulo}-${unidad}`;
+            const nuevoId = `${producto.articulo}-${unidad}-${unidadEncontrada.factor}`;
 
             setUnidadSeleccionada({
                 ...unidadEncontrada,
@@ -268,7 +270,10 @@ const ModalProd: React.FC<ProductModalProps> = ({
     };
 
     // Función para formatear el stock según la unidad
-    const formatearStock = (cantidad: number, unidad: string, factor: number) => {
+    const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
+        console.log(cantidad);
+        
+        // Para unidades como Kilogramo, mostrar con decimales
         if (/kilo|kg/i.test(unidad)) {
             return unidad !== 'Pieza'
                 ? (factor ? (cantidad / factor).toFixed(2) : cantidad.toFixed(2))
@@ -283,7 +288,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
     // Y en el productoActualizado, asegúrate de usar el ID correcto
     const productoActualizado: Producto = useMemo(() => {
         // Usar el ID de unidadSeleccionada que ahora se actualiza correctamente
-        const idUnico = unidadSeleccionada.id || `${producto.articulo}-${unidadSeleccionada.unidad}`;
+        const idUnico = `${producto.articulo}-${unidadSeleccionada.unidad}-${unidadSeleccionada.factor}`;
 
         return {
             ...producto,
@@ -396,15 +401,15 @@ const ModalProd: React.FC<ProductModalProps> = ({
                             {unidadSeleccionada.descuento ? (
                                 <>
                                     <span className="text-lg font-semibold text-purple-600">
-                                        ${unidadSeleccionada.descuento.toFixed(2)}
+                                        {formatValue(unidadSeleccionada.descuento, "currency")}
                                     </span>
                                     <span className="text-xs text-gray-500 line-through">
-                                        ${unidadSeleccionada.precio.toFixed(2)}
+                                        {formatValue(unidadSeleccionada.precio, "currency")}
                                     </span>
                                 </>
                             ) : (
                                 <span className="text-lg font-semibold text-purple-600">
-                                    ${unidadSeleccionada.precio.toFixed(2)}
+                                    {formatValue(unidadSeleccionada.precio, "currency")}
                                 </span>
                             )}
                             <span className="text-sm text-gray-500 ml-2">

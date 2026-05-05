@@ -30,6 +30,8 @@ import LayoutUsuario from './app/perfil/layout';
 import Tabs from './template/tabs';
 import { IonReactRouter } from '@ionic/react-router';
 import { usePushNotifications } from './hooks/use-notifications';
+import useBlockInspect from './hooks/block-inspect';
+import AccesDenied from './app/AccesDenied';
 
 setupIonicReact({
   mode: 'ios',
@@ -39,7 +41,14 @@ setupIonicReact({
 });
 
 const App: React.FC = () => {
- if ( isPlatform('mobile') ) usePushNotifications();
+ if ( isPlatform('android') ) usePushNotifications();
+
+  useBlockInspect({
+    blockKeyShortcuts: true,
+    blockContextMenu: true,
+    blockDevTools: true,
+    redirectUrl: '/acceso-denegado'
+  });
   return (
     <IonApp>
       <IonReactRouter>
@@ -56,6 +65,7 @@ const App: React.FC = () => {
                 <Route path="/checkout" render={() => <LayoutCheckout />} exact />
                 <Route path="/seguimiento" render={() => <LayoutSeguimiento />} exact />
                 <Route path="/cuentas" render={() => <LayoutUsuario />} exact />
+                <Route path="/acceso-denegado" render={() => <AccesDenied />} exact />
                 <Redirect exact path="/" to="/home" />
 
                 <Route>

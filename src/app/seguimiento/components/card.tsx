@@ -1,10 +1,10 @@
 import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
-import { Barcode, Hash, Heart, Minus } from "lucide-react";
+import { Barcode, CheckCheck, Hash, Heart, Minus, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
-import { useIonModal } from "@ionic/react";
+import { IonBadge, IonIcon, useIonModal } from "@ionic/react";
 
 import { formatValue } from "@/utils/constants/format-values";
 import { IconLiz } from "@/app/productos/components/ionc-liz";
@@ -13,9 +13,10 @@ import ModalProd from "@/app/productos/components/modal-product";
 import AddToCartButton from "@/app/productos/components/product-add-cart";
 import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
 import { EnvConfig } from "@/utils/constants/env.config";
+import { checkmark,close } from "ionicons/icons";
 
 interface ProductCardProps {
-    producto: Producto;
+    producto: any;
 }
 
 const { hubs: apiUrl } = EnvConfig();
@@ -113,8 +114,6 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
     // Función para formatear el stock según la unidad
     const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
-        console.log(cantidad);
-        
         // Para unidades como Kilogramo, mostrar con decimales
         if (/kilo|kg/i.test(unidad)) {
             return unidad !== 'Pieza'
@@ -199,7 +198,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                         </p> */}
                         <p className="text-xs text-gray-500 flex items-center">
                             <Hash className="size-3 text-purple-800" />
-                            STOCK: {formatearStock(producto.cantidad, producto.unidad, producto.factor)}
+                            Pedido: {producto.quantity}
                         </p>
                     </article>
                 </section>
@@ -227,11 +226,17 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
                         {/* ---- BOTÓN ADD TO CART ---- */}
                         <div className="flex-shrink-0">
-                            <AddToCartButton
-                                id={producto.id}
-                                cantidad={formatearStock(producto.cantidad, producto.unidad, producto.factor)}
-                                producto={producto}
-                            />
+                            {!producto.noEncontrado && producto.recolectado ? (
+                                <section className="text-green-600 flex items-center gap-2 text-xs">
+                                    Recolenctado <CheckCheck className="text-green-600 bg-green-300 rounded-full p-2 size-8" />
+                                </section>
+                            ) : producto.noEncontrado && !producto.recolectado ? (
+                                    <section className="text-red-600 flex items-center gap-2 text-xs">
+                                        No encontrado <XCircle className="text-red-600 bg-red-300 rounded-full p-2 size-8" />
+                                </section>
+                            ) : (
+                                <></>
+                            )}
                         </div>
                     </div>
                 </footer>

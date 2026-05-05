@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
     addMinutes,
     parseISO,
@@ -11,19 +11,23 @@ import {
 import { es } from "date-fns/locale";
 import { timeOutline } from "ionicons/icons";
 import { IonIcon } from "@ionic/react";
+import { useAppSelector } from "@/hooks/selector";
+import { RootState } from "@/hooks/store";
 
 type Cita = { nombre_lista: string };
 
 const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
+    const cart = useAppSelector((state: RootState) => state.cart);
+    const { items = [] } = cart || {};
+
     return useMemo(() => {
         if (!selectedDate) return { morningSlots: [], afternoonSlots: [] };
 
         const SLOT_MINUTES = 30;
         const day = startOfDay(parseISO(selectedDate));
-        const now = new Date();
+        const now = addMinutes(new Date(), 20);
         const isToday = isSameDay(day, now);
 
-        // Horario: 09:30 -> 16:00
         const startHour = 9;
         const startMinute = 30;
         const endHour = 16;
@@ -34,7 +38,6 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
         const endDate = new Date(day);
         endDate.setHours(endHour, endMinute, 0, 0);
 
-        // Transformar citas reservadas a intervalos
         const bookedIntervals = citasExistentes
             .map((c) => {
                 try {
@@ -47,7 +50,6 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             })
             .filter(Boolean) as { start: Date; end: Date }[];
 
-        // Helper para convertir time-only "HH:mm:ss.SSS" a Date en el día seleccionado
         const parseTimeOnDay = (timeStr: string) => {
             const [hh, mm, ssMs = "0"] = timeStr.split(":");
             const [ss = "0", ms = "0"] = ssMs.split(".");
@@ -58,7 +60,6 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
 
         const slots: { id: string; time: string; isAvailable: boolean }[] = [];
 
-        
         for (
             let t = startDate.getTime();
             t <= endDate.getTime();
@@ -67,15 +68,21 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             const slotStart = new Date(t);
             const slotEnd = addMinutes(slotStart, SLOT_MINUTES);
 
-            // No mostrar slots que ya pasaron (solo para hoy)
             if (isToday && isBefore(slotStart, now)) continue;
 
-            // Comprobar solapamiento con reservas
-            const available = !bookedIntervals.some((b) =>
+            let available = !bookedIntervals.some((b) =>
                 areIntervalsOverlapping({ start: slotStart, end: slotEnd }, b)
             );
 
-            // Guardamos solo la parte de hora/minuto/segundos/milisegundos en time
+            // --- NUEVA REGLA: si hay items en el carrito, bloquear antes de las 10:00 ---
+            if (items.length > 0) {
+                const tenAm = new Date(day);
+                tenAm.setHours(10, 0, 0, 0);
+                if (slotStart < tenAm) {
+                    available = false;
+                }
+            }
+
             const timeOnly = format(slotStart, "HH:mm:ss.SSS");
 
             slots.push({
@@ -85,7 +92,6 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             });
         }
 
-        // Separar mañana/tarde por 13:00
         const midday = new Date(day);
         midday.setHours(13, 0, 0, 0);
 
@@ -93,7 +99,7 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
         const afternoonSlots = slots.filter((s) => parseTimeOnDay(s.time) >= midday);
 
         return { morningSlots, afternoonSlots };
-    }, [selectedDate, citasExistentes]);
+    }, [selectedDate, citasExistentes, items.length]);
 };
 
 interface TimeRanges {
@@ -103,18 +109,21 @@ interface TimeRanges {
 }
 
 const TimeSlots: React.FC<TimeRanges> = ({ selectedDate, setSelectedTime, selectedTime }) => {
-    // ejemplo de citas existentes
-    const citasExistentes = [
-        { nombre_lista: "2025-11-01T10:00:00.000Z" },
-        { nombre_lista: "2025-11-01T11:30:00.000Z" },
-    ];
+    const citasExistentes = [{ nombre_lista: "" }];
+    const { morningSlots, afternoonSlots } = useTimeSlots(selectedDate, citasExistentes);
 
-    const { morningSlots, afternoonSlots } = useTimeSlots(
-        selectedDate,
-        citasExistentes
-    );
+    // --- Limpiar la selección si la hora ya no está disponible ---
+    useEffect(() => {
+        if (!selectedTime) return;
+        const allSlots = [...morningSlots, ...afternoonSlots];
+        const stillAvailable = allSlots.some(
+            (slot) => slot.time === selectedTime && slot.isAvailable
+        );
+        if (!stillAvailable) {
+            setSelectedTime(null);
+        }
+    }, [morningSlots, afternoonSlots, selectedTime, setSelectedTime]);
 
-    // Formatea un time-only "HH:mm:ss.SSS" usando la fecha seleccionada (o hoy si no hay)
     const formatHour = useCallback(
         (timeOnly: string | null) => {
             if (!timeOnly) return "";
@@ -169,9 +178,7 @@ const TimeSlots: React.FC<TimeRanges> = ({ selectedDate, setSelectedTime, select
                                                         aria-label={`Hora ${formatHour(slot.time)} ${disabled ? "no disponible" : selected ? "seleccionada" : ""
                                                             }`}
                                                         disabled={disabled}
-                                                        onClick={() => {
-                                                            setSelectedTime(slot.time);
-                                                        }}
+                                                        onClick={() => setSelectedTime(slot.time)}
                                                         className={`w-full p-2 rounded-md border text-sm flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-400
                                                             ${selected ? "bg-purple-600 text-white border-purple-700" : ""}
                                                             ${!selected && !disabled ? "border-purple-200 hover:bg-purple-50" : ""}
@@ -197,7 +204,6 @@ const TimeSlots: React.FC<TimeRanges> = ({ selectedDate, setSelectedTime, select
                                         {afternoonSlots.map((slot) => {
                                             const disabled = !slot.isAvailable;
                                             const selected = selectedTime === slot.time;
-
                                             return (
                                                 <li key={slot.id}>
                                                     <button

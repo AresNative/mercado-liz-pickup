@@ -63,7 +63,7 @@ export function BentoGrid({ className, cols = 6, rows, children, loading = false
             className={cn(
                 "relative",
                 "grid gap-4 p-4",
-                "grid-cols-1", // fallback mobile
+                "grid-cols-2", // fallback mobile --revisar para siguiente presentacion
                 colClasses[cols] ?? colClasses[6],
                 rows ? rowClasses[rows] : "auto-rows-[minmax(120px,auto)]",
                 className

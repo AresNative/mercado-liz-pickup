@@ -52,8 +52,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
 
     async function LoadImage() {
         const response = await getWithFilter({
-            table: `imagenes
-                    left join articulos on articulos.id = imagenes.id_ref`,
+            table: `imagenes left join articulos on articulos.id = imagenes.id_ref`,
             pageSize: 10,
             page: 1,
             tag: 'Productos',
@@ -134,20 +133,26 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-52 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
+            className="group relative min-w-20 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
 
-            <section
-                className="relative border-b border-gray-200 overflow-hidden">
-                {image ?
-                    (<img
-                        src={image ? image : "/logo.jpg"}
-                        alt="Product Image"
-                        className=" h-52 mx-auto object-cover group-hover:scale-105 transition-transform duration-300"
-                    />) :
-                    (<IconLiz fill="#DBDBDB" />)}
+            <section className="relative flex justify-center border-b border-gray-200 overflow-hidden bg-gray-50">
+                {/* Contenedor con proporción fija (1:1 = cuadrado) */}
+                <div className="relative w-full aspect-square">
+                    {image ? (
+                        <img
+                            src={image}
+                            alt="Product Image"
+                            className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+                            <IconLiz fill="#DBDBDB" className="w-1/2 h-1/2 max-w-32 max-h-32" />
+                        </div>
+                    )}
+                </div>
 
                 {/* ---- BOTÓN ADD TO CART ---- */}
-                <div className="absolute bottom-2 right-2">
+                <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3">
                     <AddToCartButton
                         id={producto.id}
                         cantidad={formatearStock(producto.cantidad, producto.unidad, producto.factor)}
@@ -160,19 +165,19 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 <label className="font-semibold text-sm">{producto.nombre}</label>
 
                 <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
-                    <li className="flex flex-col gap-1">
+                    <li className="flex flex-col gap-1 text-[12px]">
                         {discountPercentage > 0 && (
-                            <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  font-semibold px-2 py-1 rounded-md">
                                 -{discountPercentage}%
                             </div>
                         )}
                         {isLowStock && (
-                            <div className="w-full text-center border-2 bg-yellow-100 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-yellow-100 border-yellow-600 text-yellow-600 font-semibold px-2 py-1 rounded-md">
                                 última(s) {producto.cantidad}
                             </div>
                         )}
                         {isOutOfStock && (
-                            <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
+                            <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600  font-semibold px-2 py-1 rounded-md">
                                 agotado
                             </div>
                         )}
@@ -194,7 +199,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                 </ul>
 
 
-                <p className="text-xs text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
+                <p className="text-[10px] text-gray-500 flex items-center justify-between">{producto.unidad} | {producto.categoria}</p>
                 {/* <p className="text-xs text-gray-500 flex items-center gap-1">
                     <Barcode className="size-3 text-purple-800" />
                     CB: {producto.codigo}
@@ -218,15 +223,15 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                     <div className="flex flex-col overflow-hidden">
                         {producto.descuento ? (
                             <>
-                                <span className="text-lg font-semibold text-purple-600 leading-none truncate">
+                                <span className="text-md md:text-lg font-semibold text-purple-600 leading-none truncate">
                                     {formatValue(producto.descuento, "currency")}
                                 </span>
-                                <span className="text-[11px] text-gray-500 line-through truncate leading-none">
+                                <span className="text-xs text-gray-500 line-through truncate leading-none">
                                     {formatValue(producto.precio, "currency")}
                                 </span>
                             </>
                         ) : (
-                            <span className="text-lg font-semibold text-purple-600 leading-none truncate">
+                            <span className="text-md md:text-lg font-semibold text-purple-600 leading-none truncate">
                                 {formatValue(producto.precio, "currency")}
                             </span>
                         )}

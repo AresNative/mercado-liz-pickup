@@ -86,14 +86,12 @@ export const api = createApi({
     }),
     getWithFilters: builder.mutation({
       query: ({ url, page, pageSize, filtros, signal }) => ({
-        url: `${url}/consultar/filtros`,
+        url: `/v1/consultar`,
         method: "POST",
-
         params: {
-          page,
-          pageSize,
+          fromClause: url, // tabla a consultar
         },
-        body: filtros,
+        body: { ...filtros, page, pageSize },
         signal,
       }),
       transformErrorResponse: (response: any) => ({
@@ -121,8 +119,9 @@ export const api = createApi({
     }),
     post: builder.mutation({
       query: ({ url, data, signal }) => ({
-        url: `${url}/register`,
+        url: `v1/register`,
         method: "POST",
+        params: { table:url }, // tabla a consultar
         body: JSON.stringify(data),
         headers: {
           "Content-Type": "application/json",

@@ -54,7 +54,7 @@ const Calendar: React.FC<Calendar> = ({ selectedDate, setSelectedDate }) => {
     const cargarCitasExistentes = useCallback(async () => {
         try {
             const response = await GetData({
-                url: "v1/pickup/listas",
+                url: "listas",
                 filtros: {
                     Filtros: [
                         /* { Key: "sucursal", Value: precio } */

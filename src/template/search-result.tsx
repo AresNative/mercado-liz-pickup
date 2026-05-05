@@ -42,8 +42,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 
     // Construir objetos Producto desde item API
     const mapApiItemToProducto = (item: any): Producto => ({
-        id: item.Codigo + "-" + item.Unidad,
-        /* codigo: item.Codigo || "0000", */
+        id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
+        codigo: item.Codigo || "0000",
         articulo: item.Articulo || "Cuenta",
         nombre: item.Descripcion1 || "Sin nombre",
         categoria: item.Grupo || "Sin categoría",
@@ -72,8 +72,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             }
 
             const result = await getData({
-                table: ` CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 LEFT JOIN Oferta AS ofr On ofr.Estatus = 'VIGENTE' AND ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()  LEFT JOIN OfertaD AS ofrd On ofrd.id = ofr.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad  WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')`,
-                pageSize: 5,
+                table: `CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 LEFT JOIN Oferta AS ofr On ofr.Estatus = 'VIGENTE' AND ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()  LEFT JOIN OfertaD AS ofrd On ofrd.id = ofr.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad  WHERE (art.Descripcion1 LIKE '%${searchTerm}%' OR cb.Codigo LIKE '%${searchTerm}%')`,
+                pageSize: 10,
                 page: pageToFetch,
                 filtros: {
                     "Filtros": [],
@@ -228,6 +228,9 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                                 <h3 className="font-medium text-sm">{suggestion.nombre}</h3>
                                 <p className="text-xs text-gray-500 mt-1">
                                     {suggestion.categoria} | {suggestion.unidad} de {suggestion.factor} Pieza(s)
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {suggestion.codigo}
                                 </p>
                             </IonLabel>
                             <IonNote slot="end" className="text-xs">

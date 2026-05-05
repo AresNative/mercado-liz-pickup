@@ -20,44 +20,63 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
 
     const quantity = cartItem?.quantity || 0;
 
+    // Determinar si la unidad es kg
+    const isKgUnit = producto?.unidad?.toLowerCase().includes('kg') || producto?.unidad?.toLowerCase().includes('kilogramo');
+
+    // Step para incrementos/decrementos
+    const step = isKgUnit ? 0.25 : 1;
+
+    // Función para redondear a múltiplos de step
+    const roundToStep = (value: number, step: number) => {
+        return Math.round(value / step) * step;
+    };
+
     // Stock status - usar la cantidad actualizada
     const isOutOfStock = cantidad <= 0;
     const canAddToCart = !isOutOfStock && quantity < cantidad;
 
-    // Asegurar que las funciones usen los props actualizados
+    // Función para agregar al carrito con step
     const handleAddToCart = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         if (cantidad > 0 && quantity < cantidad) {
             dispatch(addToCart({
                 ...producto,
-                quantity: 1
+                quantity: step
             }));
         }
-    }, [producto, cantidad, quantity, dispatch]);
+    }, [producto, cantidad, quantity, dispatch, step]);
 
     const handleIncrement = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        if (quantity < cantidad) {
-            dispatch(addToCart({
-                ...producto,
-                quantity: 1
-            }));
-        }
-    }, [producto, cantidad, quantity, dispatch]);
-
-    const handleDecrement = useCallback((e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (quantity > 0) {
-            if (quantity === 1) {
-                dispatch(removeFromCart(id));
-            } else {
+        const newQuantity = roundToStep(quantity + step, step);
+        if (newQuantity <= cantidad) {
+            const difference = newQuantity - quantity;
+            if (difference > 0) {
                 dispatch(addToCart({
                     ...producto,
-                    quantity: -1
+                    quantity: difference
                 }));
             }
         }
-    }, [producto, id, quantity, dispatch]);
+    }, [producto, cantidad, quantity, dispatch, step]);
+
+    const handleDecrement = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newQuantity = roundToStep(quantity - step, step);
+        if (newQuantity >= 0) {
+            if (newQuantity === 0) {
+                dispatch(removeFromCart(id));
+            } else {
+                const difference = newQuantity - quantity;
+                if (difference < 0) {
+                    dispatch(addToCart({
+                        ...producto,
+                        quantity: difference
+                    }));
+                }
+            }
+        }
+    }, [producto, id, quantity, dispatch, step]);
 
     // Función para eliminar rápidamente el producto del carrito
     const handleRemoveFromCart = useCallback((e: React.MouseEvent) => {
@@ -66,22 +85,34 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
     }, [id, dispatch]);
 
     const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const newQuantity = parseInt(e.target.value) || 0;
+        let newQuantity = parseFloat(e.target.value);
 
-        if (newQuantity >= 0 && newQuantity <= cantidad) {
-            if (newQuantity === 0) {
-                dispatch(removeFromCart(id));
-            } else {
-                const difference = newQuantity - quantity;
-                if (difference !== 0) {
-                    dispatch(addToCart({
-                        ...producto,
-                        quantity: difference
-                    }));
-                }
-            }
+        if (isNaN(newQuantity)) {
+            newQuantity = 0;
         }
-    }, [producto, id, cantidad, quantity, dispatch]);
+
+        // Redondear al step más cercano
+        newQuantity = roundToStep(newQuantity, step);
+
+        // Asegurar que no exceda los límites
+        newQuantity = Math.max(0, Math.min(newQuantity, cantidad));
+
+        if (newQuantity === 0) {
+            dispatch(removeFromCart(id));
+        } else if (newQuantity !== quantity) {
+            const difference = newQuantity - quantity;
+            dispatch(addToCart({
+                ...producto,
+                quantity: difference
+            }));
+        }
+    }, [producto, id, cantidad, quantity, dispatch, step]);
+
+    // Formatear la cantidad mostrada
+    const displayQuantity = isKgUnit ? quantity.toFixed(2) : Math.floor(quantity);
+
+    // Verificar si el botón de incremento debe estar deshabilitado
+    const isIncrementDisabled = roundToStep(quantity + step, step) > cantidad;
 
     return (
         <motion.div className="flex items-center gap-2 flex-shrink-0">
@@ -105,7 +136,6 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         className="flex items-center gap-1 bg-gray-50 rounded-xl p-1"
                         layout
                     >
-
                         {/* Botón para eliminar rápidamente */}
                         <button
                             onClick={handleRemoveFromCart}
@@ -114,6 +144,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
+
                         <button
                             onClick={handleDecrement}
                             className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -123,22 +154,23 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         </button>
 
                         <input
-                            type="number"
-                            value={quantity}
+                            type={isKgUnit ? "number" : "text"}
+                            value={displayQuantity}
                             onChange={handleQuantityChange}
-                            className="w-12 h-8 text-center text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-md"
+                            className="w-16 h-8 text-center text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-md"
                             min="0"
                             max={cantidad}
-                            disabled
+                            step={step}
                             aria-label="Cantidad"
+                            readOnly={!isKgUnit}
                         />
 
                         <button
                             onClick={handleIncrement}
-                            disabled={quantity >= cantidad}
+                            disabled={isIncrementDisabled}
                             className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500",
-                                quantity >= cantidad
+                                isIncrementDisabled
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-purple-600 hover:bg-purple-700 text-white"
                             )}
@@ -159,4 +191,5 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
         </motion.div>
     );
 }
+
 export default AddToCartButton;

@@ -83,13 +83,6 @@ const calculateCartTotal = (items: any[]) => {
     }, 0);
 };
 
-const generateNewMovId = (lastMovId: string): string => {
-    const movIdParts = lastMovId.split('-');
-    const prefix = movIdParts[0];
-    const currentNumber = parseInt(movIdParts[1]);
-    return `${prefix}-${currentNumber + 1}`;
-};
-
 const getCurrentDateTime = () => {
     const now = new Date();
     return {
@@ -305,11 +298,11 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const storedToken = getLocalStorageItem("token");
             const storedUserId = getLocalStorageItem("user-id");
 
-            if (storedToken && storedUser && storedUser.correo === userData.correo && storedUserId) {
+            /* if (storedToken && storedUser && storedUser.correo === userData.correo && storedUserId) {
                 console.log("🔁 Ya existe sesión local para este usuario — reutilizando.");
                 setIsAuthenticated(true);
                 return true;
-            }
+            } */
 
             // Si hay sesión pero para otro usuario => limpiar
             if (storedUser && storedUser.correo && storedUser.correo !== userData.correo) {
@@ -419,8 +412,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     }, []);
 
     // --- VALIDACIÓN DEL BOTÓN DE CONFIRMACIÓN ---
+    const { userValues, paymentValues } = formValues;
     const isConfirmButtonEnabled = useCallback((): boolean => {
-        const { userValues, paymentValues } = formValues;
 
         const hasUserData = Boolean(
             userValues.telefono &&
@@ -441,7 +434,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
         return isValid;
-    }, [selectedDate, selectedTime, items.length, formValues]);
+    }, [selectedDate, selectedTime, items.length, formValues, userValues, paymentValues]);
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
     const getLastSaleInfo = async () => {
@@ -823,7 +816,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         // Buscar cliente por email
         const clientResponse = await safeCall(() => GetData({
-            url: "v1/pickup/clientes",
+            url: "clientes",
             filtros: {
                 Filtros: [{ Key: "email", Value: user.correo }],
                 Order: [{ Key: "id", Direction: "Desc" }]
@@ -842,7 +835,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             // Crear nuevo cliente con hora local
             const createResponse = await safeCall(() => PostData({
-                url: "v1/pickup/clientes",
+                url: "clientes",
                 data: {
                     nombre: `${user.Nombre || user.nombre} ${user.Apellidos || ""}`.trim(),
                     telefono: user.telefono,
@@ -880,7 +873,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 await new Promise(resolve => setTimeout(resolve, 2000));
 
                 const searchResponse = await safeCall(() => GetData({
-                    url: "v1/pickup/clientes",
+                    url: "clientes",
                     filtros: {
                         Filtros: [
                             { Key: "email", Value: user.correo },
@@ -901,7 +894,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     console.log("🔄 Último intento: buscar por teléfono...");
 
                     const finalSearch = await safeCall(() => GetData({
-                        url: "v1/pickup/clientes",
+                        url: "clientes",
                         filtros: {
                             Filtros: [{ Key: "telefono", Value: user.telefono }],
                             Order: [{ Key: "id", Direction: "Desc" }]
@@ -960,7 +953,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         // Crear lista de pickup con hora local
         const listaResponse = await safeCall(() => PostData({
-            url: "v1/pickup/listas",
+            url: "listas",
             data: {
                 id_cliente: clientId,
                 usuario_id: userId,
@@ -1013,12 +1006,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const formData = await getFormData();
             console.log("📝 Datos usuario antes de login:", formData.user);
 
-            if (!isAuthenticated) {
+           /*  if (!isAuthenticated) { */
                 const authSuccess = await authenticateUser(formData.user);
                 if (!authSuccess) {
                     throw new Error("No se pudo autenticar");
                 }
-            }
+           /*  } */
 
             // ORDEN CORREGIDO: Primero Intelisis, luego nuestra API
             console.log("🔄 ORDEN DE INSERCIÓN: Intelisis primero → Nuestra API después");
