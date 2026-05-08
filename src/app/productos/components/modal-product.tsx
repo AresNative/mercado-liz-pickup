@@ -51,11 +51,12 @@ interface Unidad {
 
 const ModalProd: React.FC<ProductModalProps> = ({
     producto,
+    image: propImage,
     handleFavoriteToggle,
     isFavorite,
     onDismiss
 }) => {
-    const [image, setImage] = useState("");
+    const [image, setImage] = useState(propImage || "");
     const [recomendados, setrecomendados] = useState<Producto[]>([])
     const [recomendadosselect, setrecomendadosselect] = useState()
     const [unidades, setUnidades] = useState<Unidad[]>([]);
@@ -70,17 +71,20 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     const [getWithFilter] = useGetWithFiltersGeneralInIntelisisMutation();
     const [getWithFilterImg] = useGetWithFiltersGeneralMutation();
+
     const isLowStock = unidadSeleccionada.cantidad > 0 && unidadSeleccionada.cantidad <= 10;
     const isOutOfStock = unidadSeleccionada.cantidad <= 0;
 
     // Price calculations para la unidad seleccionada
     const { discountPercentage } = useMemo(() => {
-        const percentage = producto.descuento
-            ? ((producto.precio - producto.descuento) / producto.precio) * 100
-            : 0;
-        let roundedDiscount = Math.round(percentage);
-        return { discountPercentage: roundedDiscount };
-    }, [producto.precio, producto.precioRegular, producto.descuento]);
+        const precioActual = unidadSeleccionada.precio;
+        const descuentoActual = unidadSeleccionada.descuento;
+        if (descuentoActual && descuentoActual > 0 && precioActual > descuentoActual) {
+            const percentage = ((precioActual - descuentoActual) / precioActual) * 100;
+            return { discountPercentage: Math.round(percentage) };
+        }
+        return { discountPercentage: 0 };
+    }, [unidadSeleccionada.precio, unidadSeleccionada.descuento]);
 
     // Función para cargar las unidades disponibles del artículo
     async function cargarUnidades() {
@@ -112,28 +116,34 @@ const ModalProd: React.FC<ProductModalProps> = ({
             }).unwrap();
 
             if (response && response.data) {
-                const unidadesData: Unidad[] = response.data.map((item: any) => ({
-                    id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
-                    unidad: item.Unidad || "Unidad",
-                    factor: item.Factor || 1,
-                    precio: item.Precio || 0,
-                    Descuento: item.Porcentaje ? item.Precio - ((item.Porcentaje / 100) * item.Precio) : item.Descuento || 0,
-                    cantidad: item.Cantidad || 0
-                }));
+                const unidadesData: Unidad[] = response.data.map((item: any) => {
+                    let descuentoValor = 0;
+                    if (item.Porcentaje) {
+                        descuentoValor = item.Precio - ((item.Porcentaje / 100) * item.Precio);
+                    } else if (item.Descuento) {
+                        descuentoValor = item.Descuento;
+                    }
+                    return {
+                        id: `${item.Articulo}-${item.Unidad}-${item.Factor}`,
+                        unidad: item.Unidad || "Unidad",
+                        factor: item.Factor || 1,
+                        precio: item.Precio || 0,
+                        descuento: descuentoValor,
+                        cantidad: item.Cantidad || 0
+                    };
+                });
 
                 setUnidades(unidadesData);
 
-                // Seleccionar la unidad por defecto si existe en las unidades cargadas
+                // Seleccionar la unidad por defecto: la que coincide con producto.unidad, o la primera
                 const unidadDefault = unidadesData.find(u => u.unidad === producto.unidad) || unidadesData[0];
-                console.log(unidadDefault, producto);
-                
                 if (unidadDefault) {
                     setUnidadSeleccionada(unidadDefault);
                 }
             }
         } catch (error) {
             console.error("Error al cargar unidades:", error);
-            // En caso de error, mantener la unidad original con ID correcto
+            // En caso de error, mantener la unidad original
             setUnidades([{
                 id: producto.id,
                 unidad: producto.unidad,
@@ -146,76 +156,83 @@ const ModalProd: React.FC<ProductModalProps> = ({
     }
 
     async function LoadImage() {
-        const response = await getWithFilterImg({
-            table: `imagenes left join articulos on articulos.id = imagenes.id_ref`,
-            pageSize: 10,
-            page: 1,
-            tag: 'Productos',
-            filtros: {
-                "Filtros": [
-                    {
-                        "Key": "articulo",
-                        "Value": producto.articulo,
-                        "Operator": "="
-                    },
-                    {
-                        "Key": "tabla",
-                        "Value": "articulos",
-                        "Operator": "="
-                    }
-                ],
-                "Selects": [
-                    { key: "articulos.id" },
-                    { key: "articulos.nombre" },
-                    { key: "articulos.descripcion" },
-                    { key: "articulos.precio" },
-                    { key: "imagenes.url" }
-                ]
-            }
-        }).unwrap();
+        if (propImage) {
+            setImage(propImage);
+            return;
+        }
+        try {
+            const response = await getWithFilterImg({
+                table: `imagenes left join articulos on articulos.id = imagenes.id_ref`,
+                pageSize: 10,
+                page: 1,
+                tag: 'Productos',
+                filtros: {
+                    "Filtros": [
+                        {
+                            "Key": "articulo",
+                            "Value": producto.articulo,
+                            "Operator": "="
+                        },
+                        {
+                            "Key": "tabla",
+                            "Value": "articulos",
+                            "Operator": "="
+                        }
+                    ],
+                    "Selects": [
+                        { key: "articulos.id" },
+                        { key: "articulos.nombre" },
+                        { key: "articulos.descripcion" },
+                        { key: "articulos.precio" },
+                        { key: "imagenes.url" }
+                    ]
+                }
+            }).unwrap();
 
-        if (response && response.data) {
-            response.data.map((item: any) => {
-                setImage(apiUrl.slice(0, -1) + item.url);
-            });
+            if (response && response.data && response.data.length > 0) {
+                const imgUrl = apiUrl.slice(0, -1) + response.data[0].url;
+                setImage(imgUrl);
+            }
+        } catch (error) {
+            console.error("Error loading image", error);
         }
     }
+
     async function LoadRecomendados() {
-        const response = await getWithFilter({
-            table: `CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd On ofr.ID = ofrd.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad `,
-            pageSize: 4,
-            page: 1,
-            filtros: {
-                Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
-                Selects: [
-                    { key: "cb.Codigo" },
-                    { key: "art.Articulo" },
-                    { key: "art.Grupo" },
-                    { key: "art.Descripcion1" },
-                    { key: "lpu.Unidad" },
-                    { key: "lpu.Precio" },
-                    { key: "ofrd.Precio", alias: "Descuento" },
-                    { key: "au.Unidad", alias: "UnidadFactor" },
-                    { key: "au.Factor" },
-                ],
-                Agregaciones: [
-                    {
-                        Key: "ad.DispMenosApartado",
-                        Operation: "SUM",
-                        Alias: "Cantidad",
-                    },
-                ],
-                Order: [{ Key: "Codigo", Direction: "DESC" }],
-            },
-            signal: undefined,
-        }).unwrap();
+        try {
+            const response = await getWithFilter({
+                table: `CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo LEFT JOIN Oferta AS ofr On ofr.Articulo = art.Articulo AND ofr.Estatus = 'VIGENTE' AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd On ofr.ID = ofrd.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad `,
+                pageSize: 4,
+                page: 1,
+                filtros: {
+                    Filtros: [{ key: "art.Grupo", Operator: "=", Value: producto.categoria }],
+                    Selects: [
+                        { key: "cb.Codigo" },
+                        { key: "art.Articulo" },
+                        { key: "art.Grupo" },
+                        { key: "art.Descripcion1" },
+                        { key: "lpu.Unidad" },
+                        { key: "lpu.Precio" },
+                        { key: "ofrd.Precio", alias: "Descuento" },
+                        { key: "au.Unidad", alias: "UnidadFactor" },
+                        { key: "au.Factor" },
+                    ],
+                    Agregaciones: [
+                        {
+                            Key: "ad.DispMenosApartado",
+                            Operation: "SUM",
+                            Alias: "Cantidad",
+                        },
+                    ],
+                    Order: [{ Key: "Codigo", Direction: "DESC" }],
+                },
+                signal: undefined,
+            }).unwrap();
 
-        if (response && response.data) {
-            const apiData: any = response.data;
-
-            if (apiData && apiData.length > 0) {
+            if (response && response.data) {
+                const apiData: any = response.data;
                 const mappedItems: Producto[] = apiData.map((item: any) => ({
-                    id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
+                    id: `${item.Articulo}-${item.Unidad}-${item.Factor}`,
                     articulo: item.Articulo || "Articulo",
                     nombre: item.Descripcion1 || "Sin nombre",
                     categoria: item.Grupo || "Sin categoría",
@@ -223,24 +240,25 @@ const ModalProd: React.FC<ProductModalProps> = ({
                     precio: item.Precio || 0,
                     cantidad: item.Cantidad || 1,
                     factor: item.Factor || 1,
-                    impuesto1: item.Impuesto1 || 0,
-                    impuesto2: item.Impuesto2 || 0,
-                    tipoImpuesto1: item.TipoImpuesto1 || 0,
-                    tipoImpuesto2: item.TipoImpuesto2 || 0,
+                    impuesto1: 0,
+                    impuesto2: 0,
+                    tipoImpuesto1: 0,
+                    tipoImpuesto2: 0,
                     descuento: item.Descuento || 0,
                 }));
-
                 setrecomendados(mappedItems);
             }
+        } catch (error) {
+            console.error("Error loading recomendados", error);
         }
     }
+
     useEffect(() => {
         LoadImage();
         LoadRecomendados();
         cargarUnidades();
     }, [producto]);
 
-    // Corrección: pasar las opciones del modal al presentarlo
     const [present, dismiss] = useIonModal(ProductPreviewModal, {
         producto: recomendadosselect,
         onDismiss: () => dismiss(),
@@ -248,64 +266,36 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     useEffect(() => {
         if (!recomendadosselect) return;
-
         present({
             initialBreakpoint: 0.95,
             breakpoints: [0, 0.5, 0.95],
         });
     }, [recomendadosselect]);
 
-    // Función para manejar el cambio de unidad
     const handleUnidadChange = (unidad: string) => {
         const unidadEncontrada = unidades.find(u => u.unidad === unidad);
         if (unidadEncontrada) {
-            // Crear un ID único que combine el artículo y la unidad seleccionada
-            const nuevoId = `${producto.articulo}-${unidad}-${unidadEncontrada.factor}`;
-
-            setUnidadSeleccionada({
-                ...unidadEncontrada,
-                id: nuevoId // Actualizar el ID con la unidad seleccionada
-            });
+            setUnidadSeleccionada(unidadEncontrada);
         }
     };
 
-    // Función para formatear el stock según la unidad
     const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
-        console.log(cantidad);
-        
-        // Para unidades como Kilogramo, mostrar con decimales
         if (/kilo|kg/i.test(unidad)) {
-            return unidad !== 'Pieza'
-                ? (factor ? (cantidad / factor).toFixed(2) : cantidad.toFixed(2))
-                : cantidad.toFixed(0);
+            return (cantidad / factor).toFixed(2);
         } else {
-            return unidad !== 'Pieza'
-                ? (factor ? Math.trunc(cantidad / factor) : Math.trunc(cantidad))
-                : Math.trunc(cantidad);
+            return Math.trunc(cantidad / factor);
         }
     };
 
-    // Y en el productoActualizado, asegúrate de usar el ID correcto
     const productoActualizado: Producto = useMemo(() => {
-        // Usar el ID de unidadSeleccionada que ahora se actualiza correctamente
-        const idUnico = `${producto.articulo}-${unidadSeleccionada.unidad}-${unidadSeleccionada.factor}`;
-
         return {
             ...producto,
-            id: idUnico, // Usar el ID único que incluye la unidad
-            /* codigo: producto.codigo || producto.id, */
-            articulo: producto.articulo,
-            nombre: producto.nombre,
-            categoria: producto.categoria,
+            id: `${producto.articulo}-${unidadSeleccionada.unidad}-${unidadSeleccionada.factor}`,
             unidad: unidadSeleccionada.unidad,
             factor: unidadSeleccionada.factor,
             precio: unidadSeleccionada.precio,
             descuento: unidadSeleccionada.descuento,
-            cantidad: producto.cantidad,
-            impuesto1: producto.impuesto1 || 0,
-            impuesto2: producto.impuesto2 || 0,
-            tipoImpuesto1: producto.tipoImpuesto1 || 0,
-            tipoImpuesto2: producto.tipoImpuesto2 || 0
+            cantidad: unidadSeleccionada.cantidad,
         };
     }, [producto, unidadSeleccionada]);
 
@@ -330,28 +320,30 @@ const ModalProd: React.FC<ProductModalProps> = ({
             <IonContent className="ion-padding">
                 <article className="flex flex-col gap-4">
                     {/* Imagen del producto */}
-                    <header className="relative rounded-lg overflow-hidde flex justify-center">
-                        {image ?
-                            (<img
-                                src={image ? image : "/logo.jpg"}
+                    <header className="relative rounded-lg overflow-hidden flex justify-center">
+                        {image ? (
+                            <img
+                                src={image}
                                 alt="Product Image"
-                                className="size-[25rem] object-contain group-hover:scale-105 transition-transform duration-300"
-                            />) :
-                            (<IconLiz fill="#DBDBDB" width="300" />)}
+                                className="w-full max-w-[300px] object-contain aspect-square"
+                            />
+                        ) : (
+                            <IconLiz fill="#DBDBDB" width="300" height="300" />
+                        )}
                         <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                             <li className="flex flex-col gap-1">
                                 {discountPercentage > 0 && (
-                                    <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600  text-xs font-semibold px-2 py-1 rounded-md">
+                                    <div className="w-full text-center border-2 bg-red-100 border-red-600 text-red-600 text-xs font-semibold px-2 py-1 rounded-md">
                                         -{discountPercentage}%
                                     </div>
                                 )}
                                 {isLowStock && (
                                     <div className="w-full text-center border-2 bg-yellow-100 border-yellow-600 text-yellow-600 text-xs font-semibold px-2 py-1 rounded-md">
-                                        última(s) {producto.cantidad}
+                                        última(s) {formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)} {unidadSeleccionada.unidad}(s)
                                     </div>
                                 )}
                                 {isOutOfStock && (
-                                    <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600  text-xs font-semibold px-2 py-1 rounded-md">
+                                    <div className="w-full text-center border-2 bg-gray-100 border-gray-600 text-gray-600 text-xs font-semibold px-2 py-1 rounded-md">
                                         agotado
                                     </div>
                                 )}
@@ -376,7 +368,7 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
                     {/* Información básica del producto */}
                     <section className="space-y-3">
-                        <label className="font-bold">{producto.nombre}</label>
+                        <label className="font-bold text-lg">{producto.nombre}</label>
 
                         {/* Selector de Unidad */}
                         {unidades.length > 1 && (
@@ -398,44 +390,36 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
                         {/* Precio */}
                         <div className="flex items-center gap-2">
-                            {unidadSeleccionada.descuento ? (
+                            {unidadSeleccionada.descuento && unidadSeleccionada.descuento > 0 ? (
                                 <>
-                                    <span className="text-lg font-semibold text-purple-600">
+                                    <span className="text-2xl font-bold text-purple-600">
                                         {formatValue(unidadSeleccionada.descuento, "currency")}
                                     </span>
-                                    <span className="text-xs text-gray-500 line-through">
+                                    <span className="text-sm text-gray-500 line-through">
                                         {formatValue(unidadSeleccionada.precio, "currency")}
                                     </span>
                                 </>
                             ) : (
-                                <span className="text-lg font-semibold text-purple-600">
+                                <span className="text-2xl font-bold text-purple-600">
                                     {formatValue(unidadSeleccionada.precio, "currency")}
                                 </span>
                             )}
-                            <span className="text-sm text-gray-500 ml-2">
+                            <span className="text-sm text-gray-500">
                                 / {unidadSeleccionada.unidad}
                             </span>
                         </div>
 
                         {/* Detalles */}
                         <div className="space-y-2">
-                            {/* <div className="flex items-center gap-2 text-sm">
-                                <Barcode className="size-4 text-purple-600" />
-                                <IonText color="medium">
-                                    <span>Código: {producto.codigo ? producto.codigo : ""}</span>
-                                </IonText>
-                            </div> */}
-
                             <div className="flex items-center gap-2 text-sm">
                                 <Hash className="size-4 text-purple-600" />
                                 <IonText color="medium">
                                     <span>
-                                        Stock: {formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)}
-                                        <label className="text-green-600 ml-2">{unidadSeleccionada.unidad}(s)</label>
+                                        Stock: {formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)} {unidadSeleccionada.unidad}(s)
                                         {unidadSeleccionada.factor > 1 && (
-                                            <label className="text-gray-500 ml-2">
+                                            <span className="text-gray-500 ml-2">
                                                 (Contiene: {unidadSeleccionada.factor} pzs.)
-                                            </label>
+                                            </span>
                                         )}
                                     </span>
                                 </IonText>
@@ -450,101 +434,42 @@ const ModalProd: React.FC<ProductModalProps> = ({
                         </div>
                     </section>
 
-                    {/* Resto del código se mantiene igual */}
-                    {/* Sección de Puntuación y Comentarios */}
-                    {/* <section className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <IonText>
-                                <h2 className="text-lg font-semibold flex items-center gap-2">
-                                    <MessageCircle className="size-5" />
-                                    Valoraciones ({sampleComments.length})
-                                </h2>
-                            </IonText>
-                            <div className="flex items-center gap-2">
-                                <div className="flex">
-                                    {renderStars(averageRating)}
-                                </div>
-                                <IonText color="medium">
-                                    <span className="text-sm">{averageRating.toFixed(1)}/5.0</span>
-                                </IonText>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            {sampleComments.map((comment) => (
-                                <div key={comment.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                                    <div className="flex items-start gap-3">
-                                        <IonAvatar className="w-8 h-8">
-                                            <img src={comment.avatar} alt={comment.user} />
-                                        </IonAvatar>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <IonText>
-                                                    <span className="font-medium text-sm">{comment.user}</span>
-                                                </IonText>
-                                                <div className="flex items-center gap-1">
-                                                    <div className="flex">
-                                                        {renderStars(comment.rating)}
-                                                    </div>
-                                                    <IonText color="medium">
-                                                        <span className="text-xs">{comment.date}</span>
-                                                    </IonText>
-                                                </div>
-                                            </div>
-                                            <IonText>
-                                                <p className="text-sm text-gray-600 mb-2">{comment.comment}</p>
-                                            </IonText>
-                                            <div className="flex items-center gap-4">
-                                                <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-purple-600">
-                                                    <ThumbsUp className="size-3" />
-                                                    <span>Útil ({comment.likes})</span>
-                                                </button>
-                                                <button className="text-xs text-gray-500 hover:text-purple-600">
-                                                    Responder
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section> */}
-
                     {/* Sección de Productos Recomendados */}
-                    <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <IonText>
-                            <h2 className="text-lg font-semibold mb-4">Productos Recomendados</h2>
-                        </IonText>
+                    {recomendados.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200">
+                            <IonText>
+                                <h2 className="text-lg font-semibold mb-4">Productos Recomendados</h2>
+                            </IonText>
 
-                        <IonGrid className="p-0">
-                            <IonRow>
-                                {recomendados.map((recommended: any) => (
-                                    <IonCol size="6" key={recommended.id}>
-                                        <div
-                                            className="bg-gray-50 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100 transition-colors"
-                                            onClick={() => {
-                                                setrecomendadosselect(recommended);
-                                            }}
-                                        >
-                                            <img
-                                                src="/logo.jpg"
-                                                alt={recommended.nombre}
-                                                className="w-16 h-16 object-cover mx-auto mb-2 rounded"
-                                            />
-                                            <IonText>
-                                                <p className="text-xs font-medium mb-1 line-clamp-2">{recommended.nombre}</p>
-                                            </IonText>
-                                            <span className="text-sm font-bold text-purple-800">${recommended.precio.toFixed(2)}</span>
-                                        </div>
-                                    </IonCol>
-                                ))}
-                            </IonRow>
-                        </IonGrid>
-                    </div>
+                            <IonGrid className="p-0">
+                                <IonRow>
+                                    {recomendados.map((recommended:any) => (
+                                        <IonCol size="6" key={recommended.id}>
+                                            <div
+                                                className="bg-gray-50 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-100 transition-colors"
+                                                onClick={() => setrecomendadosselect(recommended)}
+                                            >
+                                                <img
+                                                    src="/logo.jpg"
+                                                    alt={recommended.nombre}
+                                                    className="w-16 h-16 object-cover mx-auto mb-2 rounded"
+                                                />
+                                                <IonText>
+                                                    <p className="text-xs font-medium mb-1 line-clamp-2">{recommended.nombre}</p>
+                                                </IonText>
+                                                <span className="text-sm font-bold text-purple-800">
+                                                    {formatValue(recommended.precio, "currency")}
+                                                </span>
+                                            </div>
+                                        </IonCol>
+                                    ))}
+                                </IonRow>
+                            </IonGrid>
+                        </div>
+                    )}
                 </article>
             </IonContent>
 
-            {/* Footer con botón de añadir al carrito */}
             <IonFooter className="bg-white border-t border-gray-200">
                 <IonToolbar>
                     <div className="flex items-center justify-between px-4 pt-2 pb-10 md:pb-16">
@@ -557,9 +482,9 @@ const ModalProd: React.FC<ProductModalProps> = ({
                             )}
                         </div>
                         <AddToCartButton
-                            id={productoActualizado.id} // Usar el ID único
+                            id={productoActualizado.id}
                             cantidad={formatearStock(unidadSeleccionada.cantidad, unidadSeleccionada.unidad, unidadSeleccionada.factor)}
-                            producto={productoActualizado} // Pasar el producto actualizado
+                            producto={productoActualizado}
                         />
                     </div>
                 </IonToolbar>

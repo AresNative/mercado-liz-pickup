@@ -41,7 +41,6 @@ import {
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router-dom";
 import { safeCall } from "@/hooks/use-debounce";
-import { cn } from "@/utils/functions/cn";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -118,7 +117,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<UserInfo>({});
     const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({});
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [authLoading, setAuthLoading] = useState<boolean>(false);
     const [isProcessing, setIsProcessing] = useState<boolean>(false);
     const [showPasswordAlert, setShowPasswordAlert] = useState<boolean>(false);
@@ -156,19 +154,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const subtotal = calculateCartTotal(items);
     /* const serviceFee = subtotal * 0.05;//->calculo del 5% de servicio */
     const totalWithService = subtotal /* + serviceFee */;
-
-    // --- EFECTOS ---
-    // No asumimos autenticado solo por tener token; requerimos user-id/user-data
-    useEffect(() => {
-        const token = getLocalStorageItem("token");
-        const userId = getLocalStorageItem("user-id");
-        if (token && userId) {
-            setIsAuthenticated(true);
-        } else {
-            setIsAuthenticated(false);
-        }
-    }, []);
-
     // --- FUNCIONES DE AUTENTICACIÓN MEJORADAS ---
     const hasUserChanged = (currentUserData: UserInfo): boolean => {
         const storedUserData = getLocalStorageItem("user-data");
@@ -190,7 +175,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             if (currentUserData && hasUserChanged(currentUserData)) {
                 console.log("👤 Usuario detectado como diferente, limpiando sesión previa...");
                 logoutAllLocal();
-                setIsAuthenticated(false);
                 return;
             }
 
@@ -206,11 +190,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }
 
             logoutAllLocal();
-            setIsAuthenticated(false);
             console.log("✅ Sesión cerrada correctamente (local).");
         } catch (error) {
             console.error("❌ Error al cerrar sesión:", error);
-            setIsAuthenticated(false);
         }
     };
 
@@ -321,7 +303,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 console.log("✅ Login exitoso (backend).");
                 // Persistir token/id/user-data en localStorage
                 persistAuthData(userData, loginResp);
-                setIsAuthenticated(true);
 
                 // Asegurar que user-id quedó disponible (espera corta)
                 const waitId = await waitForLocalStorage("user-id", 3000);
@@ -360,7 +341,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 // Persistir datos
                 persistAuthData(userData, loginResp2);
-                setIsAuthenticated(true);
 
                 // Esperar user-id si es necesario
                 const waitId2 = await waitForLocalStorage("user-id", 3000);
@@ -412,9 +392,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     }, []);
 
     // --- VALIDACIÓN DEL BOTÓN DE CONFIRMACIÓN ---
-    const { userValues, paymentValues } = formValues;
     const isConfirmButtonEnabled = useCallback((): boolean => {
-
+    const { userValues, paymentValues } = formValues;
+        
         const hasUserData = Boolean(
             userValues.telefono &&
             (userValues.Nombre || userValues.nombre) &&
@@ -434,7 +414,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
         return isValid;
-    }, [selectedDate, selectedTime, items.length, formValues, userValues, paymentValues]);
+    }, [selectedDate, selectedTime, items.length, formValues]);
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
     const getLastSaleInfo = async () => {

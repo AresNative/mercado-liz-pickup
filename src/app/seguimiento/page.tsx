@@ -326,12 +326,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return completed / orderStatus.length;
     };
 
-    const calculateDiscountPercentage = (precio: number, descuento?: number) => {
-        if (!descuento || descuento >= precio) return 0;
-        const percentage = ((precio - descuento) / precio) * 100;
-        return Math.round(percentage);
-    };
-
     const handleCancelarPedido = async () => {
         if (!pedidoSeleccionado) return;
 
@@ -693,7 +687,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     return (
         <>
-            {pedidoSeleccionado &&( <ModalChat telefonoClient={pedidoSeleccionado.cliente_telefono || 'general'} pedido={pedidoSeleccionado} />)}
+            {pedidoSeleccionado && pedidosFiltrados && pedidosFiltrados.map(pedido => <ModalChat telefonoClient={pedido.cliente_telefono || 'general'} pedido={pedido} />)}
         <IonContent
             fullscreen
             scrollEvents

@@ -43,7 +43,7 @@ export const ModalChat = ({ telefonoClient, pedido }: ModalChatProps) => {
 
     const getModalTitle = () => {
         if (pedido?.nombre) {
-            return `Chat con ${pedido.nombre} - ${telefonoClient || 'Sin teléfono'}`;
+            return `Chat de pedido #${pedido.id} - ${telefonoClient || 'Sin teléfono'}`;
         }
         return telefonoClient ? `Chat - ${telefonoClient}` : 'Chat General';
     };
@@ -69,8 +69,8 @@ export const ModalChat = ({ telefonoClient, pedido }: ModalChatProps) => {
         const updateCurrentUser = async () => {
             try {
                 await usersService.update(userId, {
-                    nombre: pedido?.nombre || 'Soporte',
-                    telefono: pedido?.cliente_telefono || '000-000-00-00',
+                    nombre: pedido?.nombre,
+                    telefono: pedido?.cliente_telefono,
                     lastSeen: Date.now()
                 });
             } catch (error) {

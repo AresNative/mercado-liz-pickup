@@ -112,9 +112,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     }, [producto.id]);
 
     // Función para formatear el stock según la unidad
-    const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {
-        console.log(cantidad);
-        
+    const formatearStock = (cantidad: number, unidad: string, factor: number = 1) => {        
         // Para unidades como Kilogramo, mostrar con decimales
         if (/kilo|kg/i.test(unidad)) {
             return unidad !== 'Pieza'
