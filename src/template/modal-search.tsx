@@ -29,10 +29,6 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
         setShowResults(term.length > 0);
     };
 
-    const handleCloseResults = () => {
-        setShowResults(false);
-    };
-
     return (
         <IonPage>
             <IonHeader>
@@ -57,12 +53,12 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
                 {/* Resultados de búsqueda */}
                 <SearchResults
                     isVisible={true}
-                    onClose={handleCloseResults}
+                    onClose={()=>setShowResults(false)}
                 />
 
                 {/* Mensaje cuando no hay búsqueda */}
                 {!searchTerm && (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 px-2 text-gray-500">
                         <p>Ingresa un término de búsqueda para encontrar productos</p>
                     </div>
                 )}

@@ -73,9 +73,8 @@ const useTimeSlots = (selectedDate: string | null, citasExistentes: Cita[]) => {
             let available = !bookedIntervals.some((b) =>
                 areIntervalsOverlapping({ start: slotStart, end: slotEnd }, b)
             );
-
-            // --- NUEVA REGLA: si hay items en el carrito, bloquear antes de las 10:00 ---
-            if (items.length > 0) {
+            
+            if (items.map((row: any) => row.categoria.toLowerCase()).includes("cervezas")) {
                 const tenAm = new Date(day);
                 tenAm.setHours(10, 0, 0, 0);
                 if (slotStart < tenAm) {

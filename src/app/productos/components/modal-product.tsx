@@ -16,7 +16,8 @@ import {
     IonSelect,
     IonSelectOption,
     IonItem,
-    IonLabel
+    IonLabel,
+    isPlatform
 } from "@ionic/react";
 import { star, starHalf, starOutline, arrowBack, close } from "ionicons/icons";
 import { Barcode, ChartColumnStackedIcon, Hash, Heart, MessageCircle, ThumbsUp } from "lucide-react";
@@ -266,10 +267,10 @@ const ModalProd: React.FC<ProductModalProps> = ({
 
     useEffect(() => {
         if (!recomendadosselect) return;
-        present({
-            initialBreakpoint: 0.95,
-            breakpoints: [0, 0.5, 0.95],
-        });
+        present(isPlatform('desktop') ? {
+                    initialBreakpoint: 0.95,
+                    breakpoints: [0, 0.5, 0.95],
+                } : undefined);
     }, [recomendadosselect]);
 
     const handleUnidadChange = (unidad: string) => {

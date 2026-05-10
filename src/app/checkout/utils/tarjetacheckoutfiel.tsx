@@ -14,7 +14,8 @@ export function CheckOutTarjetaField(): Field[] {
             icon: <CreditCard />,
             options: [
                 { value: "Efectivo", label: "Pago en Efectivo" },
-                { value: "Tarjeta Credito/Debito", label: "Pago con Tarjeta Credito/Debito" },
+                { value: "Tarjeta Credito", label: "Pago con Tarjeta Credito" },
+                { value: "Tarjeta Debito", label: "Pago con Tarjeta Debito" },
             ],
         },
         /* {

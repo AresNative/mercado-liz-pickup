@@ -44,9 +44,9 @@ const App: React.FC = () => {
  if ( isPlatform('android') ) usePushNotifications();
 
   useBlockInspect({
-    blockKeyShortcuts: true,
-    blockContextMenu: true,
-    blockDevTools: true,
+    blockKeyShortcuts: false,
+    blockContextMenu: false,
+    blockDevTools: false,
     redirectUrl: '/acceso-denegado'
   });
   return (

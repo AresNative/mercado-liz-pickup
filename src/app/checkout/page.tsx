@@ -277,8 +277,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             // Si ya hay auth local y pertenece al mismo correo, reuse
             const storedUser = getLocalStorageItem("user-data");
-            const storedToken = getLocalStorageItem("token");
-            const storedUserId = getLocalStorageItem("user-id");
 
             /* if (storedToken && storedUser && storedUser.correo === userData.correo && storedUserId) {
                 console.log("🔁 Ya existe sesión local para este usuario — reutilizando.");
@@ -494,7 +492,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
-    const insertIntelisisData = async (saleId: number) => {
+    const insertIntelisisData = async (saleId: number, id:string) => {
         const { date, timestamp } = getCurrentDateTime();
         const baseId = parseInt(saleId.toString()) + 1;
 
@@ -533,7 +531,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Sucursal: 4,
             SucursalVenta: 4,
             SucursalOrigen: 4,
-            ListaPreciosEsp: "(Precio Lista)"
+            ListaPreciosEsp: "(Precio Lista)",
+            Referencia: id
         };
 
         const saleResult = await safeCall(() => PostInt({
@@ -706,7 +705,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         console.log("✅ Todos los detalles de venta insertados correctamente");
     };
 
-    const processIntelisisOrder = async (): Promise<string> => {
+    const processIntelisisOrder = async (id: string): Promise<string> => {
         console.log("🚀 Iniciando proceso Intelisis...");
 
         // ✅ VERIFICACIÓN: Asegurar que no hay proceso en curso
@@ -716,27 +715,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         try {
             const { saleId, movId } = await getLastSaleInfo();
-            //console.log("📊 Venta obtenida - ID:", saleId, "MovID:", movId);
-
-            //const newMovId = generateNewMovId(movId);
-            //console.log("🆕 Nuevo MovID generado:", newMovId);
-
-            // ✅ VERIFICACIÓN: Log para debugging
-            console.log("📦 Datos del carrito:", {
-                itemsCount: items.length,
-                subtotal,
-                /* serviceFee, */
-                totalWithService
-            });
-
-            console.log("💾 Realizando inserts en Intelisis...");
-            const baseId = await insertIntelisisData(saleId);
-
-            console.log("📦 Insertando detalles de venta...");
+            const baseId = await insertIntelisisData(saleId, id);
             await insertSaleDetails(baseId);
 
-            console.log("✅ Todos los inserts en Intelisis realizados exitosamente");
-            return "✅ Todos los inserts en Intelisis realizados exitosamente"; //newMovId;
+            return "✅ Todos los inserts en Intelisis realizados exitosamente";
         } catch (error: any) {
             console.error("❌ Error en processIntelisisOrder:", error);
             throw new Error(`Error en Intelisis: ${error.message}`);
@@ -945,11 +927,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 array_lista: JSON.stringify(itemsWithPickupService),
             }
         }), "crear lista pickup");
-
-        console.log("✅ Lista de pickup creada:", listaResponse);
-
         console.log("✅ Cita de pickup guardada correctamente");
-        return clientId; // Retornar el clientId para uso posterior si es necesario
+        return listaResponse.data.data.id; // Retornar el clientId para uso posterior si es necesario
     };
 
     // --- FUNCIONES PRINCIPALES CORREGIDAS ---
@@ -996,8 +975,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             // ORDEN CORREGIDO: Primero Intelisis, luego nuestra API
             console.log("🔄 ORDEN DE INSERCIÓN: Intelisis primero → Nuestra API después");
             await getUserId(); // Pre-cargar userId en background
-            await savePickupAppointment(formData);
-            await processIntelisisOrder();
+            const id = await savePickupAppointment(formData);
+            await processIntelisisOrder(id);
             dispatch(clearCart());
 
             setShowPasswordAlert(true);
@@ -1019,8 +998,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     // En lugar de llamar recursivamente, repetimos la lógica principal
                     try {
                         const formData = await getFormData();
-                        await savePickupAppointment(formData);
-                        await processIntelisisOrder();
+                        const id = await savePickupAppointment(formData);
+                        await processIntelisisOrder(id);
 
                         dispatch(clearCart());
                         return; // Éxito en el reintento

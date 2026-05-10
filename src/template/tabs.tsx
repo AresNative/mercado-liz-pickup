@@ -33,11 +33,7 @@ const Tabs: React.FC = () => {
 
     // Función para abrir el modal de búsqueda
     const handleSearchClick = () => {
-        presentSearchModal({
-            initialBreakpoint: 0.8,
-            breakpoints: [0, 0.5, 0.8, 0.95],
-            handle: true
-        });
+        presentSearchModal();
     };
 
     if (!mobile) return null;

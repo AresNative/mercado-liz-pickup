@@ -4,7 +4,7 @@ import { Barcode, Hash, Heart, Minus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
-import { useIonModal } from "@ionic/react";
+import { isPlatform, useIonModal } from "@ionic/react";
 
 import { formatValue } from "@/utils/constants/format-values";
 import { IconLiz } from "@/app/productos/components/ionc-liz";
@@ -64,10 +64,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     });
 
     const handleCardClick = () => {
-        present({
-            initialBreakpoint: 0.95,
-            breakpoints: [0, 0.5, 0.95],
-        });
+        present(isPlatform('desktop') ? {
+                    initialBreakpoint: 0.95,
+                    breakpoints: [0, 0.5, 0.95],
+                } : undefined);
     };
     async function LoadImage() {
         const response = await getWithFilter({

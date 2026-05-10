@@ -1,19 +1,16 @@
-import { Producto } from "@/utils/types/page";
 import { motion } from "framer-motion";
 import { Barcode, CheckCheck, Hash, Heart, Minus, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
-import { IonBadge, IonIcon, useIonModal } from "@ionic/react";
+import { IonBadge, IonIcon, isPlatform, useIonModal } from "@ionic/react";
 
 import { formatValue } from "@/utils/constants/format-values";
 import { IconLiz } from "@/app/productos/components/ionc-liz";
 
 import ModalProd from "@/app/productos/components/modal-product";
-import AddToCartButton from "@/app/productos/components/product-add-cart";
 import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
 import { EnvConfig } from "@/utils/constants/env.config";
-import { checkmark,close } from "ionicons/icons";
 
 interface ProductCardProps {
     producto: any;
@@ -65,10 +62,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     });
 
     const handleCardClick = () => {
-        present({
-            initialBreakpoint: 0.95,
-            breakpoints: [0, 0.5, 0.95],
-        });
+        present(isPlatform('desktop') ? {
+                    initialBreakpoint: 0.95,
+                    breakpoints: [0, 0.5, 0.95],
+                } : undefined);
     };
     async function LoadImage() {
         const response = await getWithFilter({
@@ -214,12 +211,12 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                                         {formatValue(producto.descuento, "currency")}
                                     </span>
                                     <span className="text-[11px] text-gray-500 line-through truncate leading-none">
-                                        {formatValue(producto.precio, "currency")}
+                                        {formatValue(producto.precio * producto.quantity, "currency")}
                                     </span>
                                 </>
                             ) : (
                                 <span className="text-base font-semibold text-purple-600 leading-none truncate">
-                                    {formatValue(producto.precio, "currency")}
+                                        {formatValue(producto.precio * producto.quantity, "currency")}
                                 </span>
                             )}
                         </div>

@@ -139,7 +139,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                         {/* Botón para eliminar rápidamente */}
                         <button
                             onClick={handleRemoveFromCart}
-                            className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 hover:text-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ml-1"
+                            className="md:size-8 size-4 cursor-pointer rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center text-red-600 hover:text-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 ml-1"
                             aria-label="Eliminar producto del carrito"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -147,7 +147,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
 
                         <button
                             onClick={handleDecrement}
-                            className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="md:size-8 size-4 cursor-pointer rounded-lg bg-white border border-gray-200 hover:border-gray-300 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
                             aria-label="Disminuir cantidad"
                         >
                             <span className="text-lg font-medium">−</span>
@@ -169,7 +169,7 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
                             onClick={handleIncrement}
                             disabled={isIncrementDisabled}
                             className={cn(
-                                "w-8 h-8 rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500",
+                                "md:size-8 size-4 cursor-pointer rounded-lg flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500",
                                 isIncrementDisabled
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-purple-600 hover:bg-purple-700 text-white"

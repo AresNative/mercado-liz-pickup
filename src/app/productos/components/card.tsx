@@ -6,7 +6,7 @@ import { Barcode, Hash, Heart, ReceiptText } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getLocalStorageItem, setLocalStorageItem } from "@/utils/functions/local-storage";
 import { cn } from "@/utils/functions/cn";
-import { useIonModal } from "@ionic/react";
+import { isPlatform, useIonModal } from "@ionic/react";
 import { IconLiz } from "./ionc-liz";
 import { formatValue } from "@/utils/constants/format-values";
 import { useGetWithFiltersGeneralMutation } from "@/hooks/reducers/api";
@@ -95,10 +95,10 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     });
 
     const handleCardClick = () => {
-        present({
+        present(isPlatform('desktop') ? {
             initialBreakpoint: 0.95,
             breakpoints: [0, 0.5, 0.95],
-        });
+        } : undefined);
     };
 
     useEffect(() => {
