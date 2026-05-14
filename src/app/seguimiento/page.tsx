@@ -612,14 +612,19 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     const formatFechaCita = (fecha: string) => {
-        const date = new Date(fecha);
-        const hoy = new Date();
-        const manana = new Date(hoy);
-        manana.setDate(hoy.getDate() + 1);
+        // Suponiendo que 'fecha' es un string en formato "YYYY-MM-DD"
+        const [year, month, day] = fecha.split('-').map(Number);
+        const date = new Date(year, month - 1, day);  // ← medianoche en hora LOCAL
 
-        if (date.toDateString() === hoy.toDateString()) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);                     // medianoche de hoy (local)
+
+        const manana = new Date(hoy);
+        manana.setDate(hoy.getDate() + 1);            // medianoche de mañana (local)
+
+        if (date.getTime() === hoy.getTime()) {
             return "Hoy";
-        } else if (date.toDateString() === manana.toDateString()) {
+        } else if (date.getTime() === manana.getTime()) {
             return "Mañana";
         } else {
             return date.toLocaleDateString('es-ES', {
