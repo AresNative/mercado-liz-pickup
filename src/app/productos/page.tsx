@@ -17,7 +17,6 @@ import { Sucursales } from "@/utils/data/sucursales";
 import { clearAll } from "@/hooks/slices/app";
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router";
-import { cn } from "@/utils/functions/cn";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {

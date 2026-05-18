@@ -9,13 +9,15 @@ import {
     IonItem,
     IonLabel,
     IonNote,
+    IonSpinner,
     isPlatform,
     useIonModal,
-    IonInfiniteScroll,
-    IonInfiniteScrollContent,
     IonList,
 } from "@ionic/react";
+import { Barcode } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SearchResultsProps {
     isVisible?: boolean;
@@ -30,218 +32,279 @@ interface ApiResponse {
     data: any[];
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const SEARCH_TABLE = "CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad ON ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 LEFT JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE() LEFT JOIN OfertaD AS ofrd ON ofrd.id = ofr.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad";
+
+const PAGE_SIZE = 15;
+const DEBOUNCE_MS = 300;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const mapApiItemToProducto = (item: any): Producto => ({
+    id: `${item.Articulo}-${item.Unidad}-${item.Factor}`,
+    codigo: item.Codigo ?? "0000",
+    articulo: item.Articulo ?? "Cuenta",
+    nombre: item.Descripcion1 ?? "Sin nombre",
+    categoria: item.Grupo ?? "Sin categoría",
+    unidad: item.Unidad ?? "Unidad",
+    precio: item.Precio ?? 0,
+    cantidad: item.Cantidad ?? 1,
+    factor: item.Factor ?? 1,
+    impuesto1: item.Impuesto1 ?? 0,
+    impuesto2: item.Impuesto2 ?? 0,
+    tipoImpuesto1: item.TipoImpuesto1 ?? 0,
+    tipoImpuesto2: item.TipoImpuesto2 ?? 0,
+    descuento: item.Descuento ?? 0,
+});
+
+const buildFiltros = (term: string) => ({
+    FiltrosAnd: [{
+        OperadorLogico: "OR",
+        Filtros: [
+            { key: "art.Descripcion1", operator: "LIKE", value: term },
+            { key: "cb.Codigo", operator: "LIKE", value: term },
+        ],
+    }],
+    Selects: [
+        { key: "cb.Codigo" },
+        { key: "art.Articulo" },
+        { key: "art.Grupo" },
+        { key: "art.Descripcion1" },
+        { key: "art.Impuesto1" },
+        { key: "art.Impuesto2" },
+        { key: "art.TipoImpuesto1" },
+        { key: "art.TipoImpuesto2" },
+        { key: "lpu.Unidad" },
+        { key: "lpu.Precio" },
+        { key: "ofrd.Precio", alias: "Descuento" },
+        { key: "au.Unidad", alias: "UnidadFactor" },
+        { key: "au.Factor" },
+    ],
+    Agregaciones: [
+        { Key: "ad.DispMenosApartado", Operation: "SUM", Alias: "Cantidad" },
+    ],
+    Order: [{ Key: "Descripcion1", Direction: "ASC" }],
+});
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const SearchResults: React.FC<SearchResultsProps> = ({
     isVisible = false,
     onClose,
 }) => {
     const [getData] = useGetWithFiltersGeneralInIntelisisMutation();
     const searchTerm = useAppSelector(
-        (state: RootState) => state.filterData.search?.value || ""
+        (state: RootState) => state.filterData.search?.value ?? ""
     );
-    const [producto, setproducto] = useState<Producto>({} as Producto);
 
-    // Estados para los resultados
+    const [producto, setProducto] = useState<Producto>({} as Producto);
     const [suggestions, setSuggestions] = useState<Producto[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-    // Paginación
+    const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [debouncedTerm, setDebouncedTerm] = useState(searchTerm);
 
-    const resultsRef = useRef<HTMLDivElement | null>(null);
+    // ── Refs ──────────────────────────────────────────────────────────────────
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Stable snapshots readable inside IntersectionObserver callbacks
+    // without needing to re-subscribe the observer on every render.
+    const activeTermRef = useRef("");
+    const pageRef = useRef(1);
+    const totalPagesRef = useRef(1);
+    const isSearchingRef = useRef(false);
+    // Sentinel element observed at the bottom of the list.
+    const sentinelRef = useRef<HTMLDivElement | null>(null);
+    // The observer instance — disconnected/reconnected when hasMore changes.
+    const observerRef = useRef<IntersectionObserver | null>(null);
 
-    // 🔒 Bloqueo inmediato para peticiones de "cargar más"
-    const loadingLock = useRef(false);
+    // ── Debounce ──────────────────────────────────────────────────────────────
 
-    // 🧾 Identificador para ignorar respuestas obsoletas
-    const requestIdRef = useRef(0);
+    useEffect(() => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        debounceTimer.current = setTimeout(
+            () => setDebouncedTerm(searchTerm),
+            DEBOUNCE_MS,
+        );
+        return () => {
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
+    }, [searchTerm]);
 
-    // Construir objetos Producto desde item API
-    const mapApiItemToProducto = (item: any): Producto => ({
-        id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
-        codigo: item.Codigo || "0000",
-        articulo: item.Articulo || "Cuenta",
-        nombre: item.Descripcion1 || "Sin nombre",
-        categoria: item.Grupo || "Sin categoría",
-        unidad: item.Unidad || "Unidad",
-        precio: item.Precio || 0,
-        cantidad: item.Cantidad || 1,
-        factor: item.Factor || 1,
-        impuesto1: item.Impuesto1 || 0,
-        impuesto2: item.Impuesto2 || 0,
-        tipoImpuesto1: item.TipoImpuesto1 || 0,
-        tipoImpuesto2: item.TipoImpuesto2 || 0,
-        descuento: item.Descuento || 0,
-    });
+    // ── Core fetch ────────────────────────────────────────────────────────────
 
     const fetchPage = useCallback(
-        async (pageToFetch: number, append = false, requestId: number) => {
-            // Evitar ejecución si la búsqueda está vacía
-            if (!searchTerm.trim()) {
-                setSuggestions([]);
-                return;
-            }
+        async (termToSearch: string, pageToFetch: number) => {
+            // Cancel any previous in-flight request
+            abortControllerRef.current?.abort();
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
+            isSearchingRef.current = true;
+            setIsSearching(true);
+            setError(null);
 
             try {
-                if (!append) {
-                    setIsSearching(true);
-                } else {
-                    setIsLoadingMore(true);
-                }
-
-                // Llamada original SIN MODIFICAR
                 const result = await getData({
-                    table: `CB AS cb INNER JOIN Art AS art ON cb.Cuenta = art.Articulo INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND cb.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad On ad.Almacen = 'ALMMAYO' AND art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 LEFT JOIN Oferta AS ofr On ofr.Estatus = 'VIGENTE' AND ofr.Articulo = art.Articulo AND ofr.FechaD < GETDATE() AND ofr.FechaA > GETDATE()  LEFT JOIN OfertaD AS ofrd On ofrd.id = ofr.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = cb.Unidad`,
-                    pageSize: 10,
+                    table: SEARCH_TABLE,
+                    pageSize: PAGE_SIZE,
                     page: pageToFetch,
-                    filtros: {
-                        FiltrosAnd: [{
-                            OperadorLogico: "OR",
-                            Filtros: [
-                                {
-                                    key: "art.Descripcion1",
-                                    operator: "LIKE",
-                                    value: searchTerm
-                                }, {
-                                    key: "cb.Codigo",
-                                    operator: "LIKE",
-                                    value: searchTerm
-                                },
-                            ]
-                        }],
-                        Selects: [
-                            { key: "cb.Codigo" },
-                            { key: "art.Articulo" },
-                            { key: "art.Grupo" },
-                            { key: "art.Descripcion1" },
-                            { key: "art.Impuesto1" },
-                            { key: "art.Impuesto2" },
-                            { key: "art.TipoImpuesto1" },
-                            { key: "art.TipoImpuesto2" },
-                            { key: "lpu.Unidad" },
-                            { key: "lpu.Precio" },
-                            { key: "ofrd.Precio", alias: "Descuento" },
-                            { key: "au.Unidad", alias: "UnidadFactor" },
-                            { key: "au.Factor" },
-                        ],
-                        Agregaciones: [
-                            {
-                                Key: "ad.DispMenosApartado",
-                                Operation: "SUM",
-                                Alias: "Cantidad",
-                            },
-                        ],
-                        Order: [
-                            {
-                                Key: "Descripcion1",
-                                Direction: "ASC",
-                            },
-                        ],
-                    },
-                    signal: undefined,
+                    filtros: buildFiltros(termToSearch),
+                    signal: controller.signal,
                 });
 
-                // 🚫 Ignorar si la solicitud ya no es la última
-                if (requestId !== requestIdRef.current) return;
+                if (controller.signal.aborted) return;
 
                 if ("data" in result && result.data) {
                     const apiData = result.data as ApiResponse;
-                    console.log(apiData);
-
                     const newItems = apiData.data.map(mapApiItemToProducto);
-                    setTotalPages(apiData.totalPages);
-                    setPage(apiData.page || pageToFetch);
 
-                    if (append) {
-                        setSuggestions((prev) => [...prev, ...newItems]);
-                    } else {
-                        setSuggestions(newItems);
-                    }
+                    totalPagesRef.current = apiData.totalPages;
+                    setTotalPages(apiData.totalPages);
+
+                    setSuggestions(prev =>
+                        pageToFetch === 1 ? newItems : [...prev, ...newItems]
+                    );
                 }
-            } catch (error) {
-                // Solo mostrar error si la solicitud sigue siendo vigente
-                if (requestId === requestIdRef.current) {
-                    console.error("❌ Error fetching search results:", error);
-                    if (!append) setSuggestions([]);
+            } catch (err: any) {
+                if (err?.name === "AbortError") return;
+                console.error("Error fetching search results:", err);
+                if (pageToFetch === 1) {
+                    setError("Error al cargar resultados. Intente de nuevo.");
+                    setSuggestions([]);
                 }
             } finally {
-                // Resetear indicadores de carga
-                if (requestId === requestIdRef.current) {
+                if (abortControllerRef.current === controller) {
+                    abortControllerRef.current = null;
+                    isSearchingRef.current = false;
                     setIsSearching(false);
-                    setIsLoadingMore(false);
-                }
-                // Liberar el bloqueo de carga si la petición era un append
-                if (append) {
-                    loadingLock.current = false;
                 }
             }
         },
-        [getData, searchTerm]
+        [getData],
     );
 
-    // Manejador de carga infinita (scroll)
-    const handleLoadMore = async (event: any) => {
-        // Bloqueo inmediato: si ya hay una petición en curso o no hay más páginas
-        if (loadingLock.current || page >= totalPages) {
-            event.target.complete();
+    // ── Reset + first page when term changes ──────────────────────────────────
+
+    useEffect(() => {
+        const term = debouncedTerm.trim();
+
+        if (!term) {
+            abortControllerRef.current?.abort();
+            setSuggestions([]);
+            setError(null);
+            setPage(1);
+            pageRef.current = 1;
+            setTotalPages(1);
+            totalPagesRef.current = 1;
+            activeTermRef.current = "";
             return;
         }
 
-        // Activar bloqueo
-        loadingLock.current = true;
+        activeTermRef.current = term;
+        pageRef.current = 1;
+        totalPagesRef.current = 1;
+        setPage(1);
+        setTotalPages(1);
+        setSuggestions([]);
+        setError(null);
 
-        const nextPage = page + 1;
-        try {
-            await fetchPage(nextPage, true, requestIdRef.current);
-        } finally {
-            // Siempre marcamos como completado el scroll, incluso si falló
-            event.target.complete();
-            // El bloqueo se libera en el finally de fetchPage (para append)
+        fetchPage(term, 1);
+    }, [debouncedTerm, fetchPage]);
+
+    // ── Load next pages (triggered by IntersectionObserver via setPage) ───────
+
+    useEffect(() => {
+        if (page > 1 && activeTermRef.current) {
+            fetchPage(activeTermRef.current, page);
         }
-    };
+    }, [page, fetchPage]);
 
-    // Corrección: pasar las opciones del modal al presentarlo
+    // ── IntersectionObserver — works inside any scroll container ──────────────
+    //
+    // IonInfiniteScroll observes the document scroll (ion-content), so it
+    // never fires when the list is inside a fixed-height overflow:auto div
+    // (the case on web/desktop). IntersectionObserver targets the scroll
+    // container directly via `root`, so it works everywhere.
+
+    useEffect(() => {
+        // Disconnect any existing observer before recreating
+        observerRef.current?.disconnect();
+
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+
+        const hasMore = pageRef.current < totalPagesRef.current;
+        if (!hasMore) return;
+
+        // `root: null` observes relative to the viewport.
+        // Because the sentinel is *inside* the scrollable IonList container
+        // the browser reports it as invisible until the user scrolls to it,
+        // regardless of whether the overflow is on a div or the document.
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                const entry = entries[0];
+                if (
+                    entry.isIntersecting &&
+                    !isSearchingRef.current &&
+                    pageRef.current < totalPagesRef.current
+                ) {
+                    const nextPage = pageRef.current + 1;
+                    pageRef.current = nextPage;
+                    setPage(nextPage);
+                }
+            },
+            {
+                // Observe relative to the nearest scrollable ancestor
+                // (the IonList with overflow-y:auto).
+                root: sentinel.closest(".search-results") as Element,
+                rootMargin: "0px 0px 120px 0px",
+                threshold: 0,
+            },
+        );
+
+        observerRef.current.observe(sentinel);
+
+        return () => observerRef.current?.disconnect();
+        // Re-run whenever results or totalPages change so the observer
+        // is re-attached after each successful fetch.
+    }, [suggestions, totalPages]);
+
+    // ── Cleanup observer on unmount ───────────────────────────────────────────
+
+    useEffect(() => {
+        return () => {
+            observerRef.current?.disconnect();
+            abortControllerRef.current?.abort();
+            if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        };
+    }, []);
+
+    // ── Modal ─────────────────────────────────────────────────────────────────
+
     const [present, dismiss] = useIonModal(ModalProd, {
         producto,
         onDismiss: () => dismiss(),
     });
 
-    const handleCardClick = (productoSelected: any) => {
-        setproducto(productoSelected);
-        present(
-            isPlatform("desktop")
-                ? {
-                    initialBreakpoint: 0.95,
-                    breakpoints: [0, 0.5, 0.95],
-                }
-                : undefined
-        );
-    };
+    const handleCardClick = useCallback(
+        (productoSelected: Producto) => {
+            setProducto(productoSelected);
+            present(
+                isPlatform("desktop")
+                    ? { initialBreakpoint: 0.95, breakpoints: [0, 0.5, 0.95] }
+                    : undefined
+            );
+        },
+        [present],
+    );
 
-    // Efecto para búsqueda controlada y cancelación de respuestas obsoletas
+    // ── Close on outside click ────────────────────────────────────────────────
+
     useEffect(() => {
-        if (searchTerm.trim() === "") {
-            setSuggestions([]);
-            return;
-        }
-
-        // Incrementar el id de solicitud para invalidar peticiones anteriores
-        const currentRequestId = ++requestIdRef.current;
-
-        // Resetear paginación al escribir una nueva búsqueda
-        setPage(1);
-        setIsSearching(true);
-        // No se resetea totalPages aquí para evitar parpadeos, se actualizará con la respuesta
-
-        fetchPage(1, false, currentRequestId);
-
-        // No es posible abortar la petición, pero sí evitar que modifique estados
-        // (el control de requestId lo maneja)
-    }, [searchTerm, fetchPage]);
-
-    // Ocultar resultados al hacer clic fuera
-    useEffect(() => {
+        if (!isVisible) return;
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as HTMLElement;
             if (
@@ -251,27 +314,28 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 onClose?.();
             }
         };
-
-        if (isVisible) {
-            document.addEventListener("click", handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isVisible, onClose]);
 
-    if (!isVisible) {
-        return null;
-    }
+    // ── Render ────────────────────────────────────────────────────────────────
+
+    if (!isVisible) return null;
+
+    const hasMore = page < totalPages;
+    const showSkeleton = isSearching && suggestions.length === 0 && !error;
+    const showEmpty = !isSearching && !error && suggestions.length === 0 && !!debouncedTerm.trim();
 
     return (
-        <IonList className="absolute md:top-20 sm:top-10 left-0 right-0 md:w-[70%] md:mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 md:max-h-60 overflow-y-auto mt-2">
-            <section ref={resultsRef}>
-            {isSearching && suggestions.length === 0 ? (
+        <IonList className="search-results absolute md:top-20 sm:top-10 left-0 right-0 md:w-[70%] md:mx-auto bg-white border border-gray-200 rounded-lg shadow-lg z-50 md:h-3/5 overflow-y-auto mt-2">
+            {showSkeleton ? (
+                <IonItem>
+                    <IonLabel><IonNote>Buscando...</IonNote></IonLabel>
+                </IonItem>
+            ) : error ? (
                 <IonItem>
                     <IonLabel>
-                        <IonNote>Buscando...</IonNote>
+                        <IonNote className="text-red-500">{error}</IonNote>
                     </IonLabel>
                 </IonItem>
             ) : suggestions.length > 0 ? (
@@ -287,41 +351,33 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                             <IonLabel className="px-4">
                                 <h3 className="font-medium text-sm">{suggestion.nombre}</h3>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {suggestion.categoria} | {suggestion.unidad} de{" "}
-                                    {suggestion.factor} Pieza(s)
+                                    {suggestion.categoria} | {suggestion.unidad} de {suggestion.factor} Pieza(s)
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1">
+                                <p className="text-xs text-purple-500 mt-1 flex gap-2 items-center">
+                                    <Barcode className="size-4" />
                                     {suggestion.codigo}
                                 </p>
                             </IonLabel>
-                            <IonNote slot="end" className="text-xs">
+                            <IonNote slot="end" className="text-lg text-purple-800">
                                 {formatValue(suggestion.precio, "currency")}
                             </IonNote>
                         </IonItem>
                     ))}
 
-                    {/* Infinite scroll: se deshabilita mientras se busca, carga, no hay más páginas o no hay resultados */}
-                    <IonInfiniteScroll
-                        threshold="100px"
-                        disabled={
-                            isSearching ||
-                            isLoadingMore ||
-                            page >= totalPages ||
-                            suggestions.length === 0
-                        }
-                        onIonInfinite={handleLoadMore}
-                    >
-                        <IonInfiniteScrollContent loadingText="Cargando más..."></IonInfiniteScrollContent>
-                    </IonInfiniteScroll>
+                    {/* Sentinel: IntersectionObserver watches this element.
+                        When it enters the viewport (user scrolled to the bottom)
+                        the next page is fetched — works in any scroll container. */}
+                    <div ref={sentinelRef} className="flex justify-center py-2">
+                        {isSearching && hasMore && (
+                            <IonSpinner name="dots" />
+                        )}
+                    </div>
                 </>
-            ) : searchTerm.trim() ? (
+            ) : showEmpty ? (
                 <IonItem>
-                    <IonLabel>
-                        <IonNote className="text-sm">No se encontraron resultados</IonNote>
-                    </IonLabel>
+                    <IonLabel><IonNote>No se encontraron resultados</IonNote></IonLabel>
                 </IonItem>
-                ) : null}
-            </section>
+            ) : null}
         </IonList>
     );
 };

@@ -26,7 +26,6 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
 
     const handleSearchChange = (term: string) => {
         setSearchTerm(term);
-        setShowResults(term.length > 0);
     };
 
     return (
