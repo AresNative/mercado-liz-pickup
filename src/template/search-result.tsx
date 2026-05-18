@@ -342,22 +342,22 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                 <>
                     {suggestions.map((suggestion) => (
                         <IonItem
-                            key={suggestion.id}
+                            key={suggestion.id + suggestion.precio + suggestion.factor} // ID compuesto para evitar colisiones
                             button
                             onClick={() => handleCardClick(suggestion)}
-                            className="cursor-pointer hover:bg-gray-50"
+                            className="cursor-pointer hover:bg-gray-50 py-2"
                             detail={false}
                         >
-                            <IonLabel className="px-4">
-                                <h3 className="font-medium text-sm">{suggestion.nombre}</h3>
-                                <p className="text-xs text-gray-500 mt-1">
+                            <IonNote className="px-4 flex flex-col">
+                                <h3 className="font-medium text-black text-sm">{suggestion.nombre}</h3>
+                                <p className="text-gray-400 text-xs mt-1">
                                     {suggestion.categoria} | {suggestion.unidad} de {suggestion.factor} Pieza(s)
                                 </p>
-                                <p className="text-xs text-purple-500 mt-1 flex gap-2 items-center">
+                                <p className="text-purple-600 mt-1 flex gap-1 items-center">
                                     <Barcode className="size-4" />
                                     {suggestion.codigo}
                                 </p>
-                            </IonLabel>
+                            </IonNote>
                             <IonNote slot="end" className="text-lg text-purple-800">
                                 {formatValue(suggestion.precio, "currency")}
                             </IonNote>
