@@ -38,20 +38,6 @@ interface OrderStatus {
     icon?: React.ReactNode;
 }
 
-interface OrderItem {
-    id: string;
-    name: string;
-    quantity: string;
-    price: number;
-    unit: string;
-    image?: string;
-    descuento?: number;
-    precioRegular?: number;
-    esServicio?: boolean;
-    recolectado?: boolean;
-    noEncontrado?: boolean;
-}
-
 interface ListaItem {
     id: string;
     articulo: string;
@@ -692,7 +678,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     return (
         <>
-            {pedidoSeleccionado && pedidosFiltrados && pedidosFiltrados.map(pedido => <ModalChat telefonoClient={pedido.cliente_telefono || 'general'} pedido={pedido} />)}
+            {pedidoSeleccionado && <ModalChat telefonoClient={pedidoSeleccionado.cliente_telefono || 'general'} pedido={pedidoSeleccionado} />}
         <IonContent
             fullscreen
             scrollEvents
