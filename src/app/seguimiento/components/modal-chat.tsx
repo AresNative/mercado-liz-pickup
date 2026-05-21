@@ -209,16 +209,29 @@ export const ModalChat = ({ telefonoClient, pedido: pedidoProp }: ModalChatProps
             setPendingReplace({
                 productId,
                 productName,
-                cantidadOriginal: oldItem?.cantidad || 1,
+                cantidadOriginal: oldItem?.quantity || 1,
             });
             setShowProductSelector(true);
         }
     };
 
-    // Reemplazar producto con nueva cantidad
+    // handleReplaceProduct
     const handleReplaceProduct = async (newProduct: Producto, nuevaCantidad: number) => {
         if (!pendingReplace || !currentPedido || !messagesService) return;
         const { productId: oldProductId, productName: oldProductName } = pendingReplace;
+
+        // Validar que la nueva cantidad no supere el stock del nuevo producto
+        if (nuevaCantidad > newProduct.cantidad) {
+            await messagesService.create({
+                text: `❌ La cantidad seleccionada (${nuevaCantidad}) supera el stock disponible (${newProduct.cantidad} ${newProduct.unidad}).`,
+                userId: "unknown",
+                userName: "Soporte",
+                timestamp: Date.now(),
+            });
+            setShowProductSelector(false);
+            setPendingReplace(null);
+            return;
+        }
 
         const nuevosItems = currentPedido.items.map((item: any) =>
             item.id === oldProductId
@@ -230,7 +243,11 @@ export const ModalChat = ({ telefonoClient, pedido: pedidoProp }: ModalChatProps
                     articulo: newProduct.articulo,
                     unidad: newProduct.unidad,
                     factor: newProduct.factor,
-                    quantity: nuevaCantidad,
+                    cantidad: newProduct.cantidad,     // stock disponible del nuevo producto
+                    quantity: nuevaCantidad,           // cantidad que pide el cliente
+                    // conservar otros campos como recolectado, etc.
+                    recolectado: item.recolectado ?? false,
+                    noEncontrado: false,
                 }
                 : item
         );
@@ -253,7 +270,7 @@ export const ModalChat = ({ telefonoClient, pedido: pedidoProp }: ModalChatProps
             });
 
             await messagesService.create({
-                text: `✅ Se ha reemplazado "${oldProductName}" por "${newProduct.nombre}" (cantidad: ${nuevaCantidad}).`,
+                text: `✅ Se ha reemplazado "${oldProductName}" por "${newProduct.nombre}" (cantidad: ${nuevaCantidad} ${newProduct.unidad}).`,
                 userId: "unknown",
                 userName: "Soporte",
                 timestamp: Date.now(),

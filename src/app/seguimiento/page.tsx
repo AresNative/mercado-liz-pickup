@@ -95,11 +95,13 @@ interface Pedido {
     tiempo_restante?: number;
     fecha_cita?: string;
     hora_cita?: string;
+    tipo_pago?: string;
     fecha_cita_obj?: Date | null;
     productos_recolectados?: number;
     productos_no_encontrados?: number;
     productos_totales?: number;
     porcentaje_recolectado?: number;
+    fecha_entrega: string;
 }
 
 const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
@@ -324,12 +326,12 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         fecha_actualizacion: new Date().toISOString()
                     },
                     Filtros: [
-                            {
-                                "Key": "ID",
-                                "Value": pedidoSeleccionado.id,
-                                "Operator": "="
-                            }
-                        ],
+                        {
+                            "Key": "ID",
+                            "Value": pedidoSeleccionado.id,
+                            "Operator": "="
+                        }
+                    ],
                 },
             }).unwrap();
 
@@ -431,6 +433,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             array_lista: lista.array_lista,
             fecha_creacion: lista.fecha_creacion,
             fecha_actualizacion: lista.fecha_actualizacion,
+            fecha_entrega: lista.fecha_entrega,
             estado: lista.estado,
             es_publica: lista.es_publica,
             items: items,
@@ -452,6 +455,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             fecha_cita,
             hora_cita,
             fecha_cita_obj,
+            tipo_pago: lista.tipo_pago,
             productos_recolectados: productosRecolectados,
             productos_no_encontrados: productosNoEncontrados,
             productos_totales: productosTotales,
@@ -481,8 +485,10 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     { key: "listas.array_lista" },
                     { key: "listas.fecha_creacion" },
                     { key: "listas.fecha_actualizacion" },
+                    { key: "listas.fecha_entrega" },
                     { key: "listas.estado" },
                     { key: "listas.sucursal_id" },
+                    { key: "listas.tipo_pago" },
                     { key: "clientes.nombre" },
                     { key: "clientes.telefono" },
                     { key: "clientes.email" },
@@ -679,110 +685,206 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     return (
         <>
             {pedidoSeleccionado && <ModalChat telefonoClient={pedidoSeleccionado.cliente_telefono || 'general'} pedido={pedidoSeleccionado} />}
-        <IonContent
-            fullscreen
-            scrollEvents
-            onIonScroll={(e) => {
-                const isScrolled = e.detail.scrollTop > 10;
-                onScroll?.(isScrolled);
-            }}>
+            <IonContent
+                fullscreen
+                scrollEvents
+                onIonScroll={(e) => {
+                    const isScrolled = e.detail.scrollTop > 10;
+                    onScroll?.(isScrolled);
+                }}>
 
-            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
-                <IonToolbar>
-                    <div className="flex items-center justify-between px-2">
-                        <a className='decoration-none cursor-pointer' href='/productos'>
-                            <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                        </a>
-                        <div className="flex items-center gap-2">
-                            <IonButton
-                                fill="clear"
-                                size="small"
-                                onClick={() => fetchPedidos(true)}
-                                disabled={refreshing}
+                <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
+                    <IonToolbar>
+                        <div className="flex items-center justify-between px-2">
+                            <a className='decoration-none cursor-pointer' href='/productos'>
+                                <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
+                            </a>
+                            <div className="flex items-center gap-2">
+                                <IonButton
+                                    fill="clear"
+                                    size="small"
+                                    onClick={() => fetchPedidos(true)}
+                                    disabled={refreshing}
+                                >
+                                    <IonIcon icon={refreshing ? "sync" : "refresh"} className={refreshing ? "animate-spin" : ""} />
+                                </IonButton>
+                            </div>
+                        </div>
+                    </IonToolbar>
+                </IonHeader>
+
+                <section className="py-1 px-3 sm:px-4 max-w-6xl mx-auto min-h-screen md:my-6 space-y-5">
+                    {/* Header responsive */}
+                    <div className="z-10 bg-white pb-2 pt-4 -mx-3 px-3 sm:static sm:top-auto sm:bg-transparent sm:pb-0">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mis Pedidos</h1>
+                                <p className="text-xs sm:text-sm text-gray-500">
+                                    {pedidosFiltrados.length} {segmentoActivo === 'activos' ? 'activos' : 'totales'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <IonSegment
+                                    value={segmentoActivo}
+                                    onIonChange={e => setSegmentoActivo(e.detail.value as any)}
+                                    className="segment-responsive"
+                                >
+                                    <IonSegmentButton value="activos" className="text-xs sm:text-sm">
+                                        <span className="hidden xs:inline">Activos</span>
+                                        <span className="xs:hidden">Activos</span>
+                                    </IonSegmentButton>
+                                    <IonSegmentButton value="todos" className="text-xs sm:text-sm">
+                                        <span className="hidden xs:inline">Todos</span>
+                                        <span className="xs:hidden">Todos</span>
+                                    </IonSegmentButton>
+                                </IonSegment>
+                            </div>
+                        </div>
+                    </div>
+
+                    {loading ? (
+                        <LoadingSkeleton />
+                    ) : showNoPedidos ? (
+                        <div className="flex flex-col justify-center items-center min-h-[60vh] px-4 text-center">
+                            <div className="w-24 h-24 rounded-full bg-purple-50 flex items-center justify-center mb-6">
+                                <IconLiz fill="#7927F5" width={48} />
+                            </div>
+                            <IonText className="text-lg font-semibold text-gray-700 mb-2">
+                                No tienes pedidos aún
+                            </IonText>
+                            <IonText className="text-sm text-gray-500 mb-6 text-center max-w-md">
+                                Cuando realices un pedido, aparecerá aquí para que puedas seguir su estado en tiempo real.
+                            </IonText>
+                            <a
+                                href="/productos"
+                                className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-6 py-3 rounded-xl text-base shadow-lg shadow-yellow-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 justify-center"
                             >
-                                <IonIcon icon={refreshing ? "sync" : "refresh"} className={refreshing ? "animate-spin" : ""} />
-                            </IonButton>
+                                <ShoppingCart className="size-4" />
+                                <span className="hidden sm:inline">Explorar Productos</span>
+                                <span className="sm:hidden">Comprar</span>
+                                <MoveRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                            </a>
                         </div>
-                    </div>
-                </IonToolbar>
-            </IonHeader>
+                    ) : (
+                        <>
+                            {/* Lista de pedidos - Mobile swipeable */}
+                            <div className="md:hidden">
+                                <div className="overflow-x-auto pb-2 -mx-3 px-3">
+                                    <div className="flex space-x-3" style={{ minWidth: 'max-content' }}>
+                                        {pedidosFiltrados.map(pedido => {
+                                            const storeInfo = getStoreInfo(pedido);
+                                            const orderStatus = getOrderStatus(pedido);
+                                            const progress = getProgressValue(orderStatus);
 
-            <section className="py-1 px-3 sm:px-4 max-w-6xl mx-auto min-h-screen md:my-6 space-y-5">
-                {/* Header responsive */}
-                <div className="z-10 bg-white pb-2 pt-4 -mx-3 px-3 sm:static sm:top-auto sm:bg-transparent sm:pb-0">
-                    <div className="flex items-center justify-between mb-3">
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Mis Pedidos</h1>
-                            <p className="text-xs sm:text-sm text-gray-500">
-                                {pedidosFiltrados.length} {segmentoActivo === 'activos' ? 'activos' : 'totales'}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <IonSegment
-                                value={segmentoActivo}
-                                onIonChange={e => setSegmentoActivo(e.detail.value as any)}
-                                className="segment-responsive"
-                            >
-                                <IonSegmentButton value="activos" className="text-xs sm:text-sm">
-                                    <span className="hidden xs:inline">Activos</span>
-                                    <span className="xs:hidden">Activos</span>
-                                </IonSegmentButton>
-                                <IonSegmentButton value="todos" className="text-xs sm:text-sm">
-                                    <span className="hidden xs:inline">Todos</span>
-                                    <span className="xs:hidden">Todos</span>
-                                </IonSegmentButton>
-                            </IonSegment>
-                        </div>
-                    </div>
-                </div>
+                                            return (
+                                                <div
+                                                    key={pedido.id}
+                                                    className={`flex-shrink-0 w-72 rounded-xl border cursor-pointer transition-all ${pedidoSeleccionado?.id === pedido.id
+                                                        ? 'border-purple-500 bg-purple-50 shadow-sm'
+                                                        : 'border-gray-200 bg-white'
+                                                        }`}
+                                                    onClick={() => setPedidoSeleccionado(pedido)}
+                                                >
+                                                    <IonCardContent className="py-3">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div>
+                                                                <IonText className="font-bold text-gray-900">#{pedido.id}</IonText>
+                                                                <IonBadge
+                                                                    color={
+                                                                        pedido.estado === 'entregado' ? 'success' :
+                                                                            pedido.estado === 'cancelado' ? 'danger' :
+                                                                                pedido.estado === 'incompleto' ? 'warning' :
+                                                                                    pedido.urgencia === 'alta' ? 'danger' :
+                                                                                        pedido.urgencia === 'media' ? 'warning' : 'primary'
+                                                                    }
+                                                                    className="ml-2 text-xs"
+                                                                >
+                                                                    {pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1)}
+                                                                </IonBadge>
+                                                            </div>
+                                                            <IonText className="font-bold text-purple-600">
+                                                                {formatValue(pedido.total, "currency")}
+                                                            </IonText>
+                                                        </div>
 
-                {loading ? (
-                    <LoadingSkeleton />
-                ) : showNoPedidos ? (
-                    <div className="flex flex-col justify-center items-center min-h-[60vh] px-4 text-center">
-                        <div className="w-24 h-24 rounded-full bg-purple-50 flex items-center justify-center mb-6">
-                            <IconLiz fill="#7927F5" width={48} />
-                        </div>
-                        <IonText className="text-lg font-semibold text-gray-700 mb-2">
-                            No tienes pedidos aún
-                        </IonText>
-                        <IonText className="text-sm text-gray-500 mb-6 text-center max-w-md">
-                            Cuando realices un pedido, aparecerá aquí para que puedas seguir su estado en tiempo real.
-                        </IonText>
-                        <a
-                            href="/productos"
-                            className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-6 py-3 rounded-xl text-base shadow-lg shadow-yellow-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 justify-center"
-                        >
-                            <ShoppingCart className="size-4" />
-                            <span className="hidden sm:inline">Explorar Productos</span>
-                            <span className="sm:hidden">Comprar</span>
-                            <MoveRight className="size-4 group-hover:translate-x-1 transition-transform" />
-                        </a>
-                    </div>
-                ) : (
-                    <>
-                        {/* Lista de pedidos - Mobile swipeable */}
-                        <div className="md:hidden">
-                            <div className="overflow-x-auto pb-2 -mx-3 px-3">
-                                <div className="flex space-x-3" style={{ minWidth: 'max-content' }}>
-                                    {pedidosFiltrados.map(pedido => {
-                                        const storeInfo = getStoreInfo(pedido);
-                                        const orderStatus = getOrderStatus(pedido);
-                                        const progress = getProgressValue(orderStatus);
+                                                        {/* Barra de progreso mini */}
+                                                        <div className="relative h-1 bg-gray-100 rounded-full mb-3">
+                                                            <div
+                                                                className="absolute left-0 h-full bg-gradient-to-r from-emerald-600 to-green-500 rounded-full transition-all duration-500"
+                                                                style={{ width: `${progress * 100}%` }}
+                                                            />
+                                                        </div>
 
-                                        return (
-                                            <div
-                                                key={pedido.id}
-                                                className={`flex-shrink-0 w-72 rounded-xl border cursor-pointer transition-all ${pedidoSeleccionado?.id === pedido.id
-                                                    ? 'border-purple-500 bg-purple-50 shadow-sm'
-                                                    : 'border-gray-200 bg-white'
-                                                    }`}
-                                                onClick={() => setPedidoSeleccionado(pedido)}
-                                            >
-                                                <IonCardContent className="py-3">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div>
-                                                            <IonText className="font-bold text-gray-900">#{pedido.id}</IonText>
+                                                        <div className="space-y-2">
+                                                            {pedido.fecha_cita && (
+                                                                <div className="flex items-center gap-1 text-sm">
+                                                                    <IonIcon icon={calendar} className="text-purple-600" />
+                                                                    <IonText className="text-gray-600">
+                                                                        {formatFechaCita(pedido.fecha_cita)} {pedido.hora_cita}
+                                                                    </IonText>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex items-center gap-1 text-sm">
+                                                                <IonIcon icon={storefront} className="text-gray-400" />
+                                                                <IonText className="text-gray-500 truncate">
+                                                                    {storeInfo.store}
+                                                                </IonText>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Indicadores de recolección */}
+                                                        {pedido.productos_totales && pedido.productos_totales > 0 && (
+                                                            <div className="mt-2 pt-2 border-t border-gray-100">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Cuboid className="size-3 text-gray-500" />
+                                                                        <IonText className="text-xs text-gray-600">
+                                                                            Recolectado:
+                                                                        </IonText>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <IonChip
+                                                                            color={pedido.porcentaje_recolectado === 100 ? 'success' : 'warning'}
+                                                                            className="text-xs h-5"
+                                                                        >
+                                                                            {pedido.productos_recolectados}/{pedido.productos_totales}
+                                                                        </IonChip>
+                                                                        {Number(pedido.productos_no_encontrados) > 0 && (
+                                                                            <IonBadge color="danger" className="text-xs">
+                                                                                {pedido.productos_no_encontrados} no encontrado (s)
+                                                                            </IonBadge>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </IonCardContent>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Lista de pedidos - Desktop */}
+                            <div className="hidden md:block space-y-2 max-h-80 overflow-y-auto pr-2">
+                                {pedidosFiltrados.map(pedido => {
+                                    const storeInfo = getStoreInfo(pedido);
+
+                                    return (
+                                        <IonCard
+                                            key={pedido.id}
+                                            className={`rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${pedidoSeleccionado?.id === pedido.id
+                                                ? 'border-purple-500 bg-purple-50 shadow-sm'
+                                                : 'border-gray-200 hover:border-purple-300'
+                                                }`}
+                                            onClick={() => setPedidoSeleccionado(pedido)}
+                                        >
+                                            <IonCardContent className="py-3">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <IonText className="font-bold text-gray-900">Pedido #{pedido.id}</IonText>
                                                             <IonBadge
                                                                 color={
                                                                     pedido.estado === 'entregado' ? 'success' :
@@ -791,521 +893,453 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                                                 pedido.urgencia === 'alta' ? 'danger' :
                                                                                     pedido.urgencia === 'media' ? 'warning' : 'primary'
                                                                 }
-                                                                className="ml-2 text-xs"
+                                                                className="text-xs"
                                                             >
                                                                 {pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1)}
+                                                                {pedido.urgencia === 'alta' && ' ⚠️'}
                                                             </IonBadge>
                                                         </div>
-                                                        <IonText className="font-bold text-purple-600">
-                                                            {formatValue(pedido.total, "currency")}
-                                                        </IonText>
-                                                    </div>
 
-                                                    {/* Barra de progreso mini */}
-                                                    <div className="relative h-1 bg-gray-100 rounded-full mb-3">
-                                                        <div
-                                                            className="absolute left-0 h-full bg-gradient-to-r from-emerald-600 to-green-500 rounded-full transition-all duration-500"
-                                                            style={{ width: `${progress * 100}%` }}
-                                                        />
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        {pedido.fecha_cita && (
-                                                            <div className="flex items-center gap-1 text-sm">
-                                                                <IonIcon icon={calendar} className="text-purple-600" />
-                                                                <IonText className="text-gray-600">
-                                                                    {formatFechaCita(pedido.fecha_cita)} {pedido.hora_cita}
+                                                        {pedido.fecha_cita && pedido.hora_cita && (
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <IonIcon icon={calendar} className="text-purple-600 text-sm" />
+                                                                <IonText className="text-sm text-gray-600">
+                                                                    {formatFechaCita(pedido.fecha_cita)} a las {pedido.hora_cita}
                                                                 </IonText>
                                                             </div>
                                                         )}
-                                                        <div className="flex items-center gap-1 text-sm">
-                                                            <IonIcon icon={storefront} className="text-gray-400" />
-                                                            <IonText className="text-gray-500 truncate">
-                                                                {storeInfo.store}
-                                                            </IonText>
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Indicadores de recolección */}
-                                                    {pedido.productos_totales && pedido.productos_totales > 0 && (
-                                                        <div className="mt-2 pt-2 border-t border-gray-100">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1">
-                                                                    <Cuboid className="size-3 text-gray-500" />
-                                                                    <IonText className="text-xs text-gray-600">
-                                                                        Recolectado:
-                                                                    </IonText>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <IonChip
-                                                                        color={pedido.porcentaje_recolectado === 100 ? 'success' : 'warning'}
-                                                                        className="text-xs h-5"
-                                                                    >
-                                                                        {pedido.productos_recolectados}/{pedido.productos_totales}
-                                                                    </IonChip>
-                                                                    {Number(pedido.productos_no_encontrados) > 0 && (
-                                                                        <IonBadge color="danger" className="text-xs">
-                                                                            {pedido.productos_no_encontrados} no encontrado (s)
-                                                                        </IonBadge>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </IonCardContent>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Lista de pedidos - Desktop */}
-                        <div className="hidden md:block space-y-2 max-h-80 overflow-y-auto pr-2">
-                            {pedidosFiltrados.map(pedido => {
-                                const storeInfo = getStoreInfo(pedido);
-
-                                return (
-                                    <IonCard
-                                        key={pedido.id}
-                                        className={`rounded-xl border cursor-pointer transition-all hover:shadow-md active:scale-[0.98] ${pedidoSeleccionado?.id === pedido.id
-                                            ? 'border-purple-500 bg-purple-50 shadow-sm'
-                                            : 'border-gray-200 hover:border-purple-300'
-                                            }`}
-                                        onClick={() => setPedidoSeleccionado(pedido)}
-                                    >
-                                        <IonCardContent className="py-3">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <IonText className="font-bold text-gray-900">Pedido #{pedido.id}</IonText>
-                                                        <IonBadge
-                                                            color={
-                                                                pedido.estado === 'entregado' ? 'success' :
-                                                                    pedido.estado === 'cancelado' ? 'danger' :
-                                                                        pedido.estado === 'incompleto' ? 'warning' :
-                                                                            pedido.urgencia === 'alta' ? 'danger' :
-                                                                                pedido.urgencia === 'media' ? 'warning' : 'primary'
-                                                            }
-                                                            className="text-xs"
-                                                        >
-                                                            {pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1)}
-                                                            {pedido.urgencia === 'alta' && ' ⚠️'}
-                                                        </IonBadge>
-                                                    </div>
-
-                                                    {pedido.fecha_cita && pedido.hora_cita && (
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <IonIcon icon={calendar} className="text-purple-600 text-sm" />
-                                                            <IonText className="text-sm text-gray-600">
-                                                                {formatFechaCita(pedido.fecha_cita)} a las {pedido.hora_cita}
-                                                            </IonText>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                        <div className="flex items-center gap-1">
-                                                            <Package className="size-3" />
-                                                            <span>{pedido.productos_totales || 0} productos</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <IonIcon icon={storefront} className="text-sm" />
-                                                            <span>{storeInfo.store}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Estadísticas de recolección */}
-                                                    {pedido.productos_totales && pedido.productos_totales > 0 && (
-                                                        <div className="flex items-center gap-4 mt-2">
+                                                        <div className="flex items-center gap-4 text-sm text-gray-500">
                                                             <div className="flex items-center gap-1">
-                                                                <IonBadge color={pedido.porcentaje_recolectado === 100 ? 'success' : 'warning'} className="text-xs">
-                                                                    <IonIcon icon={cube} className="mr-1" />
-                                                                    {pedido.productos_recolectados || 0}/{pedido.productos_totales} recogidos
-                                                                </IonBadge>
+                                                                <Package className="size-3" />
+                                                                <span>{pedido.productos_totales || 0} productos</span>
                                                             </div>
-                                                            {Number(pedido.productos_no_encontrados) > 0 && (
+                                                            <div className="flex items-center gap-1">
+                                                                <IonIcon icon={storefront} className="text-sm" />
+                                                                <span>{storeInfo.store}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Estadísticas de recolección */}
+                                                        {pedido.productos_totales && pedido.productos_totales > 0 && (
+                                                            <div className="flex items-center gap-4 mt-2">
                                                                 <div className="flex items-center gap-1">
-                                                                    <IonBadge color="danger" className="text-xs">
-                                                                        {pedido.productos_no_encontrados || ""} no encontrado (s)
+                                                                    <IonBadge color={pedido.porcentaje_recolectado === 100 ? 'success' : 'warning'} className="text-xs">
+                                                                        <IonIcon icon={cube} className="mr-1" />
+                                                                        {pedido.productos_recolectados || 0}/{pedido.productos_totales} recogidos
                                                                     </IonBadge>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="text-right">
-                                                    <IonText className="block font-bold text-lg text-purple-600">
-                                                        {formatValue(pedido.total, "currency")}
-                                                    </IonText>
-                                                    <IonNote className="text-xs text-gray-500 block mt-1">
-                                                        {formatFecha(pedido.fecha_creacion)}
-                                                    </IonNote>
-                                                </div>
-                                            </div>
-                                        </IonCardContent>
-                                    </IonCard>
-                                );
-                            })}
-                        </div>
-
-                        {pedidoSeleccionado && (
-                            <div className="space-y-4 animate-fadeIn">
-                                {/* Encabezado del pedido seleccionado */}
-                                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border border-gray-200">
-                                    <div className="flex-1">
-                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                                            <IonCardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-900">
-                                                Pedido #{pedidoSeleccionado.id}
-                                            </IonCardTitle>
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <IonBadge
-                                                    color={
-                                                        pedidoSeleccionado.estado === 'entregado' ? 'success' :
-                                                            pedidoSeleccionado.estado === 'cancelado' ? 'danger' :
-                                                                pedidoSeleccionado.estado === 'incompleto' ? 'warning' :
-                                                                    pedidoSeleccionado.urgencia === 'alta' ? 'danger' :
-                                                                        pedidoSeleccionado.urgencia === 'media' ? 'warning' : 'primary'
-                                                    }
-                                                    className="text-sm"
-                                                >
-                                                    {pedidoSeleccionado.estado.charAt(0).toUpperCase() + pedidoSeleccionado.estado.slice(1)}
-                                                </IonBadge>
-
-                                                {pedidoSeleccionado.fecha_cita && pedidoSeleccionado.hora_cita && (
-                                                    <IonChip color="medium" className="text-sm">
-                                                        <IonIcon icon={calendar} slot="start" />
-                                                        {formatFechaCita(pedidoSeleccionado.fecha_cita)} {pedidoSeleccionado.hora_cita}
-                                                    </IonChip>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <IonText color="medium" className="text-sm">
-                                            Realizado {formatFecha(pedidoSeleccionado.fecha_creacion)}
-                                        </IonText>
-                                    </div>
-
-                                    <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
-                                        {puedeCancelar && (
-                                            <IonButton
-                                                fill="outline"
-                                                color="danger"
-                                                size="small"
-                                                onClick={() => setShowCancelAlert(true)}
-                                                className="w-full sm:w-auto"
-                                            >
-                                                <IonIcon icon={closeCircle} slot="start" />
-                                                <span className="hidden sm:inline">Cancelar</span>
-                                                <span className="sm:hidden">Cancelar Pedido</span>
-                                            </IonButton>
-                                        )}
-
-                                        <a
-                                            href="/productos"
-                                            className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-yellow-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 justify-center"
-                                        >
-                                            <ShoppingCart className="size-4" />
-                                            <span className="hidden sm:inline">Nueva Compra</span>
-                                            <span className="sm:hidden">Comprar</span>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                {/* Barra de progreso responsive */}
-                                <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
-                                    <IonCardHeader className="pb-4">
-                                        <div className="relative mt-2">
-                                            <div className="absolute top-1/2 left-0 right-0 h-1.5 sm:h-2 bg-gray-100 rounded-full -translate-y-1/2" />
-                                            <div
-                                                className="absolute top-1/2 left-0 h-1.5 sm:h-2 bg-gradient-to-r from-emerald-600 to-green-500 rounded-full -translate-y-1/2 transition-all duration-700"
-                                                style={{ width: `${getProgressValue(getOrderStatus(pedidoSeleccionado)) * 100}%` }}
-                                            />
-                                            <div className="flex justify-between relative z-10 px-1 sm:px-0">
-                                                {getOrderStatus(pedidoSeleccionado).map((step, index) => (
-                                                    <div key={step.status} className="flex flex-col items-center flex-1 text-center max-w-[70px] sm:max-w-none">
-                                                        <div
-                                                            className={cn(
-                                                                "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 sm:border-3 text-sm sm:text-lg mb-2 shadow-sm transition-all",
-                                                                step.completed
-                                                                    ? "bg-gradient-to-br from-green-500 to-green-600 border-green-600 text-white shadow-green-500/25"
-                                                                    : step.active
-                                                                        ? "bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-600 text-white shadow-emerald-500/25 animate-pulse"
-                                                                        : "bg-white border-gray-300 text-gray-400"
-                                                            )}
-                                                        >
-                                                            {step.icon}
-                                                        </div>
-                                                        <p
-                                                            className={cn(
-                                                                "text-xs font-bold px-1 mt-8 truncate w-full",
-                                                                step.active
-                                                                    ? "text-purple-700"
-                                                                    : step.completed
-                                                                        ? "text-green-600"
-                                                                        : "text-gray-400"
-                                                            )}
-                                                        >
-                                                            {step.status}
-                                                        </p>
-                                                        {step.description && (
-                                                            <p className="text-[10px] text-gray-500 truncate w-full">
-                                                                {step.description}
-                                                            </p>
-                                                        )}
-                                                        {step.time && (
-                                                            <p className="text-[10px] font-medium text-gray-600 mt-0.5">{step.time}</p>
+                                                                {Number(pedido.productos_no_encontrados) > 0 && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <IonBadge color="danger" className="text-xs">
+                                                                            {pedido.productos_no_encontrados || ""} no encontrado (s)
+                                                                        </IonBadge>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </IonCardHeader>
-                                </IonCard>
 
-                                {/* Grid de información responsive con estadísticas */}
-                                <IonGrid className="px-0 gap-2">
-                                    <IonRow>
-                                        <IonCol size="12" sizeMd="8">
-                                            <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white h-full">
-                                                <IonCardHeader>
-                                                    <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                                                        <IonIcon icon={location} className="mr-2 text-purple-600" />
-                                                        Recoger en Tienda
-                                                    </IonCardTitle>
-                                                </IonCardHeader>
-                                                <IonCardContent className="space-y-4">
-                                                    <div className="flex items-start space-x-3">
-                                                        <IonIcon icon={storefront} className="text-purple-600 mt-1 flex-shrink-0" />
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900">{getStoreInfo(pedidoSeleccionado).store}</p>
-                                                            <p className="text-sm text-gray-500">{getStoreInfo(pedidoSeleccionado).address}</p>
-                                                        </div>
+                                                    <div className="text-right">
+                                                        <IonText className="block font-bold text-lg text-purple-600">
+                                                            {formatValue(pedido.total, "currency")}
+                                                        </IonText>
+                                                        <IonNote className="text-xs text-gray-500 block mt-1">
+                                                            {formatFecha(pedido.fecha_creacion)}
+                                                        </IonNote>
                                                     </div>
-                                                    <div className="flex items-start space-x-3">
-                                                        <IonIcon icon={calendar} className="text-purple-600 mt-1 flex-shrink-0" />
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900">Horario de Recogida</p>
-                                                            <p className="text-sm text-gray-500">{getStoreInfo(pedidoSeleccionado).schedule}</p>
-                                                            {pedidoSeleccionado.tiempo_restante !== undefined && pedidoSeleccionado.tiempo_restante > 0 && (
-                                                                <div className="flex flex-wrap gap-2 mt-2">
-                                                                    <IonChip
-                                                                        color={pedidoSeleccionado.urgencia === 'alta' ? 'danger' : pedidoSeleccionado.urgencia === 'media' ? 'warning' : 'success'}
-                                                                        className="text-xs h-6"
-                                                                    >
-                                                                        <Clock className="mr-1 size-3" />
-                                                                        {pedidoSeleccionado.tiempo_restante} min
-                                                                    </IonChip>
-                                                                    {pedidoSeleccionado.urgencia === 'alta' && (
-                                                                        <IonChip color="danger" className="text-xs h-6">
-                                                                            <AlertTriangle className="mr-1 size-3" />
-                                                                            ¡Urgente!
-                                                                        </IonChip>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-start space-x-3">
-                                                        <IonIcon icon={call} className="text-purple-600 mt-1 flex-shrink-0" />
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900">Contacto</p>
-                                                            <p className="text-sm text-gray-500">{getStoreInfo(pedidoSeleccionado).phone}</p>
-                                                        </div>
-                                                            </div>
-
-                                                            <Sucursales sucursalVista="(Precio Lista)" />
-                                                </IonCardContent>
-                                            </IonCard>
-                                        </IonCol>
-
-                                        <IonCol size="12" sizeMd="4">
-                                            <IonCard className="shadow-none bg-transparent h-full">
-                                                <IonCardHeader>
-                                                    <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                                                        <IonIcon icon={cube} className="mr-2 text-purple-600" />
-                                                        Estado de Recolección
-                                                    </IonCardTitle>
-                                                </IonCardHeader>
-                                                <IonCardContent className="space-y-4">
-                                                    {/* Barra de progreso de recolección */}
-                                                    <ul className="h-full">
-                                                        <li className="flex justify-between items-center mb-2">
-                                                            <IonText className="text-sm font-semibold text-gray-700">
-                                                                Productos recolectados
-                                                            </IonText>
-                                                            <IonText className="text-sm font-bold text-purple-600">
-                                                                {estadisticas?.porcentaje || 0}%
-                                                            </IonText>
-                                                        </li>
-                                                        <li className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
-                                                            <div
-                                                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
-                                                                style={{ width: `${estadisticas?.porcentaje || 0}%` }}
-                                                            />
-                                                        </li>
-                                                        <li className="flex justify-between mt-1">
-                                                            <IonText className="text-xs text-gray-500">
-                                                                {estadisticas?.recolectados || 0} de {estadisticas?.total || 0}
-                                                            </IonText>
-                                                        </li>
-                                                    </ul>
-
-                                                    {/* Estadísticas detalladas */}
-                                                    <ul className="relative space-y-3">
-                                                        <li className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                                                <IonText className="text-sm text-gray-700">Recolectados</IonText>
-                                                            </div>
-                                                            <IonBadge color="success">
-                                                                {estadisticas?.recolectados || 0}
-                                                            </IonBadge>
-                                                        </li>
-
-                                                        <li className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                                                <IonText className="text-sm text-gray-700">No encontrados</IonText>
-                                                            </div>
-                                                            <IonBadge color="danger">
-                                                                {estadisticas?.noEncontrados || 0}
-                                                            </IonBadge>
-                                                        </li>
-
-                                                        <li className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                                                                <IonText className="text-sm text-gray-700">Pendientes</IonText>
-                                                            </div>
-                                                            <IonBadge color="medium">
-                                                                {Math.max(0, (estadisticas?.total || 0) - (estadisticas?.recolectados || 0) - (estadisticas?.noEncontrados || 0))}
-                                                            </IonBadge>
-                                                        </li>
-                                                                
-                                                        <li>
-                                                            <div className="flex items-center gap-2 bottom-0"> 
-                                                                Contactar a soloporte:                
-                                                                <button
-                                                                    onClick={() => handleOpenChat(pedidoSeleccionado)}
-                                                                    className="text-purple-600 bg-purple-200 p-2 rounded-full hover:text-purple-900 transition-colors"
-                                                                    title={`Abrir chat con ${pedidoSeleccionado.nombre || 'cliente'}`}
-                                                                >
-                                                                    <MessageCircle className="h-4 w-4" />
-                                                                </button>        
-                                                            </div>
-                                                        </li>
-                                                    </ul>
-                                                            
-                                                </IonCardContent>
-                                            </IonCard>
-                                        </IonCol>
-                                        
-                                        <IonCol size="12" sizeMd="12">
-                                            <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
-                                                <IonCardHeader>
-                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                        <IonCardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-                                                            <Package className="size-4 sm:size-5" />
-                                                            Productos ({productos.length})
-                                                            {estadisticas && (
-                                                                <div className="flex items-center gap-2 ml-2">
-                                                                    <IonBadge color="success" className="text-xs">
-                                                                        <IonIcon icon={checkmark} className="mr-1" />
-                                                                        {estadisticas.recolectados}
-                                                                    </IonBadge>
-                                                                    <IonBadge color="danger" className="text-xs">
-                                                                        <IonIcon icon={close} className="mr-1" />
-                                                                        {estadisticas.noEncontrados}
-                                                                    </IonBadge>
-                                                                </div>
-                                                            )}
-                                                        </IonCardTitle>
-
-                                                        <IonSegment
-                                                            value={mostrarFiltroProductos}
-                                                            onIonChange={e => setMostrarFiltroProductos(e.detail.value as any)}
-                                                            className="segment-responsive text-xs"
-                                                        >
-                                                            <IonSegmentButton value="todos" className="text-xs">
-                                                                Todos
-                                                            </IonSegmentButton>
-                                                            <IonSegmentButton value="recolectados" className="text-xs">
-                                                                Recolectados
-                                                            </IonSegmentButton>
-                                                            <IonSegmentButton value="no_encontrados" className="text-xs">
-                                                                No encontrados
-                                                            </IonSegmentButton>
-                                                        </IonSegment>
-                                                    </div>
-                                                </IonCardHeader>
-                                                <IonCardContent className="space-y-3">
-                                                    {productosFiltrados.length > 0 ? (
-                                                        productosFiltrados.map(item =>  <Card producto={item} key={item.id} />)
-                                                    ) : (
-                                                        <div className="text-center py-8">
-                                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                                                                <IonIcon icon={search} className="text-gray-400 text-2xl" />
-                                                            </div>
-                                                            <IonText color="medium" className="block mb-2">
-                                                                No hay productos {mostrarFiltroProductos === 'recolectados' ? 'recolectados' : mostrarFiltroProductos === 'no_encontrados' ? 'no encontrados' : ''}
-                                                            </IonText>
-                                                            {mostrarFiltroProductos !== 'todos' && (
-                                                                <IonButton
-                                                                    size="small"
-                                                                    fill="clear"
-                                                                    onClick={() => setMostrarFiltroProductos('todos')}
-                                                                >
-                                                                    Mostrar todos los productos
-                                                                </IonButton>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    
-                                                    <section className="border-t border-gray-200 pt-3 mt-2 flex justify-between items-center">
-                                                        <span>Total:</span>
-                                                        <p className="font-bold text-xl sm:text-2xl text-purple-600 right-0">
-                                                            {formatValue(pedidoSeleccionado.total, "currency")}
-                                                        </p>
-                                                    </section>
-                                                </IonCardContent>
-                                            </IonCard>
-                                        </IonCol>
-                                    </IonRow>
-
-                                </IonGrid>
-
-                                {/* Productos del pedido con filtros */}
-
+                                                </div>
+                                            </IonCardContent>
+                                        </IonCard>
+                                    );
+                                })}
                             </div>
-                        )}
-                    </>
-                )}
-            </section>
 
-            <section className="md:mb-0 mb-12">
-                <Footer />
-            </section>
+                            {pedidoSeleccionado && (
+                                <div className="space-y-4 animate-fadeIn">
+                                    {/* Encabezado del pedido seleccionado */}
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border border-gray-200">
+                                        <div className="flex-1">
+                                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                                <IonCardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-900">
+                                                    Pedido #{pedidoSeleccionado.id}
+                                                </IonCardTitle>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <IonBadge
+                                                        color={
+                                                            pedidoSeleccionado.estado === 'entregado' ? 'success' :
+                                                                pedidoSeleccionado.estado === 'cancelado' ? 'danger' :
+                                                                    pedidoSeleccionado.estado === 'incompleto' ? 'warning' :
+                                                                        pedidoSeleccionado.urgencia === 'alta' ? 'danger' :
+                                                                            pedidoSeleccionado.urgencia === 'media' ? 'warning' : 'primary'
+                                                        }
+                                                        className="text-sm"
+                                                    >
+                                                        {pedidoSeleccionado.estado.charAt(0).toUpperCase() + pedidoSeleccionado.estado.slice(1)}
+                                                    </IonBadge>
 
-            {/* Alert para confirmar cancelación */}
-            <IonAlert
-                isOpen={showCancelAlert}
-                onDidDismiss={() => setShowCancelAlert(false)}
-                header={'Cancelar Pedido'}
-                message={'¿Estás seguro de que quieres cancelar este pedido? Esta acción no se puede deshacer.'}
-                buttons={[
-                    {
-                        text: 'No, mantener',
-                        role: 'cancel',
-                        cssClass: 'secondary'
-                    },
-                    {
-                        text: 'Sí, cancelar',
-                        role: 'confirm',
-                        cssClass: 'danger',
-                        handler: handleCancelarPedido
-                    }
-                ]}
-            />
+                                                    {pedidoSeleccionado.fecha_cita && pedidoSeleccionado.hora_cita && (
+                                                        <IonChip color="medium" className="text-sm">
+                                                            <IonIcon icon={calendar} slot="start" />
+                                                            {formatFechaCita(pedidoSeleccionado.fecha_cita)} {pedidoSeleccionado.hora_cita}
+                                                        </IonChip>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <IonText color="medium" className="text-sm">
+                                                Realizado {formatFecha(pedidoSeleccionado.fecha_creacion)}
+                                            </IonText>
+                                        </div>
+
+                                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto mt-3 md:mt-0">
+                                            {puedeCancelar && (
+                                                <IonButton
+                                                    fill="outline"
+                                                    color="danger"
+                                                    size="small"
+                                                    onClick={() => setShowCancelAlert(true)}
+                                                    className="w-full sm:w-auto"
+                                                >
+                                                    <IonIcon icon={closeCircle} slot="start" />
+                                                    <span className="hidden sm:inline">Cancelar</span>
+                                                    <span className="sm:hidden">Cancelar Pedido</span>
+                                                </IonButton>
+                                            )}
+
+                                            <a
+                                                href="/productos"
+                                                className="group bg-yellow-400 hover:bg-yellow-300 text-purple-900 font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-yellow-500/25 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 justify-center"
+                                            >
+                                                <ShoppingCart className="size-4" />
+                                                <span className="hidden sm:inline">Nueva Compra</span>
+                                                <span className="sm:hidden">Comprar</span>
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    {/* Barra de progreso responsive */}
+                                    <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
+                                        <IonCardHeader className="pb-4">
+                                            <div className="relative mt-2">
+                                                <div className="absolute top-1/2 left-0 right-0 h-1.5 sm:h-2 bg-gray-100 rounded-full -translate-y-1/2" />
+                                                <div
+                                                    className="absolute top-1/2 left-0 h-1.5 sm:h-2 bg-gradient-to-r from-emerald-600 to-green-500 rounded-full -translate-y-1/2 transition-all duration-700"
+                                                    style={{ width: `${getProgressValue(getOrderStatus(pedidoSeleccionado)) * 100}%` }}
+                                                />
+                                                <div className="flex justify-between relative z-10 px-1 sm:px-0">
+                                                    {getOrderStatus(pedidoSeleccionado).map((step, index) => (
+                                                        <div key={index} className="flex flex-col items-center flex-1 text-center max-w-[70px] sm:max-w-none">
+                                                            <div
+                                                                className={cn(
+                                                                    "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 sm:border-3 text-sm sm:text-lg mb-2 shadow-sm transition-all",
+                                                                    step.completed
+                                                                        ? "bg-gradient-to-br from-green-500 to-green-600 border-green-600 text-white shadow-green-500/25"
+                                                                        : step.active
+                                                                            ? "bg-gradient-to-br from-emerald-500 to-emerald-600 border-emerald-600 text-white shadow-emerald-500/25 animate-pulse"
+                                                                            : "bg-white border-gray-300 text-gray-400"
+                                                                )}
+                                                            >
+                                                                {step.icon}
+                                                            </div>
+                                                            <p
+                                                                className={cn(
+                                                                    "text-xs font-bold px-1 mt-8 truncate w-full",
+                                                                    step.active
+                                                                        ? "text-purple-700"
+                                                                        : step.completed
+                                                                            ? "text-green-600"
+                                                                            : "text-gray-400"
+                                                                )}
+                                                            >
+                                                                {step.status}
+                                                            </p>
+                                                            {step.description && (
+                                                                <p className="text-[10px] text-gray-500 truncate w-full">
+                                                                    {step.description}
+                                                                </p>
+                                                            )}
+                                                            {step.time && (
+                                                                <p className="text-[10px] font-medium text-gray-600 mt-0.5">{step.time}</p>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </IonCardHeader>
+                                    </IonCard>
+
+                                    {/* Grid de información responsive con estadísticas */}
+                                    <IonGrid className="px-0 gap-2">
+                                        <IonRow>
+                                            <IonCol size="12" sizeMd="8">
+                                                <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white h-full">
+                                                    <IonCardHeader>
+                                                        <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                                                            <IonIcon icon={location} className="mr-2 text-purple-600" />
+                                                            Recoger en Tienda
+                                                        </IonCardTitle>
+                                                    </IonCardHeader>
+                                                    <IonCardContent className="space-y-4">
+                                                        <div className="flex items-start space-x-3">
+                                                            <IonIcon icon={storefront} className="text-purple-600 mt-1 flex-shrink-0" />
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-gray-900">{getStoreInfo(pedidoSeleccionado).store}</p>
+                                                                <p className="text-sm text-gray-500">{getStoreInfo(pedidoSeleccionado).address}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start space-x-3">
+                                                            <IonIcon icon={calendar} className="text-purple-600 mt-1 flex-shrink-0" />
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-gray-900">Horario de Recogida</p>
+                                                                        <p className="text-sm text-gray-500">{new Date(pedidoSeleccionado.fecha_entrega).getHours()}:{new Date(pedidoSeleccionado.fecha_entrega).getMinutes().toString().padStart(2, '0')}</p>
+                                                                {pedidoSeleccionado.tiempo_restante !== undefined && pedidoSeleccionado.tiempo_restante > 0 && (
+                                                                    <div className="flex flex-wrap gap-2 mt-2">
+                                                                        <IonChip
+                                                                            color={pedidoSeleccionado.urgencia === 'alta' ? 'danger' : pedidoSeleccionado.urgencia === 'media' ? 'warning' : 'success'}
+                                                                            className="text-xs h-6"
+                                                                        >
+                                                                            <Clock className="mr-1 size-3" />
+                                                                            {pedidoSeleccionado.tiempo_restante} min
+                                                                        </IonChip>
+                                                                        {pedidoSeleccionado.urgencia === 'alta' && (
+                                                                            <IonChip color="danger" className="text-xs h-6">
+                                                                                <AlertTriangle className="mr-1 size-3" />
+                                                                                ¡Urgente!
+                                                                            </IonChip>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start space-x-3">
+                                                            <IonIcon icon={call} className="text-purple-600 mt-1 flex-shrink-0" />
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-gray-900">Contacto</p>
+                                                                <p className="text-sm text-gray-500">{getStoreInfo(pedidoSeleccionado).phone}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <Sucursales sucursalVista="(Precio Lista)" />
+                                                    </IonCardContent>
+                                                </IonCard>
+                                            </IonCol>
+
+                                            <IonCol size="12" sizeMd="4" className="flex flex-col gap-2">
+                                                <IonCard className="shadow-none bg-transparent h-fit">
+                                                    <IonCardHeader>
+                                                        <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                                                            <IonIcon icon={cube} className="mr-2 text-purple-600" />
+                                                            Estado de Recolección
+                                                        </IonCardTitle>
+                                                    </IonCardHeader>
+                                                    <IonCardContent className="space-y-4">
+                                                        {/* Barra de progreso de recolección */}
+                                                        <ul className="h-full">
+                                                            <li className="flex justify-between items-center mb-2">
+                                                                <IonText className="text-sm font-semibold text-gray-700">
+                                                                    Productos recolectados
+                                                                </IonText>
+                                                                <IonText className="text-sm font-bold text-purple-600">
+                                                                    {estadisticas?.porcentaje || 0}%
+                                                                </IonText>
+                                                            </li>
+                                                            <li className="relative h-3 bg-gray-200 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="absolute left-0 top-0 h-fit bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
+                                                                    style={{ width: `${estadisticas?.porcentaje || 0}%` }}
+                                                                />
+                                                            </li>
+                                                            <li className="flex justify-between mt-1">
+                                                                <IonText className="text-xs text-gray-500">
+                                                                    {estadisticas?.recolectados || 0} de {estadisticas?.total || 0}
+                                                                </IonText>
+                                                            </li>
+                                                        </ul>
+
+                                                        {/* Estadísticas detalladas */}
+                                                        <ul className="relative space-y-3">
+                                                            <li className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                                                    <IonText className="text-sm text-gray-700">Recolectados</IonText>
+                                                                </div>
+                                                                <IonBadge color="success">
+                                                                    {estadisticas?.recolectados || 0}
+                                                                </IonBadge>
+                                                            </li>
+
+                                                            <li className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                                                    <IonText className="text-sm text-gray-700">No encontrados</IonText>
+                                                                </div>
+                                                                <IonBadge color="danger">
+                                                                    {estadisticas?.noEncontrados || 0}
+                                                                </IonBadge>
+                                                            </li>
+
+                                                            <li className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                                                                    <IonText className="text-sm text-gray-700">Pendientes</IonText>
+                                                                </div>
+                                                                <IonBadge color="medium">
+                                                                    {Math.max(0, (estadisticas?.total || 0) - (estadisticas?.recolectados || 0) - (estadisticas?.noEncontrados || 0))}
+                                                                </IonBadge>
+                                                            </li>
+
+                                                            <li>
+                                                                <div className="flex items-center gap-2 bottom-0">
+                                                                    Contactar a soporte:
+                                                                    <button
+                                                                        onClick={() => handleOpenChat(pedidoSeleccionado)}
+                                                                        className="text-purple-600 bg-purple-200 p-2 rounded-full hover:text-purple-900 transition-colors"
+                                                                        title={`Abrir chat con ${pedidoSeleccionado.nombre || 'cliente'}`}
+                                                                    >
+                                                                        <MessageCircle className="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
+                                                            </li>
+                                                        </ul>
+
+                                                    </IonCardContent>
+                                                </IonCard>
+                                                        <IonCard className="shadow-none bg-transparent h-fit">
+                                                            <IonCardHeader>
+                                                                <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                                                                    <IonIcon icon={receipt} className="mr-2 text-purple-600" />
+                                                                    Resumen de Pedido
+                                                                </IonCardTitle>
+                                                            </IonCardHeader>
+                                                            <IonCardContent className="space-y-4">
+                                                                <ul className="space-y-3">
+                                                                    <li className="flex items-center justify-between">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <IonText className="text-sm text-gray-700">Tipo de pago:</IonText>
+                                                                        </div>
+                                                                        <span className="font-medium">
+                                                                            {pedidoSeleccionado.tipo_pago || 'No especificado'}
+                                                                        </span>
+                                                                    </li>
+                                                                    <li className="flex items-center justify-between border-t pt-2">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <IonText className="text-sm font-bold text-gray-900">Total:</IonText>
+                                                                        </div>
+                                                                        <span className="font-bold text-purple-600">
+                                                                            {formatValue(pedidoSeleccionado.total, "currency")}
+                                                                        </span>
+                                                                    </li>
+                                                                </ul>
+                                                            </IonCardContent>
+                                                        </IonCard>
+                                            </IonCol>
+
+                                            <IonCol size="12" sizeMd="12">
+                                                <IonCard className="rounded-xl border border-gray-200 shadow-sm bg-white">
+                                                    <IonCardHeader>
+                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                            <IonCardTitle className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+                                                                <Package className="size-4 sm:size-5" />
+                                                                Productos ({productos.length})
+                                                                {estadisticas && (
+                                                                    <div className="flex items-center gap-2 ml-2">
+                                                                        <IonBadge color="success" className="text-xs">
+                                                                            <IonIcon icon={checkmark} className="mr-1" />
+                                                                            {estadisticas.recolectados}
+                                                                        </IonBadge>
+                                                                        <IonBadge color="danger" className="text-xs">
+                                                                            <IonIcon icon={close} className="mr-1" />
+                                                                            {estadisticas.noEncontrados}
+                                                                        </IonBadge>
+                                                                    </div>
+                                                                )}
+                                                            </IonCardTitle>
+
+                                                            <IonSegment
+                                                                value={mostrarFiltroProductos}
+                                                                onIonChange={e => setMostrarFiltroProductos(e.detail.value as any)}
+                                                                className="segment-responsive text-xs"
+                                                            >
+                                                                <IonSegmentButton value="todos" className="text-xs">
+                                                                    Todos
+                                                                </IonSegmentButton>
+                                                                <IonSegmentButton value="recolectados" className="text-xs">
+                                                                    Recolectados
+                                                                </IonSegmentButton>
+                                                                <IonSegmentButton value="no_encontrados" className="text-xs">
+                                                                    No encontrados
+                                                                </IonSegmentButton>
+                                                            </IonSegment>
+                                                        </div>
+                                                    </IonCardHeader>
+                                                    <IonCardContent className="space-y-3">
+                                                        {productosFiltrados.length > 0 ? (
+                                                            productosFiltrados.map(item => <Card producto={item} key={item.id} />)
+                                                        ) : (
+                                                            <div className="text-center py-8">
+                                                                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                                                    <IonIcon icon={search} className="text-gray-400 text-2xl" />
+                                                                </div>
+                                                                <IonText color="medium" className="block mb-2">
+                                                                    No hay productos {mostrarFiltroProductos === 'recolectados' ? 'recolectados' : mostrarFiltroProductos === 'no_encontrados' ? 'no encontrados' : ''}
+                                                                </IonText>
+                                                                {mostrarFiltroProductos !== 'todos' && (
+                                                                    <IonButton
+                                                                        size="small"
+                                                                        fill="clear"
+                                                                        onClick={() => setMostrarFiltroProductos('todos')}
+                                                                    >
+                                                                        Mostrar todos los productos
+                                                                    </IonButton>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <section className="border-t border-gray-200 pt-3 mt-2 flex justify-between items-center">
+                                                            <span>Total:</span>
+                                                            <p className="font-bold text-xl sm:text-2xl text-purple-600 right-0">
+                                                                {formatValue(pedidoSeleccionado.total, "currency")}
+                                                            </p>
+                                                        </section>
+                                                    </IonCardContent>
+                                                </IonCard>
+                                            </IonCol>
+                                        </IonRow>
+
+                                    </IonGrid>
+
+                                    {/* Productos del pedido con filtros */}
+
+                                </div>
+                            )}
+                        </>
+                    )}
+                </section>
+
+                <section className="md:mb-0 mb-12">
+                    <Footer />
+                </section>
+
+                {/* Alert para confirmar cancelación */}
+                <IonAlert
+                    isOpen={showCancelAlert}
+                    onDidDismiss={() => setShowCancelAlert(false)}
+                    header={'Cancelar Pedido'}
+                    message={'¿Estás seguro de que quieres cancelar este pedido? Esta acción no se puede deshacer.'}
+                    buttons={[
+                        {
+                            text: 'No, mantener',
+                            role: 'cancel',
+                            cssClass: 'secondary'
+                        },
+                        {
+                            text: 'Sí, cancelar',
+                            role: 'confirm',
+                            cssClass: 'danger',
+                            handler: handleCancelarPedido
+                        }
+                    ]}
+                />
 
                 <IonLoading isOpen={refreshing} message="Actualizando pedidos..." />
             </IonContent>

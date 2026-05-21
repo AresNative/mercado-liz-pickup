@@ -912,7 +912,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         ];
 
         console.log("📋 Creando lista de pickup con items:", itemsWithPickupService.length);
+        const fechaObjeto: any = new Date(selectedDate + " " + selectedTime);
 
+        // Código reducido
+        const isoLocal = new Date(fechaObjeto - fechaObjeto.getTimezoneOffset() * 60000).toISOString().slice(0, -1);
         // Crear lista de pickup con hora local
         const listaResponse = await safeCall(() => PostData({
             url: "listas",
@@ -920,11 +923,13 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 id_cliente: clientId,
                 usuario_id: userId,
                 sucursal_id: 1,
-                nombre_lista: `Pedido ${selectedDate} ${selectedTime}`,
+                nombre_lista: `Pedido ${clientId}`,
                 servicio: "Pickup",
                 fecha_creacion: getLocalISOString(), // ← CORREGIDO
+                fecha_entrega: isoLocal,
                 estado: "nuevo",
                 array_lista: JSON.stringify(itemsWithPickupService),
+                tipo_pago: pago.pago
             }
         }), "crear lista pickup");
         console.log("✅ Cita de pickup guardada correctamente");
