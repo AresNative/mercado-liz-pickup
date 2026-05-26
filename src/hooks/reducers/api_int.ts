@@ -52,6 +52,22 @@ export const api_int = createApi({
       }),
       extraOptions: { maxRetries: 2 },
     }),
+    putIntelisis: builder.mutation({
+      query: ({ table, data, signal }) => ({
+        url: `v1/update/${table}`,
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        signal,
+      }),
+      transformErrorResponse: (response: any) => ({
+        status: response.status,
+        message: response.data?.message || "Error fetching data",
+      }),
+      extraOptions: { maxRetries: 2 },
+    }),
     getArticulos: builder.query({
       query: ({ page, pageSize, filtro, listaPrecio, signal }) => ({
         url: `Precios`,
@@ -86,6 +102,21 @@ export const api_int = createApi({
       }),
       extraOptions: { maxRetries: 2 },
     }),
+
+    // Agregar este endpoint a tu api.ts
+    deleteIntelisis: builder.mutation({
+      query: ({ table, column, id, signal }) => ({
+        url: `v1/delete/${id}`,
+        method: "DELETE",
+        params: { column, table },
+        signal,
+      }),
+      transformErrorResponse: (response: any) => ({
+        status: response.status,
+        message: response.data?.message || "Error deleting data",
+      }),
+      extraOptions: { maxRetries: 2 },
+    }),
   }),
 });
 
@@ -94,4 +125,6 @@ export const {
   usePostIntelisisMutation,
   useGetArticulosQuery,
   useGetWithFiltersGeneralInIntelisisMutation,
+  usePutIntelisisMutation,
+  useDeleteIntelisisMutation,
 } = api_int;

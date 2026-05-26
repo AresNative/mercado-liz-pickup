@@ -31,22 +31,22 @@ const ModalSearch: React.FC<ModalSearchProps> = ({
     return (
         <IonPage>
             <IonHeader>
-                <IonToolbar className="bg-purple-600 text-white">
+                <IonToolbar className="flex items-center bg-purple-600 text-white">
+                    <IonButtons slot="start" className="py-2">
+                        <IonButton
+                            fill="clear"
+                            color="light"
+                            onClick={() => onDismiss(undefined, 'cancel')}
+                        >
+                            <IonIcon icon={close} />
+                        </IonButton>
+                    </IonButtons>
                     {/* Barra de búsqueda */}
                     <SearchBar
                         onSearchChange={handleSearchChange}
                     />
                 </IonToolbar>
             </IonHeader>
-            <IonButtons slot="start" className="absolute top-4 left-4 z-10">
-                <IonButton
-                    fill="clear"
-                    color="light"
-                    onClick={() => onDismiss(undefined, 'cancel')}
-                >
-                    <IonIcon icon={close} />
-                </IonButton>
-            </IonButtons>
             <IonContent>
 
                 {/* Resultados de búsqueda */}

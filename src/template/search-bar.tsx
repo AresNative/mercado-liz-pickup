@@ -9,12 +9,14 @@ interface SearchBarProps {
     mobileScreen?: boolean;
     isScrolled?: boolean;
     onSearchChange?: (searchTerm: string) => void;
+    showBackButton?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
     mobileScreen,
     isScrolled,
-    onSearchChange
+    onSearchChange,
+    showBackButton
 }) => {
     const dispatch = useAppDispatch();
     const [searchTerm, setSearchTerm] = useState("");
@@ -38,10 +40,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
     }
 
     return (
-        <section className={cn("relative w-[70%] ml-[20%]", isScrolled ? "mt-12 shadow-sm border-gray-300" : "mt-4")}>
+        <section className={cn("relative w-10/12 mx-auto", isScrolled ? "shadow-sm border-gray-300" : "mt-2")}>
             <IonSearchbar
-                className={cn("w-full", isScrolled && "custom-search-barr")}
-                color={isScrolled ? "" : "light"}
+                className={cn("mx-auto", (isScrolled || showBackButton) && "custom-search-barr")}
+                color={(isScrolled || showBackButton) ? "" : "light"}
                 value={searchTerm}
                 onIonInput={(e) => handleSearchChange(e.detail.value!)}
                 onIonClear={handleClearSearch}

@@ -26,22 +26,7 @@ const Carrito: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const isScrolled = e.detail.scrollTop > 20;
                 onScroll?.(isScrolled);
             }}>
-            <IonHeader
-                collapse="condense"
-                className="custom-toolbar-clear h-fit absolute top-0"
-            >
-                <IonToolbar>
-                    <a className='decoration-none cursor-pointer' href='/productos'>
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                    </a>
-                </IonToolbar>
-            </IonHeader>
-
-            <section className="flex my-2">
-                <IonBackButton color={"tertiary"} text={"Regresar"} defaultHref="/productos" />
-            </section>
-
-            <section className="flex flex-col mt-4 relative md:flex-row-reverse px-4 max-w-6xl w-full h-fit mx-auto mb-20 md:mb-0 gap-2">
+            <section className="flex flex-col mt-4 relative md:flex-row-reverse px-4 max-w-6xl w-full h-fit mx-auto my-10 md:mb-0 gap-2">
                 <article className={cn(onScroll ? "backdrop-blur-sm bg-white/70" : " bg-white", "sticky top-2 mb-5 z-50 h-fit w-full md:w-2/3 border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md justify-between")}>
                     <label className="text-lg font-bold">Resumen del pedido</label>
                     <div className="mt-10">

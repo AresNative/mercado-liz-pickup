@@ -185,13 +185,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             const pedidoProcesado = parseListaData(nuevoPedido);
             return [pedidoProcesado, ...prevPedidos];
         });
-
-        /* if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('¡Nuevo pedido recibido!', {
-                body: `Pedido #${nuevoPedido.id} ha sido registrado`,
-                icon: '/icon.png'
-            });
-        } */
     }, []);
 
     const handlePedidoBorrado = useCallback((idPedido: number) => {
@@ -462,7 +455,33 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             porcentaje_recolectado: Math.round(porcentajeRecolectado)
         };
     }
+    const ordenarPedidos = (a: Pedido, b: Pedido) => {
+        const prioridadEstado = { 'nuevo': 5, 'proceso': 4, 'listo': 3, 'entregado': 2, 'cancelado': 1, 'incompleto': 1 };
+        const prioridadUrgencia = { 'alta': 3, 'media': 2, 'baja': 1 };
 
+        const pendienteA = a.estado === 'nuevo' || a.estado === 'proceso';
+        const pendienteB = b.estado === 'nuevo' || b.estado === 'proceso';
+
+        if (pendienteA && pendienteB) {
+            const urgA = prioridadUrgencia[a.urgencia || 'baja'];
+            const urgB = prioridadUrgencia[b.urgencia || 'baja'];
+            if (urgA !== urgB) return urgB - urgA;
+
+            const tiempoA = a.tiempo_restante ?? Number.MAX_SAFE_INTEGER;
+            const tiempoB = b.tiempo_restante ?? Number.MAX_SAFE_INTEGER;
+            if (tiempoA !== tiempoB) return tiempoA - tiempoB;
+        } else if (pendienteA !== pendienteB) {
+            return pendienteA ? -1 : 1;
+        }
+
+        if (prioridadEstado[a.estado] !== prioridadEstado[b.estado]) {
+            return prioridadEstado[b.estado] - prioridadEstado[a.estado];
+        }
+
+        const fechaA = a.fecha_entrega ? new Date(a.fecha_entrega).getTime() : new Date(a.fecha_creacion).getTime();
+        const fechaB = b.fecha_entrega ? new Date(b.fecha_entrega).getTime() : new Date(b.fecha_creacion).getTime();
+        return fechaA - fechaB;
+    };
     const fetchPedidos = useCallback(async (forceRefresh = false) => {
         if (forceRefresh) setRefreshing(true);
 
@@ -516,27 +535,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             if (response && response.data && response.data.length > 0) {
                 const pedidosProcesados: Pedido[] = response.data.map(parseListaData);
 
-                const pedidosOrdenados = pedidosProcesados.sort((a, b) => {
-                    const estadosActivos = ['nuevo', 'proceso', 'listo'];
-                    const esAActivo = estadosActivos.includes(a.estado);
-                    const esBActivo = estadosActivos.includes(b.estado);
-
-                    if (esAActivo && !esBActivo) return -1;
-                    if (!esAActivo && esBActivo) return 1;
-
-                    if (esAActivo && esBActivo) {
-                        const ordenUrgencia = { alta: 0, media: 1, baja: 2 };
-                        const urgenciaA = ordenUrgencia[a.urgencia || 'baja'];
-                        const urgenciaB = ordenUrgencia[b.urgencia || 'baja'];
-                        if (urgenciaA !== urgenciaB) return urgenciaA - urgenciaB;
-
-                        if (a.tiempo_restante !== b.tiempo_restante) {
-                            return (a.tiempo_restante || 9999) - (b.tiempo_restante || 9999);
-                        }
-                    }
-
-                    return new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime();
-                });
+                const pedidosOrdenados = pedidosProcesados.sort(ordenarPedidos);
 
                 setPedidos(pedidosOrdenados);
                 if (pedidosOrdenados.length > 0 && (!pedidoSeleccionado || forceRefresh)) {
@@ -684,7 +683,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     return (
         <>
-            {pedidoSeleccionado && <ModalChat telefonoClient={pedidoSeleccionado.cliente_telefono || 'general'} pedido={pedidoSeleccionado} />}
+            {pedidoSeleccionado && pedidosFiltrados && pedidosFiltrados.map(pedido => <ModalChat telefonoClient={pedido.cliente_telefono || 'general'} pedido={pedido} />)}
             <IonContent
                 fullscreen
                 scrollEvents
@@ -692,27 +691,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     const isScrolled = e.detail.scrollTop > 10;
                     onScroll?.(isScrolled);
                 }}>
-
-                <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
-                    <IonToolbar>
-                        <div className="flex items-center justify-between px-2">
-                            <a className='decoration-none cursor-pointer' href='/productos'>
-                                <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                            </a>
-                            <div className="flex items-center gap-2">
-                                <IonButton
-                                    fill="clear"
-                                    size="small"
-                                    onClick={() => fetchPedidos(true)}
-                                    disabled={refreshing}
-                                >
-                                    <IonIcon icon={refreshing ? "sync" : "refresh"} className={refreshing ? "animate-spin" : ""} />
-                                </IonButton>
-                            </div>
-                        </div>
-                    </IonToolbar>
-                </IonHeader>
-
                 <section className="py-1 px-3 sm:px-4 max-w-6xl mx-auto min-h-screen md:my-6 space-y-5">
                     {/* Header responsive */}
                     <div className="z-10 bg-white pb-2 pt-4 -mx-3 px-3 sm:static sm:top-auto sm:bg-transparent sm:pb-0">
@@ -1091,7 +1069,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                             <IonIcon icon={calendar} className="text-purple-600 mt-1 flex-shrink-0" />
                                                             <div className="flex-1">
                                                                 <p className="font-semibold text-gray-900">Horario de Recogida</p>
-                                                                        <p className="text-sm text-gray-500">{new Date(pedidoSeleccionado.fecha_entrega).getHours()}:{new Date(pedidoSeleccionado.fecha_entrega).getMinutes().toString().padStart(2, '0')}</p>
+                                                                        <p className="text-sm text-gray-500">{new Date(pedidoSeleccionado.fecha_entrega).toLocaleString()}</p>
                                                                 {pedidoSeleccionado.tiempo_restante !== undefined && pedidoSeleccionado.tiempo_restante > 0 && (
                                                                     <div className="flex flex-wrap gap-2 mt-2">
                                                                         <IonChip

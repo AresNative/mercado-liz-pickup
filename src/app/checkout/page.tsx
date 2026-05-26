@@ -22,7 +22,7 @@ import {
 import {
     useGetWithFiltersMutation,
     usePostMutation,
-    usePutMutation
+    usePutGeneralMutation
 } from "@/hooks/reducers/api";
 
 import {
@@ -143,7 +143,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     // API Mutations
     const [PostData] = usePostMutation();
     const [GetData] = useGetWithFiltersMutation();
-    const [PutData] = usePutMutation();
+    const [PutData] = usePutGeneralMutation();
     const [PostInt] = usePostIntelisisMutation();
     const [GetInt] = useGetWithFiltersGeneralInIntelisisMutation();
     const [loginUser] = useLoginUserMutation();
@@ -232,7 +232,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             console.log("📝 Actualizando datos del usuario:", userData);
 
             const existingUser = await safeCall(() => GetData({
-                url: "v1/users",
+                url: "usuarios",
                 filtros: {
                     Filtros: [{ Key: "email", Value: userData.correo }],
                     Order: [{ Key: "id", Direction: "Desc" }]
@@ -246,9 +246,19 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const userId = getLocalStorageItem("user-id");
                 if (userId) {
                     await safeCall(() => PutData({
-                        url: "v1/users",
-                        id: userId,
-                        data: { email: userData.correo }
+                        url: "usuarios",
+                        data: {
+                            Data: {
+                                email: userData.correo
+                            },
+                            Filtros: [
+                                {
+                                    "Key": "ID",
+                                    "Value": userId,
+                                    "Operator": "="
+                                }
+                            ]
+                        }
                     }), "actualizar usuario");
                     console.log("✅ Usuario actualizado correctamente");
                 } else {
@@ -391,8 +401,14 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     // --- VALIDACIÓN DEL BOTÓN DE CONFIRMACIÓN ---
     const isConfirmButtonEnabled = useCallback((): boolean => {
-    const { userValues, paymentValues } = formValues;
+        const { userValues, paymentValues } = formValues;
+        const userData = getLocalStorageItem("user-data");
+
+        const hasDateTime = Boolean(selectedDate && selectedTime);
+        const hasCartItems = items.length > 0;
         
+        if (userData && hasDateTime && hasCartItems) return true;
+
         const hasUserData = Boolean(
             userValues.telefono &&
             (userValues.Nombre || userValues.nombre) &&
@@ -405,9 +421,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 paymentValues.vencimiento &&
                 paymentValues.cvv) : */ paymentValues.pago
         );
-
-        const hasDateTime = Boolean(selectedDate && selectedTime);
-        const hasCartItems = items.length > 0;
 
         const isValid = hasDateTime && hasUserData && hasPaymentData && hasCartItems;
 
@@ -566,8 +579,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             signal: undefined
         }), "Intelisis Mov");
 
-        console.log("✅ Mov insertado:", movResult);
-
         // 3. Insertar Movimientos
         const movementsData = {
             ID: baseId,
@@ -589,16 +600,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             signal: undefined
         }), "Intelisis Movimientos");
 
-        console.log("✅ Movimientos insertados:", movementsResult);
-
         return baseId;
     };
 
     const insertSaleDetails = async (baseId: number) => {
         const { date } = getCurrentDateTime();
         const baseRow = 2048;
-
-        console.log("📦 Insertando detalles de venta para baseId:", baseId);
 
         // SOLUCIÓN: Insertar servicio pickup + items en secuencia
         // Procesar items de forma asincrónica primero
@@ -625,10 +632,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 if (costResult?.data?.data?.[0]?.Costo) {
                     itemCost = costResult.data.data[0].Costo;
-                    console.log(`✅ Costo obtenido para ${item.articulo}:`, itemCost);
                 } else if (costResult?.data?.[0]?.Costo) {
                     itemCost = costResult.data[0].Costo;
-                    console.log(`✅ Costo obtenido para ${item.articulo}:`, itemCost);
                 }
 
                 return {
@@ -687,27 +692,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ...processedItems
         ];
 
-        console.log(`📋 Insertando ${allItems.length} items en VentaD...`);
-
         // Insertar todos los items secuencialmente
         for (const [index, itemData] of allItems.entries()) {
-            console.log(`📥 Insertando item ${index + 1}/${allItems.length}:`, itemData.Articulo);
-
             const itemResult = await safeCall(() => PostInt({
                 table: `VentaD`,
                 data: itemData,
                 signal: undefined
             }), `Intelisis VentaD item ${index + 1}`);
-
-            console.log(`✅ Item ${index + 1} insertado:`, itemResult);
         }
-
-        console.log("✅ Todos los detalles de venta insertados correctamente");
     };
 
     const processIntelisisOrder = async (id: string): Promise<string> => {
-        console.log("🚀 Iniciando proceso Intelisis...");
-
         // ✅ VERIFICACIÓN: Asegurar que no hay proceso en curso
         if (isProcessing) {
             throw new Error("Ya hay un proceso de orden en curso");
@@ -730,20 +725,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         // Intentar obtener de localStorage primero (inmediato)
         let storedUserId = getLocalStorageItem("user-id");
         if (storedUserId) {
-            console.log("✅ UserId obtenido de localStorage:", storedUserId);
             return storedUserId;
         }
         // Si no está, esperar un poco (por ejemplo después de un login/registro)
         storedUserId = await waitForLocalStorage("user-id", 3000);
         if (storedUserId) {
-            console.log("✅ UserId obtenido tras espera:", storedUserId);
             return storedUserId;
         }
 
         // Buscar en user-data
         const userData = getLocalStorageItem("user-data");
         if (userData?.id) {
-            console.log("✅ UserId obtenido de user-data:", userData.id);
             return userData.id;
         }
 
@@ -758,15 +750,11 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             throw new Error("Datos de usuario o carrito incompletos");
         }
 
-        console.log("💾 Guardando cita de pickup...");
-
         const userId = await getUserId();
 
         if (!userId) {
             throw new Error("No se pudo identificar al usuario. Por favor inicia sesión nuevamente.");
         }
-
-        console.log("🔍 Buscando cliente existente...");
 
         // Función para obtener fecha/hora local en formato ISO
         const getLocalISOString = () => {
@@ -791,9 +779,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         if (clients.length > 0) {
             clientId = clients[0].id;
-            console.log("✅ Cliente existente encontrado:", clientId);
         } else {
-            console.log("🔍 Cliente no encontrado, creando nuevo cliente...");
 
             // Crear nuevo cliente con hora local
             const createResponse = await safeCall(() => PostData({
@@ -807,29 +793,23 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }
             }), "crear cliente");
 
-            console.log("📦 Respuesta creación cliente:", createResponse);
-
             // ESTRATEGIA MEJORADA: Obtener clientId de múltiples formas
             const responseData = createResponse?.data;
 
             // Opción 1: IDs array
             if (responseData?.ids?.[0]) {
                 clientId = responseData.ids[0];
-                console.log("✅ ClientId obtenido de ids array:", clientId);
             }
             // Opción 2: ID directo
             else if (responseData?.id) {
                 clientId = responseData.id;
-                console.log("✅ ClientId obtenido de id directo:", clientId);
             }
             // Opción 3: Data nested
             else if (responseData?.data?.id) {
                 clientId = responseData.data.id;
-                console.log("✅ ClientId obtenido de data nested:", clientId);
             }
             // Opción 4: Buscar cliente recién creado (espera breve)
             else {
-                console.log("🔄 Buscando cliente recién creado...");
 
                 // Esperar un momento para que se propague la creación
                 await new Promise(resolve => setTimeout(resolve, 2000));
@@ -850,11 +830,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 if (newClients.length > 0) {
                     clientId = newClients[0].id;
-                    console.log("✅ ClientId obtenido de búsqueda posterior:", clientId);
                 } else {
-                    // Último intento: buscar por teléfono solamente
-                    console.log("🔄 Último intento: buscar por teléfono...");
-
                     const finalSearch = await safeCall(() => GetData({
                         url: "clientes",
                         filtros: {
@@ -868,22 +844,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                     if (finalClients.length > 0) {
                         clientId = finalClients[0].id;
-                        console.log("✅ ClientId obtenido de búsqueda por teléfono:", clientId);
                     } else {
                         throw new Error("No se pudo crear o encontrar el cliente después de múltiples intentos");
                     }
                 }
             }
-
-            console.log("✅ Nuevo cliente creado con ID:", clientId);
         }
 
         // VERIFICACIÓN FINAL: Asegurar que tenemos un clientId válido
         if (!clientId) {
             throw new Error("No se pudo obtener un ID válido para el cliente después de todos los intentos");
         }
-
-        console.log("🎯 ClientId final para usar:", clientId);
 
         // Guardar clientId en localStorage para futuras referencias
         setLocalStorageItem("user", clientId);
@@ -911,7 +882,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }))
         ];
 
-        console.log("📋 Creando lista de pickup con items:", itemsWithPickupService.length);
         const fechaObjeto: any = new Date(selectedDate + " " + selectedTime);
 
         // Código reducido
@@ -932,22 +902,18 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 tipo_pago: pago.pago
             }
         }), "crear lista pickup");
-        console.log("✅ Cita de pickup guardada correctamente");
         return listaResponse.data.data.id; // Retornar el clientId para uso posterior si es necesario
     };
 
     // --- FUNCIONES PRINCIPALES CORREGIDAS ---
     const retryWithAuth = async (currentUserData: UserInfo, maxRetries: number = 2): Promise<boolean> => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            console.log(`🔄 Reintento ${attempt}/${maxRetries}...`);
-
             try {
                 await resetAuthentication(currentUserData);
 
                 const authSuccess = await authenticateUser(currentUserData);
 
                 if (authSuccess) {
-                    console.log("✅ Reautenticación exitosa");
                     return true;
                 }
             } catch (error) {
@@ -959,64 +925,46 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     const confirmCompleteAppointment = async (): Promise<void> => {
-        // Evitar múltiples ejecuciones simultáneas
         if (isProcessing) {
-            console.log("⚠ Ya hay un proceso en ejecución, ignorando...");
             return;
         }
         setIsProcessing(true);
 
         try {
             const formData = await getFormData();
-            console.log("📝 Datos usuario antes de login:", formData.user);
-
-           /*  if (!isAuthenticated) { */
-                const authSuccess = await authenticateUser(formData.user);
-                if (!authSuccess) {
-                    throw new Error("No se pudo autenticar");
-                }
-           /*  } */
+            const authSuccess = await authenticateUser(formData.user);
+            
+            if (!authSuccess) {
+                throw new Error("No se pudo autenticar");
+            }
 
             // ORDEN CORREGIDO: Primero Intelisis, luego nuestra API
-            console.log("🔄 ORDEN DE INSERCIÓN: Intelisis primero → Nuestra API después");
             await getUserId(); // Pre-cargar userId en background
             const id = await savePickupAppointment(formData);
             await processIntelisisOrder(id);
+            
             dispatch(clearCart());
-
             setShowPasswordAlert(true);
-
         } catch (error: any) {
             console.error("❌ Error en confirmación de cita:", error);
+            const formData = await getFormData();
+            const reauthSuccess = await retryWithAuth(formData.user, 1); // Solo 1 reintento
 
-            // SOLUCIÓN: No llamar recursivamente, solo reintentar con reautenticación UNA VEZ
-            const shouldRetry = error.message?.includes("Intelisis") ||
-                error.message?.includes("autenticar");
+            if (reauthSuccess) {
+                // En lugar de llamar recursivamente, repetimos la lógica principal
+                try {
+                    const formData = await getFormData();
+                    const id = await savePickupAppointment(formData);
+                    await processIntelisisOrder(id);
 
-            if (shouldRetry) {
-                console.log("🔄 Intentando reautenticación para recuperar...");
-                const formData = await getFormData();
-                const reauthSuccess = await retryWithAuth(formData.user, 1); // Solo 1 reintento
-
-                if (reauthSuccess) {
-                    console.log("🔄 Reintentando operación después de reautenticación...");
-                    // En lugar de llamar recursivamente, repetimos la lógica principal
-                    try {
-                        const formData = await getFormData();
-                        const id = await savePickupAppointment(formData);
-                        await processIntelisisOrder(id);
-
-                        dispatch(clearCart());
-                        return; // Éxito en el reintento
-                    } catch (retryError: any) {
-                        console.error("❌ Error en reintento:", retryError);
-                        alert(`Error: ${retryError.message || "No se pudo crear la cita después del reintento"}`);
-                    }
-                } else {
-                    alert("Error: No se pudo reautenticar. Por favor intenta nuevamente.");
+                    dispatch(clearCart());
+                    return; // Éxito en el reintento
+                } catch (retryError: any) {
+                    console.error("❌ Error en reintento:", retryError);
+                    alert(`Error: ${retryError.message || "No se pudo crear la cita después del reintento"}`);
                 }
             } else {
-                alert(`Error: ${error.message || "No se pudo crear la cita"}`);
+                alert("Error: No se pudo reautenticar. Por favor intenta nuevamente.");
             }
         } finally {
             setIsProcessing(false);
@@ -1032,15 +980,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const isScrolled = e.detail.scrollTop > 10;
                 onScroll?.(isScrolled);
             }}>
-
-            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
-                <IonToolbar>
-                    <a className='decoration-none cursor-pointer' href='/productos'>
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                    </a>
-                </IonToolbar>
-            </IonHeader>
-
             <IonAlert
                 isOpen={showPasswordAlert}
                 header="Información importante"
@@ -1048,18 +987,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 buttons={[{
                     text: "Entendido",
                     handler: () => {
-                        console.log("Botón presionado, navegando...");
                         history.push("/seguimiento");
                         setShowPasswordAlert(false);
                     }
                 }]}
             />
-
-            <section className="flex my-2">
-                <IonBackButton color="tertiary" text="Regresar" defaultHref="/carrito" />
-            </section>
-
-            <section className="flex flex-col-reverse md:flex-row-reverse gap-4 px-4 mb-16 max-w-6xl mx-auto">
+            <section className="flex flex-col-reverse md:flex-row-reverse gap-4 px-4 my-8 max-w-6xl mx-auto">
                 {/* RESUMEN DEL PEDIDO */}
                 <div className="md:w-1/3">
                     <article className="bg-white rounded-xl border p-4 shadow-sm sticky top-4 z-50">

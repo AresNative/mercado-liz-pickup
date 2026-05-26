@@ -18,6 +18,7 @@ import {
 } from '@ionic/react';
 import { ShoppingCart } from 'lucide-react';
 import { useState } from 'react';
+import Badge from '@/components/badge';
 
 interface HeaderProps {
     isScrolled?: boolean;
@@ -59,15 +60,15 @@ const Header: React.FC<HeaderProps> = ({
             <IonHeader
                 className={cn(
                     `transition-all duration-300`,
-                    showBackButton || isScrolled
+                    (showBackButton || isScrolled)
                         ? 'bg-white/70 border-b backdrop-blur-md border-gray-200 shadow-md'
-                        : isPlatform('android') ? "custom-toolbar-clear" : 'bg-transparent',
+                        :  "custom-toolbar-clear",
                     className
                 )}
             >
-                <IonToolbar className={cn("flex items-center relative pt-10", isPlatform('android') ? "custom-toolbar-clear" : "top-0")}>
+                <IonToolbar className="flex items-center relative pt-10">
                     {showBackButton && (
-                        <IonButtons slot="start">
+                        <IonButtons slot="start" className={cn('flex h-full items-center gap-2 right-0 p-2 cursor-pointer', isPlatform('mobile') && 'absolute') }>
                             <IonBackButton
                                 defaultHref={defaultBack ?? "/"}
                                 className={'text-purple-700'}
@@ -75,24 +76,27 @@ const Header: React.FC<HeaderProps> = ({
                             />
                         </IonButtons>
                     )}
-
-                    <section slot="end" className='flex flex-1 justify-center items-center mt-2 absolute left-0 right-0 top-0 z-50'>
-                        {isScrolled && (
+                    <ul className={cn('flex items-center w-full', (isScrolled || showBackButton) && 'flex-col', (isPlatform('mobile') && isScrolled) && 'py-2' )}>
+                        <section slot="start">
                             <a className='decoration-none cursor-pointer' href='/productos'>
-                                <IconLiz className='mx-auto' fill={"#7927F5"} width={35} />
+                                {(isScrolled || showBackButton) ? (
+                                    <IconLiz className='mx-auto' fill={"#7927F5"} width={35} />
+                                ) : (
+                                    <IconLiz fill={"#FFF"} width={55} />
+                                )}
                             </a>
+                        </section>
+
+                        {showScrollBarr && (
+                            <SearchBar
+                                mobileScreen={mobileScreen}
+                                isScrolled={isScrolled}
+                                onSearchChange={handleSearchChange}
+                                showBackButton={showBackButton}
+                            />
                         )}
-                    </section>
-
-                    {showScrollBarr && (
-                        <SearchBar
-                            mobileScreen={mobileScreen}
-                            isScrolled={isScrolled}
-                            onSearchChange={handleSearchChange}
-                        />
-                    )}
-
-                    <IonButtons slot="end" className='flex items-center gap-2 cursor-pointer'>
+                    </ul>
+                    <IonButtons slot="end" className={cn('flex h-full items-center gap-2 right-0 p-2 cursor-pointer', isPlatform('mobile') && 'absolute')}>
                         {showMenuButton && (
                             <IonItem
                                 lines="none"
@@ -100,7 +104,7 @@ const Header: React.FC<HeaderProps> = ({
                                 detail={false}
                                 className="flex text-purple-800 hover:text-purple-700 relative"
                             >
-                                <label className='flex flex-col items-center gap-1 cursor-pointer'>
+                                <label className='flex flex-col items-center cursor-pointer'>
                                     <ShoppingCart className={cn(
                                         showBackButton || isScrolled ? 'text-purple-700' : 'text-white',
                                         'size-5'
@@ -115,24 +119,20 @@ const Header: React.FC<HeaderProps> = ({
                                     )}
                                 </label>
                                 {items.length > 0 && (
-                                    <IonBadge
-                                        color="success"
-                                        className="absolute size-4 text-xs text-white text-center -top-0 right-0 cursor-pointer"
-                                    >
-                                        {items.length}
-                                    </IonBadge>
+                                    <section className='absolute top-0 right-0 text-xs'>
+                                        <Badge
+                                            color="green"
+                                            text={items.length.toString()}
+                                        />
+                                    </section>
                                 )}
                             </IonItem>
                         )}
-                    </IonButtons>
-
-                    {!mobile && showMenuButton && (
-                        <IonButtons slot="end">
+                        {!mobile && showMenuButton && 
                             <IonMenuButton className={cn(
                                 showBackButton || isScrolled ? 'text-purple-700' : 'text-white'
-                            )} />
-                        </IonButtons>
-                    )}
+                            )} />}
+                    </IonButtons>
                 </IonToolbar>
             </IonHeader>
 
