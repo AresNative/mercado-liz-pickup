@@ -161,16 +161,6 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 onScroll?.(isScrolled);
             }}
         >
-            <IonHeader
-                collapse="condense"
-                className="custom-toolbar-clear h-fit absolute top-0"
-            >
-                <IonToolbar>
-                    <a className="cursor-pointer" href="/productos">
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                    </a>
-                </IonToolbar>
-            </IonHeader>
 
             {/* HERO PRINCIPAL MEJORADO */}
             <section className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white py-10 ">

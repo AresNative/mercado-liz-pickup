@@ -307,9 +307,9 @@ export const ModalChat = ({
             data: {
                 Data: {
                     Importe: (venta[0].Importe + (newProduct.precio * nuevaCantidad) - (ventaD[0].Precio * pendingReplace.cantidadOriginal)),
-                    //CostoTotal: newProduct.costo + venta[0].CostoTotal - ventaD[0].Costo,
+                    CostoTotal: newProduct.costo + venta[0].CostoTotal - ventaD[0].Costo,
                     PrecioTotal: newProduct.precio + venta[0].PrecioTotal - ventaD[0].Precio,
-                    //Impuesto: (newProduct.impuesto1 ?? 0) + (newProduct.impuesto2 ?? 0) + venta[0].ImpuestoTotal - ventaD[0].Impuesto1 - ventaD[0].Impuesto2,
+                    Impuestos: (newProduct.impuesto1 ?? 0) + (newProduct.impuesto2 ?? 0) + venta[0].Impuestos - ventaD[0].Impuesto1 - ventaD[0].Impuesto2,
                 },
                 Filtros: [
                     { Key: "ID", Value: venta[0].ID, Operator: "=" },

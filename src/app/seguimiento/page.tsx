@@ -456,7 +456,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
     }
     const ordenarPedidos = (a: Pedido, b: Pedido) => {
-        const prioridadEstado = { 'nuevo': 5, 'proceso': 4, 'listo': 3, 'entregado': 2, 'cancelado': 1, 'incompleto': 1 };
+        const prioridadEstado = { 'nuevo': 5, 'proceso': 4, 'incompleto': 3, 'listo': 2, 'entregado': 1, 'cancelado': 1 };
         const prioridadUrgencia = { 'alta': 3, 'media': 2, 'baja': 1 };
 
         const pendienteA = a.estado === 'nuevo' || a.estado === 'proceso';
@@ -575,7 +575,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     // Filtrar pedidos según el segmento activo
     const pedidosFiltrados = segmentoActivo === 'activos'
-        ? pedidos.filter(pedido => ['nuevo', 'proceso', 'listo'].includes(pedido.estado))
+        ? pedidos.filter(pedido => ['nuevo', 'proceso', 'listo', 'incompleto'].includes(pedido.estado) && (pedido.fecha_entrega ? new Date(pedido.fecha_entrega) >= new Date() : true))
         : pedidos;
 
     // Convertir items del pedido al formato OrderItem
