@@ -71,31 +71,18 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
     };
     async function LoadImage() {
         const response = await getWithFilter({
-            table: `imagenes left join articulos on articulos.id = imagenes.id_ref`,
-            pageSize: 10,
-            page: 1,
-            tag: 'Productos',
+            table: `imagenes`,
             filtros: {
-                "Filtros": [
-                    {
-                        "Key": "nombre",
-                        "Value": producto.nombre,
-                        "Operator": "="
-                    },
-                    {
-                        "Key": "tabla",
-                        "Value": "articulos",
-                        "Operator": "="
-                    }
+                Selects: [
+                    { key: "imagenes.url" },
                 ],
-                "Selects": [
-                    { key: "articulos.id" },
-                    { key: "articulos.nombre" },
-                    { key: "articulos.descripcion" },
-                    { key: "articulos.precio" },
-                    { key: "imagenes.url" }
-                ]
-            }
+                Filtros: [
+                    { Key: "imagenes.id_ref", Operator: "=", Value: producto.articulo },
+                ],
+                Order: [{ Key: "id", Direction: "DESC" }],
+            },
+            pageSize: 1,
+            page: 1,
         }).unwrap();
 
         if (response && response.data) {

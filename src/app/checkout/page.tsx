@@ -738,9 +738,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         if (userData?.id) {
             return userData.id;
         }
-
-        // Nada disponible
-        console.warn("⚠ No se pudo obtener userId de localStorage/user-data");
         return null;
     };
 
@@ -752,9 +749,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         const userId = await getUserId();
 
-        if (!userId) {
-            throw new Error("No se pudo identificar al usuario. Por favor inicia sesión nuevamente.");
-        }
+        if (!userId) throw new Error("No se pudo identificar al usuario. Por favor inicia sesión nuevamente.")
 
         // Función para obtener fecha/hora local en formato ISO
         const getLocalISOString = () => {
@@ -939,7 +934,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }
 
             // ORDEN CORREGIDO: Primero Intelisis, luego nuestra API
-            await getUserId(); // Pre-cargar userId en background
+            const userId = await getUserId(); // Pre-cargar userId en background
+            if (!userId) throw new Error("No se pudo identificar al usuario después de autenticar. Por favor intenta nuevamente.")
             const id = await savePickupAppointment(formData);
             await processIntelisisOrder(id);
             

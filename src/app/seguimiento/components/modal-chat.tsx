@@ -317,6 +317,7 @@ export const ModalChat = ({
             },
         }).unwrap();
 
+        const resultado = oldProductId.split("-");
         await PutData({
             table: "ventaD",
             data: {
@@ -332,7 +333,7 @@ export const ModalChat = ({
                 },
                 Filtros: [ 
                     { Key: "ID", Value: ventaD[0].ID, Operator: "=" },
-                    { Key: "Articulo", Value: ventaD[0].Articulo, Operator: "=" } 
+                    { Key: "Articulo", Value: resultado[0], Operator: "=" },  
                 ],
             },
         }).unwrap();
@@ -363,6 +364,7 @@ export const ModalChat = ({
                     Data: {
                         array_lista: arrayListaActualizado,
                         fecha_actualizacion: new Date().toISOString(),
+                        estado: "proceso",
                     },
                     Filtros: [{ Key: "ID", Value: currentPedido.id, Operator: "=" }],
                 },
