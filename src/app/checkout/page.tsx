@@ -573,7 +573,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Sucursal: 4,
         };
 
-        const movResult = await safeCall(() => PostInt({
+        await safeCall(() => PostInt({
             table: `Mov`,
             data: movData,
             signal: undefined
@@ -594,7 +594,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Retencion: 0,
         };
 
-        const movementsResult = await safeCall(() => PostInt({
+        await safeCall(() => PostInt({
             table: `Movimientos`,
             data: movementsData,
             signal: undefined
