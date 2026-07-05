@@ -120,7 +120,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
             onClick={handleCardClick}
-            className="group relative min-w-20 bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
+            className="group relative min-w-20 h-full bg-white rounded-2xl border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-200 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer">
 
             <section className="relative flex justify-center border-b border-gray-200 overflow-hidden bg-gray-50">
                 {/* Contenedor con proporción fija (1:1 = cuadrado) */}

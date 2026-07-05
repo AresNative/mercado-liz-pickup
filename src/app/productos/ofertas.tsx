@@ -1,10 +1,8 @@
-import { BentoGrid } from "@/components/bento-grid";
 import { PageProps } from "@/utils/types/page";
-import { IonContent, IonHeader, IonToolbar, IonList, IonInfiniteScroll, IonInfiniteScrollContent, isPlatform, IonButton } from "@ionic/react";
+import { IonContent, IonList, IonButton } from "@ionic/react";
 import Card from "./components/card";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useGetWithFiltersGeneralInIntelisisMutation } from "@/hooks/reducers/api_int";
-import { IconLiz } from "./components/ionc-liz";
 import CategorySlider from "./components/categories";
 import PromoBanner from "./components/banner";
 import Badge from "@/components/badge";
@@ -13,7 +11,7 @@ import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import { Producto } from "@/utils/types/page";
 import { useAppSelector } from "@/hooks/selector";
 import { RootState } from "@/hooks/store";
-import { cn } from "@/utils/functions/cn";
+import { CategoryRow } from "./components/categories-section";
 
 // Tipo para la respuesta de la API
 interface ApiResponse {
@@ -24,36 +22,60 @@ interface ApiResponse {
     data: any[];
 }
 
+// Estado de paginación/artículos de UNA categoría individual.
+interface CategoryState {
+    items: Producto[];
+    page: number;
+    hasMore: boolean;
+    isLoading: boolean;
+    total: number;
+}
+
+const PAGE_SIZE_POR_CATEGORIA = 5;
+
+// Mismo JOIN que antes, parametrizado por categoría (o sin filtro, para
+// descubrir qué categorías tienen ofertas vigentes).
+const tablaOfertas = (grupoFiltro?: string) =>
+    `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 ${grupoFiltro ? `AND art.Grupo = '${grupoFiltro}'` : ''} INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.SucursalDestino = '4' OR ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.TodasSucursales = 'true' INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Precio > 0`;
+
+const mapApiItemToProducto = (item: any): Producto => ({
+    id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
+    articulo: item.Articulo || "Articulo",
+    nombre: item.Descripcion1 || "Sin nombre",
+    categoria: item.Grupo || "Sin categoría",
+    unidad: item.Unidad || "Unidad",
+    precio: item.Precio || 0,
+    cantidad: item.Cantidad || 1,
+    factor: item.Factor || 1,
+    impuesto1: item.Impuesto1 || 0,
+    impuesto2: item.Impuesto2 || 0,
+    tipoImpuesto1: item.TipoImpuesto1 || 0,
+    tipoImpuesto2: item.TipoImpuesto2 || 0,
+    descuento: item.Porcentaje ? item.Precio - ((item.Porcentaje / 100) * item.Precio) : item.Descuento || 0,
+});
+
 const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const cat = useAppSelector((state: RootState) => state.filterData);
-    const categoria = cat?.key?.value || '';
+    const categoriaFiltro = cat?.key?.value || '';
 
-    const [getData, { isLoading }] = useGetWithFiltersGeneralInIntelisisMutation();
+    const [getData] = useGetWithFiltersGeneralInIntelisisMutation();
 
-    //gestion de data
-    const [items, setItems] = useState<Producto[]>([]);
-    const [hasMore, setHasMore] = useState(true);
+    // Categorías visibles y su estado de paginación individual: cada
+    // categoría carga 5 artículos a la vez, con su propio scroll horizontal.
+    const [categorias, setCategorias] = useState<string[]>([]);
+    const [categoriaData, setCategoriaData] = useState<Record<string, CategoryState>>({});
+    const [isLoadingCategorias, setIsLoadingCategorias] = useState(true);
 
-    //Conteo de articulos y pantallas
-    const [totalRecords, setTotalRecords] = useState(1);
-    const [page, setPage] = useState(1);
-
-    //Secciones de pantalla, favoritos | todos | promociones | combos
+    // Favoritos
     const [activeSection, setActiveSection] = useState<string | null>(null);
+    const [favoriteItems, setFavoriteItems] = useState<Producto[]>([]);
     const [favoriteCount, setFavoriteCount] = useState(0);
+    const isFavoritesSection = activeSection === 'Favoritos';
 
-    const initialLoad = useRef(true);
-    const isFetching = useRef(false);
-    const previousCategoria = useRef(categoria); // Ref para trackear cambios de categoría
-
-    const isFavoritesSection = activeSection === 'favoritos';
-
-    // Get favorite products
     const getFavoriteProducts = useCallback((): Producto[] => {
         try {
             const favorites = getLocalStorageItem("favoritos");
             const parsedFavorites = favorites ? JSON.parse(favorites) : [];
-
             setFavoriteCount(parsedFavorites.length);
             return parsedFavorites;
         } catch (e) {
@@ -62,25 +84,88 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             return [];
         }
     }, []);
-    // Update favorite count when storage changes
+
     useEffect(() => {
-        setFavoriteCount(getFavoriteProducts().length);
+        setFavoriteItems(getFavoriteProducts());
     }, [isFavoritesSection, getFavoriteProducts]);
 
-    const generateItems = useCallback(async (currentPage: number, isNewCategory: boolean = false) => {
-        // Prevenir múltiples llamadas simultáneas
-        if (isFetching.current) {
-            return;
+    // Agrupamos los favoritos por categoría con la misma forma (CategoryState)
+    // que usamos para las categorías traídas del servidor, así ambas vistas
+    // se pueden renderizar con el mismo componente CategoryRow.
+    const favoriteCategoryEntries = useMemo<[string, CategoryState][]>(() => {
+        const groups = new Map<string, Producto[]>();
+        favoriteItems.forEach((producto) => {
+            const key = producto.categoria || "Sin categoría";
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key)!.push(producto);
+        });
+        return Array.from(groups.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([nombre, items]) => [
+                nombre,
+                { items, page: 1, hasMore: false, isLoading: false, total: items.length },
+            ]);
+    }, [favoriteItems]);
+
+    // ── Descubrir qué categorías tienen ofertas vigentes ────────────────────
+    // No dependemos de que el backend soporte "distinct": pedimos solo la
+    // columna Grupo, pero recorremos TODAS las páginas y deduplicamos en el
+    // cliente. Así garantizamos encontrar todas las categorías aunque haya
+    // más artículos que el tamaño de una sola página.
+    const fetchCategorias = useCallback(async () => {
+        setIsLoadingCategorias(true);
+        try {
+            const nombres = new Set<string>();
+            let paginaActual = 1;
+            let totalPaginas = 1;
+            const TOPE_PAGINAS = 100; // resguardo de seguridad
+
+            do {
+                const result = await getData({
+                    table: tablaOfertas(),
+                    pageSize: 500,
+                    page: paginaActual,
+                    filtros: {
+                        Selects: [{ Key: "art.Grupo" }],
+                        Order: [{ Key: "art.Grupo", Direction: "ASC" }],
+                    },
+                    signal: undefined,
+                });
+
+                if (!('data' in result) || !result.data) break;
+
+                const apiData: ApiResponse = result.data;
+                (apiData.data || []).forEach((r: any) => {
+                    if (r.Grupo) nombres.add(r.Grupo);
+                });
+                totalPaginas = apiData.totalPages || 1;
+                paginaActual++;
+            } while (paginaActual <= totalPaginas && paginaActual <= TOPE_PAGINAS);
+
+            setCategorias(Array.from(nombres).sort((a, b) => a.localeCompare(b)));
+        } catch (error) {
+            console.error("❌ Error obteniendo categorías de ofertas:", error);
+            setCategorias([]);
+        } finally {
+            setIsLoadingCategorias(false);
         }
+    }, [getData]);
+
+    // ── Cargar una página (5 artículos) de UNA categoría específica ─────────
+    const fetchCategoriaPage = useCallback(async (nombreCategoria: string, pagina: number) => {
+        setCategoriaData(prev => ({
+            ...prev,
+            [nombreCategoria]: {
+                ...(prev[nombreCategoria] ?? { items: [], page: 0, hasMore: true, total: 0 }),
+                isLoading: true,
+            },
+        }));
 
         try {
-            isFetching.current = true;
-
             const result = await getData({
-                //INNER JOIN CB AS cb ON art.Articulo = cb.Cuenta AND cb.Unidad = art.Unidad 
-                table: `art INNER JOIN ListaPreciosDUnidad AS lpu ON art.Articulo = lpu.Articulo AND art.Unidad = lpu.Unidad AND lpu.Lista = '(Precio Lista)' AND lpu.Precio > 0 ${categoria && categoria !== 'TODO' ? `AND art.Grupo = '${categoria}'` : ''} INNER JOIN ArtUnidad AS au ON art.Articulo = au.Articulo AND lpu.Unidad = au.Unidad INNER JOIN ArtDisponible AS ad on art.Articulo = ad.Articulo AND ad.DispMenosApartado > 0 AND ad.Almacen = 'ALMMAYO' AND (ad.DispMenosApartado / au.Factor) > 0 INNER JOIN Oferta AS ofr ON ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.SucursalDestino = '4' OR ofr.Estatus = 'VIGENTE' AND ofr.FechaD <= GETDATE() AND ofr.FechaA >= GETDATE() AND ofr.TodasSucursales = 'true' INNER JOIN OfertaD AS ofrd ON ofr.ID = ofrd.ID AND ofrd.Articulo = art.Articulo AND ofrd.Unidad = art.Unidad AND ofrd.Precio > 0`,
-                pageSize: 10,
-                page: currentPage,
+                table: tablaOfertas(nombreCategoria),
+                pageSize: PAGE_SIZE_POR_CATEGORIA,
+                page: pagina,
                 filtros: {
                     Selects: [
                         { Key: "art.Articulo" },
@@ -98,147 +183,90 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         { Key: "art.Factor" },
                     ],
                     Agregaciones: [
-                        {
-                            Key: "ad.DispMenosApartado",
-                            Operation: "SUM",
-                            Alias: "Cantidad",
-                        },
+                        { Key: "ad.DispMenosApartado", Operation: "SUM", Alias: "Cantidad" },
                     ],
                     Order: [{ Key: "Descripcion1", Direction: "DESC" }],
                 },
                 signal: undefined,
             });
 
-            // Verificar si la respuesta tiene datos
             if ('data' in result && result.data) {
                 const apiData: ApiResponse = result.data;
+                const nuevosItems = (apiData.data || []).map(mapApiItemToProducto);
 
-                // Actualizar totalPages con la información de la API
-                if (initialLoad.current) {
-                    initialLoad.current = false;
-                }
-
-                if (apiData.data && apiData.data.length > 0) {
-                    // Mapear los datos de la API al formato de Producto
-                    const mappedItems: Producto[] = apiData.data.map((item: any) => ({
-                        id: item.Articulo + "-" + item.Unidad + "-" + item.Factor,
-                        /* codigo: item.Codigo || "0000", */
-                        articulo: item.Articulo || "Articulo",
-                        nombre: item.Descripcion1 || "Sin nombre",
-                        categoria: item.Grupo || "Sin categoría",
-                        unidad: item.Unidad || "Unidad",
-                        precio: item.Precio || 0,
-                        cantidad: item.Cantidad || 1,
-                        factor: item.Factor || 1,
-                        impuesto1: item.Impuesto1 || 0,
-                        impuesto2: item.Impuesto2 || 0,
-                        tipoImpuesto1: item.TipoImpuesto1 || 0,
-                        tipoImpuesto2: item.TipoImpuesto2 || 0,
-                        descuento: item.Porcentaje ? item.Precio - ((item.Porcentaje / 100) * item.Precio) : item.Descuento || 0,
-                    }));
-                    setTotalRecords(apiData.totalRecords)
-
-                    setItems(prevItems => {
-                        const newItems = currentPage === 1 || isNewCategory ? mappedItems : [...prevItems, ...mappedItems];
-                        return newItems;
-                    });
-
-                    // Verificar si hay más páginas disponibles
-                    const hasMoreData = currentPage < apiData.totalPages;
-                    setHasMore(hasMoreData);
-                } else {
-                    // No hay datos en esta página
-                    setHasMore(false);
-                }
+                setCategoriaData(prev => {
+                    const anterior = prev[nombreCategoria] ?? { items: [], page: 0, hasMore: true, total: 0 };
+                    return {
+                        ...prev,
+                        [nombreCategoria]: {
+                            items: pagina === 1 ? nuevosItems : [...anterior.items, ...nuevosItems],
+                            page: pagina,
+                            hasMore: pagina < (apiData.totalPages || 1),
+                            total: apiData.totalRecords ?? anterior.total,
+                            isLoading: false,
+                        },
+                    };
+                });
             }
         } catch (error) {
-            console.error("❌ Error fetching data:", error);
-            setHasMore(false);
-        } finally {
-            isFetching.current = false;
-            //console.log('🏁 Fetch completado');
+            console.error(`❌ Error cargando artículos de "${nombreCategoria}":`, error);
+            setCategoriaData(prev => ({
+                ...prev,
+                [nombreCategoria]: {
+                    ...(prev[nombreCategoria] ?? { items: [], page: 0, total: 0 }),
+                    isLoading: false,
+                    hasMore: false,
+                },
+            }));
         }
-    }, [categoria, getData]);
+    }, [getData]);
 
-    // Efecto para detectar cambios de categoría y resetear datos
+    // Al montar, o cuando cambia el filtro global de categoría (CategorySlider),
+    // recalculamos qué categorías mostrar. Si hay una categoría específica
+    // seleccionada, solo mostramos esa (una sola fila); si no, descubrimos
+    // todas las que tengan ofertas vigentes.
     useEffect(() => {
-        if (previousCategoria.current !== categoria && !initialLoad.current) {
-            //console.log('🔄 Cambio de categoría detectado:', previousCategoria.current, '->', categoria);
-
-            // Resetear estado
-            setItems([]);
-            setPage(1);
-            setHasMore(true);
-            initialLoad.current = true;
-
-            // Hacer nueva consulta con la categoría actual
-            generateItems(1, true);
-
-            // Actualizar la referencia
-            previousCategoria.current = categoria;
+        if (isFavoritesSection) return;
+        setCategoriaData({});
+        if (categoriaFiltro && categoriaFiltro !== 'TODO') {
+            setCategorias([categoriaFiltro]);
+            setIsLoadingCategorias(false);
+        } else {
+            fetchCategorias();
         }
-    }, [categoria, generateItems]);
+    }, [categoriaFiltro, isFavoritesSection, fetchCategorias]);
 
-    // Efecto para carga inicial
+    // Carga la primera página (5 artículos) de cada categoría nueva que
+    // todavía no tenga datos cargados.
     useEffect(() => {
-        if (initialLoad.current) {
-            //console.log('🚀 Carga inicial');
-            generateItems(1);
-            previousCategoria.current = categoria; // Inicializar la referencia
-        }
-    }, []);
-
-    // Efecto para cuando cambia la página
-    useEffect(() => {
-        if (page > 1 && !initialLoad.current) {
-            //console.log(`🔄 Cambio de página a: ${page}`);
-            generateItems(page);
-        }
-    }, [page]);
-
-
-    const handleInfiniteScroll = useCallback(async (event: any) => {
-        //console.log('🎯 Infinite scroll activado');
-        //console.log('📊 Estado - hasMore:', hasMore, 'isLoading:', isLoading, 'isFetching:', isFetching.current);
-
-        if (!hasMore) {
-            //console.log('⏹️  No hay más datos, deshabilitando scroll');
-            event.target.complete();
-            event.target.disabled = true;
-            return;
-        }
-
-        if (isLoading || isFetching.current) {
-            //console.log('⏳ Ya está cargando, completando sin acción');
-            event.target.complete();
-            return;
-        }
-
-        //console.log('⬆️  Incrementando página...');
-        setPage(prevPage => {
-            const nextPage = prevPage + 1;
-            //console.log(`📈 Nueva página: ${nextPage}`);
-            return nextPage;
+        if (isFavoritesSection) return;
+        categorias.forEach((nombreCategoria) => {
+            if (!categoriaData[nombreCategoria]) {
+                fetchCategoriaPage(nombreCategoria, 1);
+            }
         });
-        event.target.complete();
-        //console.log('✅ Scroll completado');
-
-    }, [hasMore, isLoading]);
+    }, [categorias, isFavoritesSection, categoriaData, fetchCategoriaPage]);
 
     const handleSectionChange = useCallback((section: string) => {
-        const newSection = activeSection === section ? null : section;
-        setActiveSection(newSection);
+        setActiveSection(prev => (prev === section ? null : section));
+    }, []);
 
-        if (newSection === 'Favoritos') {
-            setItems(getFavoriteProducts());
-        } else {
-            // Resetear para cargar desde el inicio
-            setPage(1);
-            setItems([]);
-            setHasMore(true);
-            generateItems(1, true);
-        }
-    }, [activeSection, getFavoriteProducts, generateItems]);
+    const categoriaEntries = useMemo<[string, CategoryState][]>(() => (
+        categorias.map((nombreCategoria) => [
+            nombreCategoria,
+            categoriaData[nombreCategoria] ?? { items: [], page: 0, hasMore: true, isLoading: true, total: 0 },
+        ])
+    ), [categorias, categoriaData]);
+
+    const totalOfertas = useMemo(
+        () => categoriaEntries.reduce((suma, [, data]) => suma + (data.total || 0), 0),
+        [categoriaEntries]
+    );
+
+    const entriesAMostrar = isFavoritesSection ? favoriteCategoryEntries : categoriaEntries;
+    const sinResultados = isFavoritesSection
+        ? favoriteItems.length === 0
+        : !isLoadingCategorias && entriesAMostrar.length === 0;
 
     return (
         <IonContent
@@ -279,7 +307,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                 <section className="sticky top-2 flex aling-center gap-2 overflow-x-auto scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-2 px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">
                     {[
-                        { key: null, label: "Ofertas", count: totalRecords },
+                        { key: null, label: "Ofertas", count: totalOfertas },
                         { key: 'Favoritos', label: "Favoritos", count: favoriteCount }
                     ].map((section) => (
                         <button
@@ -304,39 +332,37 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 </section>
 
                 <IonList className="bg-transparent">
-                    <BentoGrid cols={5}>
-                        {items.map((producto, index) => (
-                            <Card
-                                key={`${producto.id}-${index}`}
-                                producto={producto}
-                            />
-                        ))}
-                    </BentoGrid>
+                    {entriesAMostrar.map(([nombreCategoria, data]) => (
+                        <CategoryRow
+                            key={nombreCategoria}
+                            title={nombreCategoria}
+                            items={data.items}
+                            hasMore={data.hasMore}
+                            isLoading={data.isLoading}
+                            onLoadMore={() => fetchCategoriaPage(nombreCategoria, data.page + 1)}
+                            renderItem={(producto, index) => (
+                                <Card
+                                    key={`${producto.id}-${index}`}
+                                    producto={producto}
+                                />
+                            )}
+                        />
+                    ))}
                 </IonList>
 
-                {isLoading && (
+                {!isFavoritesSection && isLoadingCategorias && (
                     <div className="text-center py-4">
-                        <p>Cargando más ofertas...</p>
+                        <p>Cargando ofertas…</p>
                     </div>
                 )}
 
-                {items.length === 0 && !isLoading && (
+                {sinResultados && (
                     <div className="text-center py-8">
-                        <p>No se encontraron ofertas</p>
+                        <p>{isFavoritesSection ? "No tienes favoritos guardados" : "No se encontraron ofertas"}</p>
                     </div>
                 )}
-
-                <IonInfiniteScroll
-                    onIonInfinite={handleInfiniteScroll}
-                    threshold="100px"
-                    disabled={!hasMore || isLoading || activeSection === "Favoritos"}
-                >
-                    <IonInfiniteScrollContent
-                        loadingText={hasMore ? "Cargando más ofertas..." : "No hay más ofertas"}
-                    ></IonInfiniteScrollContent>
-                </IonInfiniteScroll>
             </section>
-        </IonContent >
+        </IonContent>
     );
 }
 
