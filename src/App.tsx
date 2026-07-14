@@ -46,7 +46,7 @@ const App: React.FC = () => {
   useBlockInspect({
     blockKeyShortcuts: true,
     blockContextMenu: true,
-    blockDevTools: true,
+    blockDevTools: false,
     redirectUrl: '/acceso-denegado'
   });
   return (
