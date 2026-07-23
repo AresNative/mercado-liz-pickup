@@ -5,6 +5,7 @@ type EnvConfigType = {
   hubs: any;
   mode: string;
   itemsPerPage: number;
+  apiMongoDb: any;
 };
 
 export const EnvConfig = (): EnvConfigType => {
@@ -25,6 +26,7 @@ export const EnvConfig = (): EnvConfigType => {
       : "http://localhost:5000/";
 
   const itemsPerPage = parseInt(import.meta.env.VITE_ITEMS_PER_PAGE || "10", 10); // Fallback a 10 si no está definido
+  const apiMongoDb = import.meta.env.VITE_MONGO_API_URL;
 
   return {
     api,
@@ -32,5 +34,6 @@ export const EnvConfig = (): EnvConfigType => {
     hubs,
     mode,
     itemsPerPage,
+    apiMongoDb,
   };
 };

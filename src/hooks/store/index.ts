@@ -3,6 +3,7 @@ import { setupListeners } from "@reduxjs/toolkit/query";
 
 import { api } from "@/hooks/reducers/api";
 import { api_int } from "@/hooks/reducers/api_int";
+import { api_mongodb } from "@/hooks/reducers/api-mongodb";
 import { authApi } from "@/hooks/reducers/auth";
 import { EnvConfig } from "@/utils/constants/env.config";
 
@@ -22,8 +23,9 @@ export const store = configureStore({
     [api.reducerPath]: api.reducer,
     [api_int.reducerPath]: api_int.reducer,
     [authApi.reducerPath]: authApi.reducer,
+    [api_mongodb.reducerPath]: api_mongodb.reducer,
   },
-  devTools: /* config.mode !== "production" */ true,
+  devTools: config.mode !== "production" ? true : false,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
@@ -32,7 +34,7 @@ export const store = configureStore({
         // Ignora estas acciones específicas
         ignoredActions: ["dropDown/openAlertReducer"],
       },
-    }).concat([api.middleware, api_int.middleware, authApi.middleware]),
+    }).concat([api.middleware, api_int.middleware, authApi.middleware, api_mongodb.middleware]),
 });
 
 setupListeners(store.dispatch);

@@ -4,7 +4,9 @@ import legacy from "@vitejs/plugin-legacy";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import { VitePWA } from 'vite-plugin-pwa';
+import vercel from "vite-plugin-vercel";
 import path from "path";
+
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -14,6 +16,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       legacy(),
+      vercel(),
       VitePWA({
         workbox: {
           maximumFileSizeToCacheInBytes: 3000000,

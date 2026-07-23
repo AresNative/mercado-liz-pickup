@@ -703,7 +703,13 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     return (
         <>
-            {pedidoSeleccionado && pedidosFiltrados && pedidosFiltrados.map(pedido => <ModalChat telefonoClient={pedido.cliente_telefono || 'general'} pedido={pedido} />)}
+            {pedidoSeleccionado && (
+                <ModalChat
+                    telefonoClient={pedidoSeleccionado.cliente_telefono || 'general'}
+                    pedido={pedidoSeleccionado}
+                    modalName={`chat_${pedidoSeleccionado.cliente_telefono}_${pedidoSeleccionado.id}`}
+                />
+            )}
             <IonContent
                 fullscreen
                 scrollEvents
@@ -1089,7 +1095,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                                                             <IonIcon icon={calendar} className="text-purple-600 mt-1 flex-shrink-0" />
                                                             <div className="flex-1">
                                                                 <p className="font-semibold text-gray-900">Horario de Recogida</p>
-                                                                        <p className="text-sm text-gray-500">{new Date(pedidoSeleccionado.fecha_entrega).toLocaleString()}</p>
+                                                                <p className="text-sm text-gray-500">{new Date(pedidoSeleccionado.fecha_entrega).toLocaleString()}</p>
                                                                 {pedidoSeleccionado.tiempo_restante !== undefined && pedidoSeleccionado.tiempo_restante > 0 && (
                                                                     <div className="flex flex-wrap gap-2 mt-2">
                                                                         <IonChip
@@ -1202,34 +1208,34 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                                                     </IonCardContent>
                                                 </IonCard>
-                                                        <IonCard className="shadow-none bg-transparent h-fit">
-                                                            <IonCardHeader>
-                                                                <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
-                                                                    <IonIcon icon={receipt} className="mr-2 text-purple-600" />
-                                                                    Resumen de Pedido
-                                                                </IonCardTitle>
-                                                            </IonCardHeader>
-                                                            <IonCardContent className="space-y-4">
-                                                                <ul className="space-y-3">
-                                                                    <li className="flex items-center justify-between">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <IonText className="text-sm text-gray-700">Tipo de pago:</IonText>
-                                                                        </div>
-                                                                        <span className="font-medium">
-                                                                            {pedidoSeleccionado.tipo_pago || 'No especificado'}
-                                                                        </span>
-                                                                    </li>
-                                                                    <li className="flex items-center justify-between border-t pt-2">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <IonText className="text-sm font-bold text-gray-900">Total:</IonText>
-                                                                        </div>
-                                                                        <span className="font-bold text-purple-600">
-                                                                            {formatValue(pedidoSeleccionado.total, "currency")}
-                                                                        </span>
-                                                                    </li>
-                                                                </ul>
-                                                            </IonCardContent>
-                                                        </IonCard>
+                                                <IonCard className="shadow-none bg-transparent h-fit">
+                                                    <IonCardHeader>
+                                                        <IonCardTitle className="flex items-center text-base sm:text-lg font-semibold">
+                                                            <IonIcon icon={receipt} className="mr-2 text-purple-600" />
+                                                            Resumen de Pedido
+                                                        </IonCardTitle>
+                                                    </IonCardHeader>
+                                                    <IonCardContent className="space-y-4">
+                                                        <ul className="space-y-3">
+                                                            <li className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <IonText className="text-sm text-gray-700">Tipo de pago:</IonText>
+                                                                </div>
+                                                                <span className="font-medium">
+                                                                    {pedidoSeleccionado.tipo_pago || 'No especificado'}
+                                                                </span>
+                                                            </li>
+                                                            <li className="flex items-center justify-between border-t pt-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <IonText className="text-sm font-bold text-gray-900">Total:</IonText>
+                                                                </div>
+                                                                <span className="font-bold text-purple-600">
+                                                                    {formatValue(pedidoSeleccionado.total, "currency")}
+                                                                </span>
+                                                            </li>
+                                                        </ul>
+                                                    </IonCardContent>
+                                                </IonCard>
                                             </IonCol>
 
                                             <IonCol size="12" sizeMd="12">

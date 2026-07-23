@@ -1,7 +1,6 @@
-"use client";
-import { Modal } from "@/components/modal";
+// src/app/seguimiento/components/modal-chat.tsx
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { FirestoreService } from "@/hooks/use-firebase";
+import { Modal } from "@/components/modal";
 import { getLocalStorageItem } from "@/utils/functions/local-storage";
 import { Send, UserCircle } from "lucide-react";
 import { usePutGeneralMutation } from "@/hooks/reducers/api";
@@ -14,48 +13,30 @@ import {
     usePutIntelisisMutation,
 } from "@/hooks/reducers/api_int";
 
-// ──────────────── Tipos ──────────────────────────────────────
-export type Message = {
-    id: string;
-    text: string;
-    userId: string;
-    userName: string;
-    timestamp: number;
-    actions?: {
-        label: string;
-        action: "replace" | "remove";
-        productId: string;
-        productName: string;
-    }[];
-};
-
-export type User = {
-    id: string;
-    nombre: string;
-    telefono: string;
-    lastSeen?: number;
-};
+// ─── Importar desde api-mongodb ──────────────────────
+import {
+    useGetMessagesQuery,
+    useSendMessageMutation,
+    Message,
+    User,
+} from "@/hooks/reducers/api-mongodb";
 
 interface ModalChatProps {
+    modalName: string;
     telefonoClient: string | null;
     pedido?: any;
 }
 
-// ──────────────── Componente principal ModalChat ─────────────────────
 export const ModalChat = ({
+    modalName,
     telefonoClient,
     pedido: pedidoProp,
 }: ModalChatProps) => {
     const userId = useMemo(() => getLocalStorageItem("user-id"), []);
-    const modalName = pedidoProp
-        ? `chat_${pedidoProp?.cliente_telefono}_${pedidoProp?.id}`
-        : `chat_${telefonoClient}`;
-    if (!modalName) return null;
-
+    
     // Estados locales
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
-    const [users, setUsers] = useState<Record<string, User>>({});
     const [currentPedido, setCurrentPedido] = useState(pedidoProp);
     const [showProductSelector, setShowProductSelector] = useState(false);
     const [pendingReplace, setPendingReplace] = useState<{
@@ -64,54 +45,19 @@ export const ModalChat = ({
         cantidadOriginal: number;
     } | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [messagesService, setMessagesService] =
-        useState<FirestoreService<Message> | null>(null);
     const [putGeneral] = usePutGeneralMutation();
     const [GetInt] = useGetWithFiltersGeneralInIntelisisMutation();
     const [PutData] = usePutIntelisisMutation();
     const [deleteData] = useDeleteIntelisisMutation();
 
-    // Servicios Firestore
-    const usersService = useMemo(() => new FirestoreService<User>("users"), []);
-    // Consulta data intelisis 
-    const consultarDataIntelisis = async () => {
-        const responseVenta = await GetInt({
-            table: "venta",
-            page: 1,
-            pageSize: 1,
-            filtros: {
-                Filtros: [
-                    { Key: "Referencia", Value: pedidoProp.id, Operator: "like" },
-                    { Key: "Concepto", Value: "PICK UP", Operator: "=" },
-                ]
-            },
-            signal: undefined,
-        }).unwrap();
-        
-        const venta = responseVenta.data
-        
-        const ventaD = await GetInt({
-            table: "ventaD",
-            page: 1,
-            pageSize: 1,
-            filtros: {
-                Filtros: [
-                    { Key: "id", Value: venta[0].ID, Operator: "=" },
-                ]
-            },
-            signal: undefined,
-        }).unwrap();
-        
-        return {venta:venta, ventaD: ventaD.data};
-    }
-    // ──────────────── SignalR ────────────────────────────────────────
+    // ─── SignalR ────────────────────────────────────────
     const onPedidoActualizado = useCallback(
         (pedidoActualizado: any) => {
             if (pedidoActualizado.id === currentPedido?.id) {
                 setCurrentPedido(pedidoActualizado);
             }
         },
-        [currentPedido?.id],
+        [currentPedido?.id]
     );
 
     const onRefrescarDatos = useCallback(() => {
@@ -123,112 +69,146 @@ export const ModalChat = ({
             onPedidoActualizado,
             () => { },
             () => { },
-            onRefrescarDatos,
-        );
-    useEffect(() => {
-        if (isConnected && currentPedido?.id) {
-            unirseAPedido(currentPedido.id);
-        }
-    }, [isConnected, currentPedido?.id, unirseAPedido]);
-
-    // ──────────────── Suscripción a usuarios (Firestore) ─────────────
-    useEffect(() => {
-        if (!userId) return;
-        const unsubscribeUsers = usersService.subscribe(
-            [],
-            (usersArray: User[]) => {
-                const usersMap = usersArray.reduce(
-                    (acc, user) => {
-                        acc[user.id] = user;
-                        return acc;
-                    },
-                    {} as Record<string, User>,
-                );
-                setUsers(usersMap);
-            },
-            (error: any) => console.error("Error en suscripción de usuarios:", error),
+            onRefrescarDatos
         );
 
-        const updateCurrentUser = async () => {
+    const joinedPedidoIdRef = useRef<string | null>(null);
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isConnected || !currentPedido?.id) return;
+        if (joinedPedidoIdRef.current === currentPedido.id) return;
+
+        const join = async () => {
             try {
-                await usersService.update(userId, {
-                    nombre: currentPedido?.nombre || "Soporte",
-                    telefono: currentPedido?.cliente_telefono || telefonoClient || "",
-                    lastSeen: Date.now(),
-                });
+                await unirseAPedido(currentPedido.id);
+                if (mountedRef.current) {
+                    joinedPedidoIdRef.current = currentPedido.id;
+                    console.log(`✅ Unido al grupo del pedido ${currentPedido.id}`);
+                }
             } catch (error) {
-                console.error("Error actualizando usuario:", error);
+                console.error("Error uniéndose a grupos:", error);
+                // Reintentar una vez después de 1 segundo
+                setTimeout(() => {
+                    if (
+                        mountedRef.current &&
+                        isConnected &&
+                        currentPedido?.id &&
+                        joinedPedidoIdRef.current !== currentPedido.id
+                    ) {
+                        unirseAPedido(currentPedido.id)
+                            .then(() => {
+                                if (mountedRef.current)
+                                    joinedPedidoIdRef.current = currentPedido.id;
+                            })
+                            .catch((e) => console.error("Reintento fallido:", e));
+                    }
+                }, 1000);
             }
         };
-        updateCurrentUser();
 
-        return () => unsubscribeUsers();
-    }, [userId, usersService, currentPedido, telefonoClient]);
+        join();
+    }, [isConnected, currentPedido?.id, unirseAPedido]);
 
-    // ──────────────── Suscripción a mensajes (Firestore) ────────────
-    const chatIdentifier = useMemo(() => {
+    // ─── Chat ID ────────────────────────────────────────
+    const chatId = useMemo(() => {
         if (currentPedido && currentPedido.cliente_telefono && currentPedido.id) {
-            return `chats/${currentPedido.cliente_telefono}/${currentPedido.id}`;
+            return `${currentPedido.cliente_telefono}_${currentPedido.id}`;
         }
         if (telefonoClient) {
-            return `chats/${telefonoClient}/messages`;
+            return `${telefonoClient}_general`;
         }
         return null;
     }, [currentPedido, telefonoClient]);
 
+    // ─── RTK Query: obtener mensajes (sin polling) ───
+    const { data: messagesData, refetch } = useGetMessagesQuery(chatId!, {
+        skip: !chatId,
+        pollingInterval: 0,
+    });
+
+    // Sincronizar mensajes desde RTK
     useEffect(() => {
-        if (!chatIdentifier) {
-            setMessagesService(null);
-            setMessages([]);
-            return;
+        if (messagesData) {
+            const sorted = [...messagesData].sort((a, b) => a.timestamp - b.timestamp);
+            setMessages(sorted);
         }
-        const msgService = new FirestoreService<Message>(chatIdentifier);
-        setMessagesService(msgService);
-        const unsubscribeMessages = msgService.subscribe(
-            [],
-            (messagesArray: Message[]) => {
-                const sorted = [...messagesArray].sort(
-                    (a, b) => a.timestamp - b.timestamp,
-                );
-                setMessages(sorted);
-            },
-            (error: any) => console.error("Error en suscripción de mensajes:", error),
-        );
-        return () => unsubscribeMessages();
-    }, [chatIdentifier]);
+    }, [messagesData]);
+
+    useEffect(() => {
+        setCurrentPedido(pedidoProp);
+    }, [pedidoProp]);
 
     // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    // ──────────────── Acciones del chat ─────────────────────────────
+    // ─── Enviar mensaje (RTK Mutation) ────────────────
+    const [sendMessageMutation] = useSendMessageMutation();
+
     const handleSendMessage = async () => {
-        if (!newMessage.trim() || !messagesService) return;
+        if (!newMessage.trim() || !chatId) return;
         try {
-            await messagesService.create({
+            await sendMessageMutation({
+                chatId,
                 text: newMessage.trim(),
                 userId: userId || "unknown",
                 userName: "Soporte",
-                timestamp: Date.now(),
-            });
+            }).unwrap();
             setNewMessage("");
         } catch (error) {
             console.error("Error al enviar mensaje:", error);
         }
     };
 
-    // Manejo de acciones (Eliminar / Reemplazar)
+    // ─── Intelisis ──────────────────────────────────────
+    const consultarDataIntelisis = async () => {
+        const responseVenta = await GetInt({
+            table: "venta",
+            page: 1,
+            pageSize: 1,
+            filtros: {
+                Filtros: [
+                    { Key: "Referencia", Value: pedidoProp.id, Operator: "like" },
+                    { Key: "Concepto", Value: "PICK UP", Operator: "=" },
+                ],
+            },
+            signal: undefined,
+        }).unwrap();
+
+        const venta = responseVenta.data;
+        const ventaD = await GetInt({
+            table: "ventaD",
+            page: 1,
+            pageSize: 1,
+            filtros: {
+                Filtros: [{ Key: "id", Value: venta[0].ID, Operator: "=" }],
+            },
+            signal: undefined,
+        }).unwrap();
+
+        return { venta: venta, ventaD: ventaD.data };
+    };
+
+    // ─── Manejo de acciones (Eliminar / Reemplazar) ────
     const handleAction = async (
         action: string,
         productId: string,
-        productName: string,
+        productName: string
     ) => {
-        if (!currentPedido || !messagesService) return;
+        if (!currentPedido || !chatId) return;
 
         if (action === "remove") {
             const nuevosItems = currentPedido.items.filter(
-                (item: any) => item.id !== productId,
+                (item: any) => item.id !== productId
             );
             const arrayListaActualizado = JSON.stringify(nuevosItems);
             try {
@@ -242,78 +222,84 @@ export const ModalChat = ({
                         Filtros: [{ Key: "ID", Value: currentPedido.id, Operator: "=" }],
                     },
                 }).unwrap();
-                
+
                 await notificarCambioLista("remove", {
                     pedidoId: currentPedido.id,
                     productId,
                 });
 
-                await messagesService.create({
+                await sendMessageMutation({
+                    chatId,
                     text: `✅ Se ha eliminado "${productName}" de tu pedido.`,
                     userId: "unknown",
                     userName: "Soporte",
-                    timestamp: Date.now(),
-                });
+                }).unwrap();
 
                 setCurrentPedido({ ...currentPedido, items: nuevosItems });
             } catch (error) {
                 console.error("Error al eliminar producto:", error);
-                await messagesService.create({
+                await sendMessageMutation({
+                    chatId,
                     text: `❌ Ocurrió un error al eliminar "${productName}". Por favor intenta más tarde.`,
                     userId: "unknown",
                     userName: "Soporte",
-                    timestamp: Date.now(),
-                });
+                }).unwrap();
             }
         } else if (action === "replace") {
             const oldItem = currentPedido.items.find(
-                (item: any) => item.id === productId,
+                (item: any) => item.id === productId
             );
             setPendingReplace({
                 productId,
                 productName,
                 cantidadOriginal: oldItem?.quantity || 1,
             });
-            setShowProductSelector(true);
+                setShowProductSelector(true);
         }
     };
 
-    // handleReplaceProduct
+    // ─── Reemplazar producto ────────────────────────────
     const handleReplaceProduct = async (
         newProduct: Producto,
-        nuevaCantidad: number,
+        nuevaCantidad: number
     ) => {
-        if (!pendingReplace || !currentPedido || !messagesService) return;
+        if (!pendingReplace || !currentPedido || !chatId) return;
         const { productId: oldProductId, productName: oldProductName } =
             pendingReplace;
 
-        // Validar que la nueva cantidad no supere el stock del nuevo producto
         if (nuevaCantidad > newProduct.cantidad) {
-            await messagesService.create({
+            await sendMessageMutation({
+                chatId,
                 text: `❌ La cantidad seleccionada (${nuevaCantidad}) supera el stock disponible (${newProduct.cantidad} ${newProduct.unidad}).`,
                 userId: "unknown",
                 userName: "Soporte",
-                timestamp: Date.now(),
-            });
+            }).unwrap();
             setShowProductSelector(false);
             setPendingReplace(null);
             return;
         }
+
         const { venta, ventaD } = await consultarDataIntelisis();
-        console.log("dataRefInt -> ", ventaD[0].ID);
-        
         await PutData({
             table: "venta",
             data: {
                 Data: {
-                    Importe: (venta[0].Importe + (newProduct.precio * nuevaCantidad) - (ventaD[0].Precio * pendingReplace.cantidadOriginal)),
-                    CostoTotal: newProduct.costo + venta[0].CostoTotal - ventaD[0].Costo,
-                    PrecioTotal: newProduct.precio + venta[0].PrecioTotal - ventaD[0].Precio,
-                    Impuestos: (newProduct.impuesto1 ?? 0) + (newProduct.impuesto2 ?? 0) + venta[0].Impuestos - ventaD[0].Impuesto1 - ventaD[0].Impuesto2,
+                    Importe:
+                        venta[0].Importe +
+                        newProduct.precio * nuevaCantidad -
+                        ventaD[0].Precio * pendingReplace.cantidadOriginal,
+                    CostoTotal:
+                        newProduct.costo + venta[0].CostoTotal - ventaD[0].Costo,
+                    PrecioTotal:
+                        newProduct.precio + venta[0].PrecioTotal - ventaD[0].Precio,
+                    Impuestos:
+                        (newProduct.impuesto1 ?? 0) +
+                        (newProduct.impuesto2 ?? 0) +
+                        venta[0].Impuestos -
+                        ventaD[0].Impuesto1 -
+                        ventaD[0].Impuesto2,
                 },
-                Filtros: [
-                    { Key: "ID", Value: venta[0].ID, Operator: "=" },
-                ],
+                Filtros: [{ Key: "ID", Value: venta[0].ID, Operator: "=" }],
             },
         }).unwrap();
 
@@ -331,13 +317,13 @@ export const ModalChat = ({
                     impuesto1: newProduct.impuesto1,
                     impuesto2: newProduct.impuesto2,
                 },
-                Filtros: [ 
+                Filtros: [
                     { Key: "ID", Value: ventaD[0].ID, Operator: "=" },
-                    { Key: "Articulo", Value: resultado[0], Operator: "=" },  
+                    { Key: "Articulo", Value: resultado[0], Operator: "=" },
                 ],
             },
         }).unwrap();
-       
+
         const nuevosItems = currentPedido.items.map((item: any) =>
             item.id === oldProductId
                 ? {
@@ -353,7 +339,7 @@ export const ModalChat = ({
                     recolectado: item.recolectado ?? false,
                     noEncontrado: false,
                 }
-                : item,
+                : item
         );
 
         const arrayListaActualizado = JSON.stringify(nuevosItems);
@@ -377,22 +363,22 @@ export const ModalChat = ({
                 newQuantity: nuevaCantidad,
             });
 
-            await messagesService.create({
+            await sendMessageMutation({
+                chatId,
                 text: `✅ Se ha reemplazado "${oldProductName}" por "${newProduct.nombre}" (cantidad: ${nuevaCantidad} ${newProduct.unidad}).`,
                 userId: "unknown",
                 userName: "Soporte",
-                timestamp: Date.now(),
-            });
+            }).unwrap();
 
             setCurrentPedido({ ...currentPedido, items: nuevosItems });
         } catch (error) {
             console.error("Error al reemplazar producto:", error);
-            await messagesService.create({
+            await sendMessageMutation({
+                chatId,
                 text: `❌ Error al reemplazar "${oldProductName}". Intenta de nuevo.`,
                 userId: "unknown",
                 userName: "Soporte",
-                timestamp: Date.now(),
-            });
+            }).unwrap();
         } finally {
             setShowProductSelector(false);
             setPendingReplace(null);
@@ -424,7 +410,7 @@ export const ModalChat = ({
     return (
         <Modal modalName={modalName} title={getModalTitle()} maxWidth="md">
             <div className="flex flex-col relative h-[500px]">
-                {/* Lista de mensajes (sin cambios) */}
+                {/* Lista de mensajes */}
                 <div className="flex-1 overflow-y-auto p-4 pb-20">
                     {messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-12 px-4">
@@ -438,9 +424,6 @@ export const ModalChat = ({
                         <div className="space-y-3">
                             {messages.map((message) => {
                                 const isCurrentUser = message.userId === userId;
-                                const user = users[message.userId] || {
-                                    nombre: message.userName,
-                                };
                                 return (
                                     <div
                                         key={message.id}
@@ -457,18 +440,18 @@ export const ModalChat = ({
                                             <div>
                                                 {!isCurrentUser && (
                                                     <div className="text-xs font-medium text-gray-600 mb-1 ml-1">
-                                                        {user.nombre}
+                                                        {message.userName || "Cliente"}
                                                     </div>
                                                 )}
                                                 <div className="flex flex-col">
                                                     <div
                                                         className={`
-                                                            rounded-2xl px-4 py-3
-                                                            ${isCurrentUser
+                              rounded-2xl px-4 py-3
+                              ${isCurrentUser
                                                                 ? "bg-purple-500 text-white rounded-br-none"
                                                                 : "bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-200"
                                                             }
-                                                        `}
+                            `}
                                                     >
                                                         {message.text}
                                                         {message.actions && message.actions.length > 0 && (
@@ -480,7 +463,7 @@ export const ModalChat = ({
                                                                             handleAction(
                                                                                 action.action,
                                                                                 action.productId,
-                                                                                action.productName,
+                                                                                action.productName
                                                                             )
                                                                         }
                                                                         className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"

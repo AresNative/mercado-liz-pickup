@@ -29,7 +29,7 @@
   },
   "include": [
     "src"
-  ],
+, "api/_lib/use-mongodb.ts", "api/_lib/mongodb-config.ts"  ],
   "references": [
     {
       "path": "./tsconfig.node.json"
