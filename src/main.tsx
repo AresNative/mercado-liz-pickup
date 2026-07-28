@@ -1,5 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { IonReactRouter } from '@ionic/react-router';
 import App from './App';
 import Providers from './hooks/provider';
 
@@ -8,7 +9,9 @@ const root = createRoot(container!);
 root.render(
   <React.StrictMode>
     <Providers>
-      <App />
+      <IonReactRouter>
+        <App />
+      </IonReactRouter>
     </Providers>
   </React.StrictMode>
 );
