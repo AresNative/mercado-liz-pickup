@@ -234,7 +234,15 @@ export const ModalChat = ({
                     userId: "unknown",
                     userName: "Soporte",
                 }).unwrap();
-
+                await deleteData({
+                    table: "ventaD",
+                    filtros: {
+                        Filtros: [
+                            { Key: "ID", Value: currentPedido.id, Operator: "=" },
+                            { Key: "Articulo", Value: productId.split("-")[0], Operator: "=" },
+                        ],
+                    },
+                })
                 setCurrentPedido({ ...currentPedido, items: nuevosItems });
             } catch (error) {
                 console.error("Error al eliminar producto:", error);

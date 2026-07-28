@@ -101,15 +101,6 @@ const waitForLocalStorage = async (key: string, timeout = 3000, interval = 150):
     }
     return null;
 };
-
-const logoutAllLocal = () => {
-    try {
-        clearLocalStorage();
-    } catch (e) {
-        console.warn("No se pudo limpiar completamente localStorage:", e);
-    }
-};
-
 // --- COMPONENTE PRINCIPAL ---
 const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     // --- ESTADOS ---
@@ -169,12 +160,9 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const resetAuthentication = async (currentUserData?: UserInfo): Promise<void> => {
         try {
-            console.log("🔄 Reiniciando autenticación...");
-
             // Si detectamos que se ingresó un usuario distinto, limpiamos localStorage
             if (currentUserData && hasUserChanged(currentUserData)) {
-                console.log("👤 Usuario detectado como diferente, limpiando sesión previa...");
-                logoutAllLocal();
+                clearLocalStorage();
                 return;
             }
 
@@ -189,8 +177,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 }
             }
 
-            logoutAllLocal();
-            console.log("✅ Sesión cerrada correctamente (local).");
+            clearLocalStorage();
         } catch (error) {
             console.error("❌ Error al cerrar sesión:", error);
         }
@@ -225,11 +212,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const updateUserData = async (userData: UserInfo): Promise<boolean> => {
         try {
             if (!userData.correo || !userData.telefono) {
-                console.error("❌ Datos insuficientes para actualizar usuario:", userData);
                 return false;
             }
-
-            console.log("📝 Actualizando datos del usuario:", userData);
 
             const existingUser = await safeCall(() => GetData({
                 url: "usuarios",
@@ -260,7 +244,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             ]
                         }
                     }), "actualizar usuario");
-                    console.log("✅ Usuario actualizado correctamente");
                 } else {
                     console.warn("No hay user-id para actualizar correo (se omitirá)");
                 }
@@ -268,7 +251,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
             return true;
         } catch (error) {
-            console.error("❌ Error al actualizar datos del usuario:", error);
             return false;
         }
     };
@@ -279,24 +261,13 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         try {
             if (!userData.correo || !userData.telefono) {
-                console.error("❌ Datos insuficientes para autenticar:", userData);
                 return false;
             }
-
-            console.log("🔐 Iniciando autenticación para:", userData.correo);
-
             // Si ya hay auth local y pertenece al mismo correo, reuse
             const storedUser = getLocalStorageItem("user-data");
 
-            /* if (storedToken && storedUser && storedUser.correo === userData.correo && storedUserId) {
-                console.log("🔁 Ya existe sesión local para este usuario — reutilizando.");
-                setIsAuthenticated(true);
-                return true;
-            } */
-
             // Si hay sesión pero para otro usuario => limpiar
             if (storedUser && storedUser.correo && storedUser.correo !== userData.correo) {
-                console.log("👤 Sesión local corresponde a otro usuario. Limpiando antes de autenticar.");
                 await resetAuthentication(userData);
             }
 
@@ -308,7 +279,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             // Intento de login
             try {
                 const loginResp: any = await safeCall(() => loginUser(loginPayload).unwrap(), "login usuario");
-                console.log("✅ Login exitoso (backend).");
                 // Persistir token/id/user-data en localStorage
                 persistAuthData(userData, loginResp);
 
@@ -324,7 +294,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 await updateUserData(userData);
                 return true;
             } catch (loginError) {
-                console.log("⚠ Login falló, intentando registro...", loginError);
                 // Guardar user-data provisionalmente
                 setLocalStorageItem("user-data", {
                     correo: userData.correo,
@@ -338,16 +307,10 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     nombre: userData.nombre || userData.Nombre || "Cliente",
                     rol: "cliente"
                 };
-
                 // Registrar usuario
                 await safeCall(() => registerUser(registerPayload).unwrap(), "registro usuario");
-                console.log("✅ Registrado correctamente.");
-
                 // Después de registrar, intentar login de nuevo
                 const loginResp2: any = await safeCall(() => loginUser(loginPayload).unwrap(), "login después de registrar");
-                console.log("✅ Login posterior al registro exitoso");
-
-                // Persistir datos
                 persistAuthData(userData, loginResp2);
 
                 // Esperar user-id si es necesario
@@ -360,7 +323,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 return true;
             }
         } catch (error) {
-            console.error("❌ Error en autenticación:", error);
             return false;
         } finally {
             setAuthLoading(false);
@@ -429,19 +391,12 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
     const getLastSaleInfo = async () => {
-        console.log("🔍 Buscando última venta en Intelisis...");
-
         try {
             const result = await safeCall(() => GetInt({
                 table: `venta`,
                 pageSize: 1,
                 page: 1,
                 filtros: {
-                    Filtros: [
-                        /* { Key: "Usuario", Value: INTELISIS_CONFIG.usuario }, 
-                        { Key: "MovID", Value: "MAY-", Operator: "like" },
-                        { Key: "Mov", Value: "Pedido" } */
-                    ],
                     Order: [{ Key: "id", Direction: "desc" }]
                 },
                 signal: undefined,
@@ -458,7 +413,6 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }
 
             if (!Array.isArray(apiData)) {
-                console.warn("⚠ Respuesta no es un array, intentando normalizar...", apiData);
                 // Intentar extraer datos de diferentes estructuras
                 if (apiData && typeof apiData === 'object') {
                     const possibleArrays = Object.values(apiData).find(val => Array.isArray(val));
@@ -469,33 +423,25 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }
 
             if (apiData.length === 0) {
-                console.warn("⚠ No se encontraron ventas anteriores, usando valores por defecto");
                 // Valores por defecto para primera venta
                 return {
                     saleId: 1000,
                     movId: "MAY-1000"
                 };
             }
-
             const lastSale = apiData[0];
-            console.log("📊 Última venta encontrada:", lastSale);
-
             // Buscar el ID y MovID en diferentes propiedades posibles
             const saleId = lastSale.id ?? lastSale.Id ?? lastSale.ID ?? lastSale.ventaId ?? 1000;
             const movId = lastSale.MovID ?? lastSale.MovId ?? lastSale.MOVID ?? "MAY-1000";
 
             if (saleId == null || movId == null) {
-                console.warn("⚠ Datos de venta incompletos, usando valores por defecto");
                 return {
                     saleId: 1000,
                     movId: "MAY-1000"
                 };
             }
-
-            console.log("✅ ID de venta:", saleId, "MovID:", movId);
             return { saleId, movId };
         } catch (error) {
-            console.error("❌ Error crítico al obtener última venta:", error);
             // Valores por defecto en caso de error
             return {
                 saleId: 1000,
@@ -505,61 +451,89 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     };
 
     // --- FUNCIONES INTELISIS CORREGIDAS ---
-    const insertIntelisisData = async (saleId: number, id:string) => {
+    const insertIntelisisData = async (saleId: number, id: string) => {
         const { date, timestamp } = getCurrentDateTime();
-        const baseId = parseInt(saleId.toString()) + 1;
+        const baseId = saleId + 1;
 
-        console.log("💾 Insertando datos en Intelisis con baseId:", baseId);
+        // Constantes
+        const { empresa, moneda, usuario, almacen } = INTELISIS_CONFIG;
+        const SUCURSAL = 4;
+        const BASE_ROW = 2048;
 
-        // SOLUCIÓN: Insertar TODO en una sola transacción lógica
-        const totalProductTaxes = items.reduce((sum, item) => {
+        // --- 1. Obtener todos los costos en UNA sola consulta ---
+        // Extraer todos los artículos únicos
+        const uniqueArticles = [...new Set(items.map(item => String(item.articulo)))];
+
+        // Llamada única a GetInt para todos los artículos
+        const costResponse = await safeCall(
+            () =>
+                GetInt({
+                    table: "CompraD",
+                    pageSize: 9999, // Ajusta según el volumen esperado
+                    filtros: {
+                        Filtros: [{ Key: "Articulo", Value: uniqueArticles }], // Asume que acepta array
+                        Order: [{ Key: "id", Direction: "desc" }],
+                    },
+                }),
+            "consultar costos de todos los artículos"
+        );
+
+        // Construir un mapa: clave = `${articulo}|${unidad}|${factor}` -> costo
+        const costMap = new Map<string, number>();
+        const rawData = costResponse?.data?.data || costResponse?.data || [];
+        for (const record of rawData) {
+            const key = `${String(record.Articulo)}|${record.Unidad || ''}|${record.Factor || 1}`;
+            if (!costMap.has(key)) {
+                costMap.set(key, Number(record.Costo) || 0);
+            }
+        }
+
+        // --- 2. Preparar datos de encabezados y lanzar inserciones en paralelo ---
+        // Total de impuestos (recorremos items una vez)
+        let totalProductTaxes = 0;
+        for (const item of items) {
+            const tax1 = Number(item.impuesto1 ?? 0);
+            const tax2 = Number(item.impuesto2 ?? 0);
             const qty = item.quantity || 1;
-            const tax1 = Number(item.impuesto1 || 0);
-            const tax2 = Number(item.impuesto2 || 0);
-            return sum + ((tax1 + tax2) * qty);
-        }, 0);
-        // 1. Insertar Venta PRIMERO y esperar a que termine
-        const saleData = {
-            Empresa: INTELISIS_CONFIG.empresa,
+            totalProductTaxes += (tax1 + tax2) * qty;
+        }
+
+        const baseRecord = {
+            Empresa: empresa,
             Mov: "Pedido",
             FechaEmision: date,
+            Moneda: moneda,
+            TipoCambio: 1,
+            Usuario: usuario,
+            Sucursal: SUCURSAL,
+        };
+
+        const saleData = {
+            ...baseRecord,
             UltimoCambio: timestamp,
             Concepto: "PICK UP",
-            Moneda: INTELISIS_CONFIG.moneda,
-            TipoCambio: 1,
-            Usuario: INTELISIS_CONFIG.usuario,
             Estatus: "SINAFECTAR",
             Cliente: "MOSTRADOR",
-            Almacen: INTELISIS_CONFIG.almacen,
-            Importe: totalWithService, // ✅ Usar el total CON servicio
-            Impuestos: totalProductTaxes, // suma de impuestos de los productos
+            Almacen: almacen,
+            Importe: totalWithService,
+            Impuestos: totalProductTaxes,
             Saldo: totalWithService,
             CostoTotal: subtotal * 0.6,
-            PrecioTotal: totalWithService, // ✅ Usar el total CON servicio
+            PrecioTotal: totalWithService,
             ServicioExpress: true,
             Condicion: "CONTADO",
             Vencimiento: date,
             ZonaImpuesto: "Frontera",
             FormaPagoTipo: "Efectivo",
-            Sucursal: 4,
-            SucursalVenta: 4,
-            SucursalOrigen: 4,
+            SucursalVenta: SUCURSAL,
+            SucursalOrigen: SUCURSAL,
             ListaPreciosEsp: "(Precio Lista)",
-            Referencia: id
+            Referencia: id,
         };
 
-        const saleResult = await safeCall(() => PostInt({
-            table: `Venta`,
-            data: saleData,
-            signal: undefined
-        }), "Intelisis Venta");
-
-        console.log("✅ Venta insertada:", saleResult);
-
-        // 2. Insertar Mov
         const movData = {
             ID: baseId,
-            Empresa: INTELISIS_CONFIG.empresa,
+            Empresa: empresa,
             Modulo: "VTAS",
             Mov: "Pedido",
             FechaEmision: date,
@@ -567,141 +541,78 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             Concepto: "PICK UP",
             Ejercicio: new Date().getFullYear(),
             Periodo: new Date().getMonth() + 1,
-            Moneda: INTELISIS_CONFIG.moneda,
+            Moneda: moneda,
             TipoCambio: 1,
-            Usuario: INTELISIS_CONFIG.usuario,
-            Sucursal: 4,
+            Usuario: usuario,
+            Sucursal: SUCURSAL,
         };
 
-        await safeCall(() => PostInt({
-            table: `Mov`,
-            data: movData,
-            signal: undefined
-        }), "Intelisis Mov");
-
-        // 3. Insertar Movimientos
         const movementsData = {
             ID: baseId,
-            Empresa: INTELISIS_CONFIG.empresa,
+            Empresa: empresa,
             Modulo: "VTAS",
             Mov: "Pedido",
-            FechaEmision: date,
-            Moneda: INTELISIS_CONFIG.moneda,
-            TipoCambio: 1,
-            Importe: totalWithService, // ✅ Usar el total CON servicio
             Estatus: "SINAFECTAR",
-            Impuestos: totalProductTaxes, // suma de impuestos de los productos
+            FechaEmision: date,
+            Moneda: moneda,
+            TipoCambio: 1,
+            Importe: totalWithService,
+            Impuestos: totalProductTaxes,
             Retencion: 0,
         };
 
-        await safeCall(() => PostInt({
-            table: `Movimientos`,
-            data: movementsData,
-            signal: undefined
-        }), "Intelisis Movimientos");
+        // Lanzamos las tres inserciones de encabezados en paralelo
+        await Promise.all([
+            safeCall(() => PostInt({ table: "Venta", data: saleData }), "Intelisis Venta"),
+            safeCall(() => PostInt({ table: "Mov", data: movData }), "Intelisis Mov"),
+            safeCall(() => PostInt({ table: "Movimientos", data: movementsData }), "Intelisis Movimientos"),
+        ]);
 
-        return baseId;
-    };
+        // --- 3. Preparar ítems para VentaD (usando el mapa de costos) ---
+        const itemsForVentaD = items.map((item, index) => {
+            const unitPrice = item.descuento || item.precio;
+            const cantidad = item.quantity || 1;
+            const articulo = String(item.articulo || "");
+            const unidad = item.unidad || "Unidad";
+            const factor = item.factor || 1;
 
-    const insertSaleDetails = async (baseId: number) => {
-        const { date } = getCurrentDateTime();
-        const baseRow = 2048;
+            // Obtener costo del mapa, o fallback
+            const key = `${articulo}|${unidad}|${factor}`;
+            const itemCost = costMap.get(key) ?? unitPrice * 0.6;
 
-        // SOLUCIÓN: Insertar servicio pickup + items en secuencia
-        // Procesar items de forma asincrónica primero
-        const processedItems = await Promise.all(
-            items.map(async (item, index) => {
-                const unitPrice = item.descuento || item.precio;
+            return {
+                ID: baseId,
+                Renglon: index * BASE_ROW,
+                RenglonSub: 0,
+                RenglonID: index,
+                RenglonTipo: "N",
+                Cantidad: cantidad,
+                Almacen: almacen,
+                Articulo: articulo,
+                Precio: unitPrice,
+                PrecioSugerido: unitPrice,
+                DescuentoLinea: 0,
+                Impuesto1: item.impuesto1,
+                Impuesto2: item.impuesto2,
+                Costo: itemCost,
+                Unidad: unidad,
+                Factor: factor,
+                CantidadInventario: cantidad * factor,
+                DescripcionExtra: `${articulo}-${id}`,
+                FechaRequerida: date,
+                Sucursal: SUCURSAL,
+                TipoImpuesto1: item.tipoImpuesto1,
+                TipoImpuesto2: item.tipoImpuesto2,
+            };
+        });
 
-                // Obtener el costo más reciente de compras en Intelisis
-                const costResult = await safeCall(() => GetInt({
-                    table: `CompraD`,
-                    pageSize: 1,
-                    filtros: {
-                        Filtros: [
-                            { Key: "Articulo", Value: item.articulo },
-                            { Key: "Unidad", Value: item.unidad },
-                            { Key: "Factor", Value: item.factor }
-                        ],
-                        Order: [{ Key: "id", Direction: "desc" }]
-                    },
-                    signal: undefined
-                }), `consultar costo de ${item.articulo}`);
-
-                let itemCost = unitPrice * 0.6; // Valor por defecto
-
-                if (costResult?.data?.data?.[0]?.Costo) {
-                    itemCost = costResult.data.data[0].Costo;
-                } else if (costResult?.data?.[0]?.Costo) {
-                    itemCost = costResult.data[0].Costo;
-                }
-
-                return {
-                    ID: baseId,
-                    Renglon: index * baseRow,
-                    RenglonSub: 0,
-                    RenglonID: index,
-                    RenglonTipo: "N",
-                    Cantidad: item.quantity,
-                    Almacen: INTELISIS_CONFIG.almacen,
-                    Codigo: /* String(item.codigo || "") */ "",
-                    Articulo: String(item.articulo || ""),
-                    Precio: unitPrice,
-                    PrecioSugerido: unitPrice,
-                    DescuentoLinea: 0,
-                    Impuesto1: item.impuesto1,
-                    Impuesto2: item.impuesto2,
-                    Costo: itemCost,
-                    Unidad: item.unidad || "Unidad",
-                    Factor: item.factor || 1,
-                    CantidadInventario: item.quantity * (item.factor || 1),//1784
-                    FechaRequerida: date,
-                    Sucursal: 4,
-                    TipoImpuesto1: item.tipoImpuesto1,
-                    TipoImpuesto2: item.tipoImpuesto2
-                };
-            })
+        // --- 4. Insertar todos los items en paralelo ---
+        await Promise.all(
+            itemsForVentaD.map((itemData, idx) =>
+                safeCall(() => PostInt({ table: "VentaD", data: itemData }), `Intelisis VentaD item ${idx + 1}`)
+            )
         );
-
-        const allItems = [
-            // Servicio pickup primero
-            /*  {
-                 ID: baseId,
-                 Renglon: baseRow,
-                 RenglonSub: 0,
-                 RenglonID: 1,
-                 RenglonTipo: "N",
-                 Cantidad: 1,
-                 Almacen: INTELISIS_CONFIG.almacen,
-                 Codigo: "SPICKUP",
-                 Articulo: "999911112",
-                 Precio: serviceFee,
-                 PrecioSugerido: serviceFee,
-                 DescuentoLinea: 0,
-                 Impuesto1: 8,
-                 Costo: '0.01',
-                 CantidadReservada: 1,
-                 CantidadInventario: 1,
-                 Unidad: "servicio",
-                 Factor: 1,
-                 FechaRequerida: date,
-                 Sucursal: 4,
-                 TipoImpuesto1: 'IVA8',
-             }, */
-            // Items del carrito después
-            ...processedItems
-        ];
-
-        // Insertar todos los items secuencialmente
-        for (const [index, itemData] of allItems.entries()) {
-            const itemResult = await safeCall(() => PostInt({
-                table: `VentaD`,
-                data: itemData,
-                signal: undefined
-            }), `Intelisis VentaD item ${index + 1}`);
-        }
     };
-
     const processIntelisisOrder = async (id: string): Promise<string> => {
         // ✅ VERIFICACIÓN: Asegurar que no hay proceso en curso
         if (isProcessing) {
@@ -710,8 +621,7 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         try {
             const { saleId, movId } = await getLastSaleInfo();
-            const baseId = await insertIntelisisData(saleId, id);
-            await insertSaleDetails(baseId);
+            await insertIntelisisData(saleId, id);
 
             return "✅ Todos los inserts en Intelisis realizados exitosamente";
         } catch (error: any) {
@@ -942,26 +852,8 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             dispatch(clearCart());
             setShowPasswordAlert(true);
         } catch (error: any) {
-            console.error("❌ Error en confirmación de cita:", error);
             const formData = await getFormData();
-            const reauthSuccess = await retryWithAuth(formData.user, 1); // Solo 1 reintento
-
-            if (reauthSuccess) {
-                // En lugar de llamar recursivamente, repetimos la lógica principal
-                try {
-                    const formData = await getFormData();
-                    const id = await savePickupAppointment(formData);
-                    await processIntelisisOrder(id);
-
-                    dispatch(clearCart());
-                    return; // Éxito en el reintento
-                } catch (retryError: any) {
-                    console.error("❌ Error en reintento:", retryError);
-                    alert(`Error: ${retryError.message || "No se pudo crear la cita después del reintento"}`);
-                }
-            } else {
-                alert("Error: No se pudo reautenticar. Por favor intenta nuevamente.");
-            }
+            await retryWithAuth(formData.user, 1);
         } finally {
             setIsProcessing(false);
         }

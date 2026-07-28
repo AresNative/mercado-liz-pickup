@@ -2,13 +2,13 @@
   "project_info": {
     "project_number": "713461225354",
     "firebase_url": "https://pick-up-64aa1-default-rtdb.firebaseio.com",
-    "project_id": "pick-up-64aa1",
+    "project_id": "pick-up-d6179",
     "storage_bucket": "pick-up-64aa1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:713461225354:android:9cb1ad4f9b2761f71d9a73",
+        "mobilesdk_app_id": "1:776885501942:web:1d4dce3265881f8818d1d7",
         "android_client_info": {
           "package_name": "com.eusebiodev.pickupliz"
         }
@@ -16,7 +16,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAWsQN4KdG7CVaSiIYReq7r9DlHgwluRvU"
+          "current_key": "AIzaSyBUSZg4RZ00oxJ-U_hVej2C6gkqU6gsqBE"
         }
       ],
       "services": {
