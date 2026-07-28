@@ -1,21 +1,20 @@
 import Footer from "@/template/footer";
 import { PageProps } from "@/utils/types/page";
 import {
-    IonContent, IonHeader, IonToolbar, IonCard, IonCardContent, IonCardHeader,
+    IonContent, IonCard, IonCardContent, IonCardHeader,
     IonCardTitle, IonText, IonChip, IonBadge, IonIcon, IonSegment, IonSegmentButton,
     IonButton, IonAlert, IonNote, IonRow, IonCol, IonGrid,
-    IonSkeletonText, IonLoading, IonItem, IonLabel,
-    isPlatform
+    IonSkeletonText, IonLoading,
 } from "@ionic/react";
 import { IconLiz } from "../productos/components/ionc-liz";
 import { cn } from "@/utils/functions/cn";
 import {
-    location, time, storefront,
+    location, storefront,
     receipt, call, closeCircle,
     calendar, checkmarkCircle,
-    car, bagCheck, alertCircle,
+    car, bagCheck,
     checkmark, close, search,
-    cube, checkbox, alert
+    cube
 } from "ionicons/icons";
 import { useCallback, useEffect, useState } from "react";
 import { useGetWithFiltersGeneralMutation, usePutGeneralMutation } from "@/hooks/reducers/api";
@@ -29,133 +28,18 @@ import { useAppDispatch } from "@/hooks/selector";
 import { openModalReducer } from "@/hooks/reducers/drop-down";
 import Card from "./components/card";
 
-interface OrderStatus {
-    status: string;
-    completed: boolean;
-    active: boolean;
-    time?: string;
-    description?: string;
-    icon?: React.ReactNode;
-}
-
-interface ListaItem {
-    id: string;
-    articulo: string;
-    categoria: string;
-    nombre: string;
-    precio: number;
-    precioRegular: number;
-    unidad: string;
-    cantidad: number;
-    factor: number;
-    quantity: number;
-    recolectado?: boolean;
-    noEncontrado?: boolean;
-    impuesto1?: number;
-    impuesto2?: number;
-    tipoImpuesto1?: string;
-    tipoImpuesto2?: string | number;
-    descuento?: number;
-    esServicio?: boolean;
-    fecha_servicio?: string;
-    hora_servicio?: string;
-}
-
-interface Cliente {
-    id: number;
-    nombre: string;
-    telefono: string;
-    email: string;
-    direccion?: string;
-    ciudad?: string;
-    estado?: string;
-}
-
-interface Pedido {
-    id: number;
-    id_lista: number;
-    id_cliente: number;
-    usuario_id: number;
-    sucursal_id: number;
-    nombre_lista: string;
-    tipo_lista: string;
-    servicio: string;
-    array_lista: string;
-    fecha_creacion: string;
-    fecha_actualizacion: string;
-    estado: 'nuevo' | 'proceso' | 'listo' | 'entregado' | 'cancelado' | 'incompleto';
-    es_publica: number;
-    items: ListaItem[];
-    cliente?: Cliente;
-    nombre?: string;
-    cliente_telefono?: string;
-    cliente_email?: string;
-    total: number;
-    urgencia?: 'alta' | 'media' | 'baja';
-    tiempo_restante?: number;
-    fecha_cita?: string;
-    hora_cita?: string;
-    tipo_pago?: string;
-    fecha_cita_obj?: Date | null;
-    productos_recolectados?: number;
-    productos_no_encontrados?: number;
-    productos_totales?: number;
-    porcentaje_recolectado?: number;
-    fecha_entrega: string;
-}
-
 const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     const [getWithFilter] = useGetWithFiltersGeneralMutation();
     const [putGeneral] = usePutGeneralMutation();
-    const [pedidos, setPedidos] = useState<Pedido[]>([]);
-    const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null);
+    const [pedidos, setPedidos] = useState<any[]>([]);
+    const [pedidoSeleccionado, setPedidoSeleccionado] = useState<any | null>(null);
     const [segmentoActivo, setSegmentoActivo] = useState<'activos' | 'todos'>('activos');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showCancelAlert, setShowCancelAlert] = useState(false);
     const [showNoPedidos, setShowNoPedidos] = useState(false);
     const [mostrarFiltroProductos, setMostrarFiltroProductos] = useState<'todos' | 'recolectados' | 'no_encontrados'>('todos');
-
-    // Función mejorada para extraer fecha y hora de nombre_lista
-    const extraerFechaHoraCita = (nombreLista: string): { fecha_cita: string, hora_cita: string, fecha_cita_obj: Date | null } => {
-        try {
-            const patrones = [
-                /Pedido\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}):\d{2}\.\d{3}/,
-                /(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}):\d{2}\.\d{3}/,
-                /(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/,
-                /(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})/
-            ];
-
-            for (const patron of patrones) {
-                const match = nombreLista.match(patron);
-                if (match) {
-                    let fechaStr = match[1];
-                    let horaStr = match[2];
-
-                    if (fechaStr.includes('/')) {
-                        const [day, month, year] = fechaStr.split('/');
-                        fechaStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                    }
-
-                    const fechaCitaObj = new Date(`${fechaStr}T${horaStr}:00`);
-
-                    if (!isNaN(fechaCitaObj.getTime())) {
-                        return {
-                            fecha_cita: fechaStr,
-                            hora_cita: horaStr,
-                            fecha_cita_obj: fechaCitaObj
-                        };
-                    }
-                }
-            }
-
-            return { fecha_cita: '', hora_cita: '', fecha_cita_obj: null };
-        } catch (error) {
-            console.error('Error extrayendo fecha/hora de cita:', error, nombreLista);
-            return { fecha_cita: '', hora_cita: '', fecha_cita_obj: null };
-        }
-    };
 
     // Callbacks para SignalR
     const handlePedidoActualizado = useCallback((pedidoActualizado: any) => {
@@ -168,7 +52,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     : pedido
             );
 
-            setPedidoSeleccionado(prev =>
+            setPedidoSeleccionado((prev:any) =>
                 prev && prev.id === pedidoActualizado.id
                     ? parseListaData(pedidoActualizado)
                     : prev
@@ -215,7 +99,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     );
 
     // Función para determinar el orderStatus
-    const getOrderStatus = (pedido: Pedido): OrderStatus[] => {
+    const getOrderStatus = (pedido: any): any[] => {
         const fechaCreacion = new Date(pedido.fecha_creacion);
         const fechaActualizacion = new Date(pedido.fecha_actualizacion);
 
@@ -225,7 +109,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
         const iconStyle = "text-lg";
 
-        const baseStatus: OrderStatus[] = [
+        const baseStatus = [
             {
                 status: "Confirmado",
                 completed: true,
@@ -277,7 +161,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         return baseStatus;
     };
 
-    const getStoreInfo = (pedido: Pedido) => {
+    const getStoreInfo = (pedido: any) => {
         const sucursales = {
             1: { store: "Sucursal Mayoreo", address: "Calle Principal 216, 22750", phone: "+52 (646) 155 2258" },
             2: { store: "Sucursal Centro", address: "Av. Central 123, 22740", phone: "+52 (646) 155 2259" },
@@ -302,7 +186,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         };
     };
 
-    const getProgressValue = (orderStatus: OrderStatus[]) => {
+    const getProgressValue = (orderStatus: any[]) => {
         const completed = orderStatus.filter(s => s.completed).length;
         return completed / orderStatus.length;
     };
@@ -328,7 +212,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 },
             }).unwrap();
 
-            setPedidoSeleccionado(prev => prev ? {
+            setPedidoSeleccionado((prev: any) => prev ? {
                 ...prev,
                 estado: 'cancelado',
                 fecha_actualizacion: new Date().toISOString()
@@ -353,8 +237,8 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         }
     };
 
-    const parseListaData = (lista: any): Pedido => {
-        let items: ListaItem[] = [];
+    const parseListaData = (lista: any): any => {
+        let items = [];
         let total = 0;
         let productosRecolectados = 0;
         let productosNoEncontrados = 0;
@@ -363,17 +247,17 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         try {
             if (lista.array_lista) {
                 items = JSON.parse(lista.array_lista);
-                total = items.reduce((sum, item) => {
+                total = items.reduce((sum: number, item: any) => {
                     const precioFinal = item.descuento ? item.descuento : item.precio;
                     return sum + (precioFinal * item.quantity);
                 }, 0);
 
                 // Calcular estadísticas de productos
-                productosTotales = items.filter((item: ListaItem) => !item.esServicio).length;
-                productosRecolectados = items.filter((item: ListaItem) =>
+                productosTotales = items.filter((item: any) => !item.esServicio).length;
+                productosRecolectados = items.filter((item: any) =>
                     !item.esServicio && item.recolectado === true
                 ).length;
-                productosNoEncontrados = items.filter((item: ListaItem) =>
+                productosNoEncontrados = items.filter((item: any) =>
                     !item.esServicio && item.noEncontrado === true
                 ).length;
             }
@@ -382,20 +266,17 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             items = [];
         }
 
-        // Extraer fecha y hora de la cita
-        const { fecha_cita, hora_cita, fecha_cita_obj } = extraerFechaHoraCita(lista.nombre_lista);
-
         const calcularUrgencia = (): { urgencia: 'alta' | 'media' | 'baja', tiempo_restante: number } => {
             if (lista.estado !== 'nuevo' && lista.estado !== 'proceso') {
                 return { urgencia: 'baja', tiempo_restante: 0 };
             }
 
-            if (!fecha_cita || !hora_cita || !fecha_cita_obj) {
+            if (!lista.fecha_entrega) {
                 return { urgencia: 'baja', tiempo_restante: 0 };
             }
 
             const ahora = new Date();
-            const diferenciaMs = fecha_cita_obj.getTime() - ahora.getTime();
+            const diferenciaMs = new Date(lista.fecha_entrega).getTime() - ahora.getTime();
             const minutosRestantes = Math.floor(diferenciaMs / (1000 * 60));
 
             if (minutosRestantes < 0) {
@@ -445,9 +326,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             total: total,
             urgencia,
             tiempo_restante,
-            fecha_cita,
-            hora_cita,
-            fecha_cita_obj,
+            fecha_cita: lista.fecha_entrega,
+            hora_cita: lista.hora_entrega,
+            fecha_cita_obj: new Date(lista.fecha_entrega),
             tipo_pago: lista.tipo_pago,
             productos_recolectados: productosRecolectados,
             productos_no_encontrados: productosNoEncontrados,
@@ -455,33 +336,6 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             porcentaje_recolectado: Math.round(porcentajeRecolectado)
         };
     }
-    const ordenarPedidos = (a: Pedido, b: Pedido) => {
-        const prioridadEstado = { 'nuevo': 5, 'proceso': 4, 'incompleto': 3, 'listo': 2, 'entregado': 1, 'cancelado': 1 };
-        const prioridadUrgencia = { 'alta': 3, 'media': 2, 'baja': 1 };
-
-        const pendienteA = a.estado === 'nuevo' || a.estado === 'proceso';
-        const pendienteB = b.estado === 'nuevo' || b.estado === 'proceso';
-
-        if (pendienteA && pendienteB) {
-            const urgA = prioridadUrgencia[a.urgencia || 'baja'];
-            const urgB = prioridadUrgencia[b.urgencia || 'baja'];
-            if (urgA !== urgB) return urgB - urgA;
-
-            const tiempoA = a.tiempo_restante ?? Number.MAX_SAFE_INTEGER;
-            const tiempoB = b.tiempo_restante ?? Number.MAX_SAFE_INTEGER;
-            if (tiempoA !== tiempoB) return tiempoA - tiempoB;
-        } else if (pendienteA !== pendienteB) {
-            return pendienteA ? -1 : 1;
-        }
-
-        if (prioridadEstado[a.estado] !== prioridadEstado[b.estado]) {
-            return prioridadEstado[b.estado] - prioridadEstado[a.estado];
-        }
-
-        const fechaA = a.fecha_entrega ? new Date(a.fecha_entrega).getTime() : new Date(a.fecha_creacion).getTime();
-        const fechaB = b.fecha_entrega ? new Date(b.fecha_entrega).getTime() : new Date(b.fecha_creacion).getTime();
-        return fechaA - fechaB;
-    };
     const fetchPedidos = useCallback(async (forceRefresh = false) => {
         if (forceRefresh) setRefreshing(true);
 
@@ -533,9 +387,9 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }).unwrap();
 
             if (response && response.data && response.data.length > 0) {
-                const pedidosProcesados: Pedido[] = response.data.map(parseListaData);
+                const pedidosProcesados: any[] = response.data.map(parseListaData);
 
-                const pedidosOrdenados = pedidosProcesados.sort((a, b) => {
+                const pedidosOrdenados = pedidosProcesados.sort((a: any, b: any) => {
                     const estadosActivos = ['nuevo', 'proceso', 'listo'];
                     const esAActivo = estadosActivos.includes(a.estado);
                     const esBActivo = estadosActivos.includes(b.estado);
@@ -544,7 +398,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                     if (!esAActivo && esBActivo) return 1;
 
                     if (esAActivo && esBActivo) {
-                        const ordenUrgencia = { alta: 0, media: 1, baja: 2 };
+                        const ordenUrgencia: any = { alta: 0, media: 1, baja: 2 };
                         const urgenciaA = ordenUrgencia[a.urgencia || 'baja'];
                         const urgenciaB = ordenUrgencia[b.urgencia || 'baja'];
                         if (urgenciaA !== urgenciaB) return urgenciaA - urgenciaB;
@@ -581,17 +435,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
     useEffect(() => {
         fetchPedidos();
-
-        /* if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        } */
     }, []);
-
-    useEffect(() => {
-        if (isConnected) {
-            console.log("✅ SignalR conectado - Escuchando actualizaciones en tiempo real");
-        }
-    }, [isConnected]);
 
     // Filtrar pedidos según el segmento activo
     const pedidosFiltrados = segmentoActivo === 'activos'
@@ -599,7 +443,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         : pedidos;
 
     // Convertir items del pedido al formato OrderItem
-    const orderItems: any[] = pedidoSeleccionado?.items?.map(item => item) || [];
+    const orderItems: any[] = pedidoSeleccionado?.items?.map((item: any) => item) || [];
 
     // Formatear fecha
     const formatFecha = (fecha: string) => {
@@ -654,7 +498,7 @@ const Seguimiento: React.FC<PageProps> = ({ onScroll }: PageProps) => {
     const productos = orderItems.filter(item => !item.esServicio);
 
     const dispatch = useAppDispatch();
-    const handleOpenChat = (pedido: Pedido) => {
+    const handleOpenChat = (pedido: any) => {
         dispatch(openModalReducer({ modalName: `chat_${pedido.cliente_telefono}_${pedido.id}` }));
     };
 

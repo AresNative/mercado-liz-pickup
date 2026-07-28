@@ -1,9 +1,11 @@
 // src/hooks/usePushNotifications.ts
 import { useEffect } from "react";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
+import { isPlatform } from "@ionic/react";
 
 export const usePushNotifications = () => {
   useEffect(() => {
+    if (!isPlatform("android")) return;
     const initializeNotifications = async () => {
         try {
           /* PushNotifications.addListener("registration", (token: Token) => {
@@ -19,8 +21,6 @@ export const usePushNotifications = () => {
           //    Lo enviarás a tu servidor (backend) para poder mandarle notificaciones a este usuario.
           const { token } = await FirebaseMessaging.getToken();
           console.log("Token FCM:", token);
-
-          alert(`Push registration success, token: ${token}`);
           // TODO: Aquí envías 'token' a tu servidor.
         } else {
           console.warn("Permiso de notificaciones denegado");
@@ -37,7 +37,6 @@ export const usePushNotifications = () => {
       "notificationReceived",
       (payload) => {
         console.log("Notificación en primer plano:", payload);
-        alert(`Push received`);
       },
     );
 
@@ -46,7 +45,6 @@ export const usePushNotifications = () => {
       "notificationActionPerformed",
       (event) => {
         console.log("Usuario abrió desde la notificación:", event);
-        alert(`Push action performed`);
       },
     );
 

@@ -30,7 +30,6 @@ import LayoutUsuario from './app/perfil/layout';
 import Tabs from './template/tabs';
 import { IonReactRouter } from '@ionic/react-router';
 import { usePushNotifications } from './hooks/use-notifications';
-import useBlockInspect from './hooks/block-inspect';
 import AccesDenied from './app/AccesDenied';
 
 setupIonicReact({
@@ -41,14 +40,7 @@ setupIonicReact({
 });
 
 const App: React.FC = () => {
- if ( isPlatform('android') ) usePushNotifications();
-
-  useBlockInspect({
-    blockKeyShortcuts: true,
-    blockContextMenu: true,
-    blockDevTools: false,
-    redirectUrl: '/acceso-denegado'
-  });
+ usePushNotifications();
   return (
     <IonApp>
       <IonReactRouter>
