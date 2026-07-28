@@ -46,10 +46,8 @@ const App: React.FC = () => {
       <IonReactRouter>
         <IonTabs>
           <IonRouterOutlet>
-
             <Background>
               <Switch>
-
                 <Route path="/home" render={() => <Layout />} exact />
                 <Route path="/productos" render={() => <LayoutProductos />} exact />
                 <Route path="/ofertas" render={() => <LayoutProductos />} exact />
@@ -63,7 +61,6 @@ const App: React.FC = () => {
                 <Route>
                   <NotFound />
                 </Route>
-
               </Switch>
             </Background>
           </IonRouterOutlet>
