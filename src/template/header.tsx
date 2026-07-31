@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({
             >
                 <IonToolbar className="flex items-center relative pt-10">
                     {showBackButton && (
-                        <IonButtons slot="start" className={cn('flex h-full items-center gap-2 right-0 p-2 cursor-pointer', isPlatform('mobile') && 'absolute') }>
+                        <IonButtons slot="start" className={cn('flex h-full items-center gap-2 left-0 p-2 cursor-pointer absolute ') }>
                             <IonBackButton
                                 defaultHref={defaultBack ?? "/"}
                                 className={'text-purple-700'}
@@ -76,11 +76,11 @@ const Header: React.FC<HeaderProps> = ({
                             />
                         </IonButtons>
                     )}
-                    <ul className={cn('flex items-center w-full', (isScrolled || showBackButton) && 'flex-col', (isPlatform('mobile') && isScrolled) && 'py-2' )}>
+                    <ul className={cn('flex items-center w-full', (isScrolled || showBackButton) && 'flex-col')}>
                         <section slot="start">
-                            <a className='decoration-none cursor-pointer' href='/productos'>
+                            <a className='decoration-none' href='/productos' aria-label='Mercado Liz'>
                                 {(isScrolled || showBackButton) ? (
-                                    <IconLiz className='mx-auto' fill={"#7927F5"} width={35} />
+                                    <IconLiz fill={"#7927F5"} width={35} />
                                 ) : (
                                     <IconLiz fill={"#FFF"} width={55} />
                                 )}
