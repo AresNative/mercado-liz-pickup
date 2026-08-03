@@ -41,6 +41,7 @@ import {
 import { clearCart } from "@/hooks/slices/cart";
 import { useHistory } from "react-router-dom";
 import { safeCall } from "@/hooks/use-debounce";
+import { sendOrderWhatsAppConfirmation } from "@/utils/functions/notify";
 
 // --- INTERFACES ---
 interface UserInfo {
@@ -848,7 +849,17 @@ const Checkout: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             if (!userId) throw new Error("No se pudo identificar al usuario después de autenticar. Por favor intenta nuevamente.")
             const id = await savePickupAppointment(formData);
             await processIntelisisOrder(id);
-            
+            if (formData.user.telefono) {
+                sendOrderWhatsAppConfirmation({
+                    telefono: formData.user.telefono,
+                    nombre: formData.user.nombre || formData.user.Nombre,
+                    pedidoId: id,
+                    fechaEntrega: selectedDate || undefined,
+                    horaEntrega: selectedTime || undefined,
+                }).catch ((err) =>
+                    console.error("No se pudo enviar la confirmación por WhatsApp:", err),
+                );
+            }
             dispatch(clearCart());
             setShowPasswordAlert(true);
         } catch (error: any) {

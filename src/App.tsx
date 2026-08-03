@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect } from 'react';
-import { Redirect, Route, Switch, useHistory, useLocation } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, IonTabs, isPlatform, setupIonicReact } from '@ionic/react';
+import React from 'react';
+import { Redirect, Route, Switch } from 'react-router-dom';
+import { IonApp, IonRouterOutlet, IonTabs, setupIonicReact } from '@ionic/react';
 // Estilos
 import './theme/variables.css';
 import '@ionic/react/css/core.css';
