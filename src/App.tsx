@@ -27,6 +27,7 @@ import LayoutCarrito from './app/carrito/layout';
 import LayoutCheckout from './app/checkout/layout';
 import LayoutSeguimiento from './app/seguimiento/layout';
 import LayoutUsuario from './app/perfil/layout';
+import LayoutPrivacidad from './app/privacidad/layout';
 import Tabs from './template/tabs';
 import { IonReactRouter } from '@ionic/react-router';
 import { usePushNotifications } from './hooks/use-notifications';
@@ -49,6 +50,7 @@ const App: React.FC = () => {
             <Background>
               <Switch>
                 <Route path="/home" render={() => <Layout />} exact />
+                <Route path="/privacidad" render={() => <LayoutPrivacidad />} exact />
                 <Route path="/productos" render={() => <LayoutProductos />} exact />
                 <Route path="/ofertas" render={() => <LayoutProductos />} exact />
                 <Route path="/carrito" render={() => <LayoutCarrito />} exact />
