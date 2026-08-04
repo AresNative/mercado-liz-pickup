@@ -18,10 +18,8 @@ function toE164Mexico(rawPhone: string): string | null {
 
 /**
  * Envía la confirmación de un pedido por WhatsApp usando el backend
- * api-mongodb (POST /api/whatsapp), que a su vez usa Twilio.
- *
- * No lanza si falla: una notificación fallida no debe tumbar el checkout,
- * el pedido ya quedó guardado. El error se registra en consola.
+ * api-mongodb (POST /api/whatsapp). Utiliza una plantilla de contenido
+ * aprobada (Content SID: HX40a1522b0f3dba8774a841bfb0ea3ba5).
  */
 export async function sendOrderWhatsAppConfirmation(params: {
   telefono: string;
@@ -35,26 +33,34 @@ export async function sendOrderWhatsAppConfirmation(params: {
     return false;
   }
 
-  const to = toE164Mexico(params.telefono);
+  const to = `whatsapp:${toE164Mexico(params.telefono)}`;
   if (!to) {
     console.warn("Teléfono inválido para WhatsApp:", params.telefono);
     return false;
   }
 
-  const nombre = params.nombre ? ` ${params.nombre}` : "";
+  const nombre = params.nombre || "";
+  const pedidoId = String(params.pedidoId);
   const cuando =
     params.fechaEntrega && params.horaEntrega
-      ? ` para el ${params.fechaEntrega} a las ${params.horaEntrega}`
+      ? `para el ${params.fechaEntrega} a las ${params.horaEntrega}`
       : "";
 
-  const body =
-    `¡Hola${nombre}! Tu pedido #${params.pedidoId} en Mercado Liz Pick-Up fue confirmado ${cuando}. Te avisaremos por aquí cuando esté listo. Puedes ver el estado en https://pick-up.mercadosliz.com/seguimiento`;
+  const contentVariables = {
+    "1": nombre,
+    "2": pedidoId,
+    "3": cuando,
+  };
 
   try {
     const response = await fetch(`${apiMongoDb}/whatsapp`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to, body }),
+      body: JSON.stringify({
+        to,
+        contentSid: "HX40a1522b0f3dba8774a841bfb0ea3ba5",
+        contentVariables, // <-- ahora es un objeto
+      }),
     });
 
     if (!response.ok) {
@@ -72,8 +78,7 @@ export async function sendOrderWhatsAppConfirmation(params: {
 
 /**
  * Envía una notificación push directa a un token FCM concreto usando el
- * backend api-mongodb (POST /api/push). Útil para avisar, por ejemplo,
- * al equipo de la sucursal que llegó un pedido nuevo.
+ * backend api-mongodb (POST /api/push).
  */
 export async function sendPushToToken(params: {
   token: string;
