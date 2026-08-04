@@ -48,9 +48,7 @@ export async function sendOrderWhatsAppConfirmation(params: {
       : "";
 
   const body =
-    `¡Hola${nombre}! Tu pedido #${params.pedidoId} en Mercado Liz Pick-Up ` +
-    `fue confirmado${cuando}. Te avisaremos por aquí cuando esté listo. ` +
-    `Puedes ver el estado en https://pick-up.mercadosliz.com/seguimiento`;
+    `¡Hola${nombre}! Tu pedido #${params.pedidoId} en Mercado Liz Pick-Up fue confirmado ${cuando}. Te avisaremos por aquí cuando esté listo. Puedes ver el estado en https://pick-up.mercadosliz.com/seguimiento`;
 
   try {
     const response = await fetch(`${apiMongoDb}/whatsapp`, {
