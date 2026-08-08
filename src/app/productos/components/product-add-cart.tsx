@@ -119,11 +119,11 @@ const AddToCartButton: React.FC<ButtonProps> = ({ id, cantidad, producto }) => {
             {!isOutOfStock ? (
                 quantity === 0 ? (
                     <motion.button
-                        whileTap={{ scale: 0.95 }}
+                        whileTap={{ scale: 0.85 }}
                         onClick={handleAddToCart}
                         disabled={!canAddToCart}
                         className={cn(
-                            "p-2.5 min-w-20 gap-2 flex items-center justify-between rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                            "p-2.5 min-w-10 gap-2 text-xs md:text-base flex items-center justify-between rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
                             canAddToCart
                                 ? "bg-purple-600 hover:bg-purple-700 text-white"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"

@@ -129,7 +129,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
                         <img
                             src={image}
                             alt="Product Image"
-                            className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                            className="absolute inset-0 w-full h-full bg-white object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                     ) : (
                         <div className="absolute inset-0 w-full h-full flex items-center justify-center">
@@ -149,7 +149,7 @@ const Card: React.FC<ProductCardProps> = ({ producto }) => {
             </section>
 
             <section className="p-4 min-h-24 bg-white">
-                <label className="font-semibold text-sm">{producto.nombre}</label>
+                <label className="font-semibold text-xs md:text-sm">{producto.nombre}</label>
 
                 <ul className="absolute w-[90%] mx-auto top-2 flex justify-between items-center">
                     <li className="flex flex-col gap-1 text-[12px]">

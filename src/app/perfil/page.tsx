@@ -317,20 +317,7 @@ const PerfilPage: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                 const isScrolled = e.detail.scrollTop > 10;
                 onScroll?.(isScrolled);
             }}>
-
-            <IonHeader collapse="condense" className="custom-toolbar-clear h-fit absolute top-0">
-                <IonToolbar>
-                    <a className='decoration-none cursor-pointer' href='/productos'>
-                        <IconLiz fill={onScroll ? "#FFF" : "#7927F5"} width={55} />
-                    </a>
-                </IonToolbar>
-            </IonHeader>
-
-            <section className="flex my-2">
-                <IonBackButton color="tertiary" text="Regresar" defaultHref="/productos" />
-            </section>
-            <div className="pt-16 pb-8 px-4 max-w-6xl mx-auto">
-
+            <div className="pb-8 px-4 max-w-6xl mx-auto">
                 {/* Tarjeta de Perfil Principal */}
                 <IonButton
                     fill="solid"

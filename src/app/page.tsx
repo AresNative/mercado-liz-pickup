@@ -224,7 +224,7 @@ const Landing: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             </section>
 
             {/* SELECCIÓN DE SUCURSAL MEJORADA */}
-            <section className="max-w-6xl mx-auto px-4 my-10">
+            <section id="sucursales" className="max-w-6xl mx-auto px-4 my-10">
                 <div className="text-center mb-8">
                     <span className="font-bold text-2xl md:text-3xl dark:text-white mb-3">
                         🏪 Elige Tu Sucursal

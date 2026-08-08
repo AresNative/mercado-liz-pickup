@@ -107,44 +107,28 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ]);
     }, [favoriteItems]);
 
-    // ── Descubrir qué categorías tienen ofertas vigentes ────────────────────
-    // No dependemos de que el backend soporte "distinct": pedimos solo la
-    // columna Grupo, pero recorremos TODAS las páginas y deduplicamos en el
-    // cliente. Así garantizamos encontrar todas las categorías aunque haya
-    // más artículos que el tamaño de una sola página.
     const fetchCategorias = useCallback(async () => {
         setIsLoadingCategorias(true);
         try {
-            const nombres = new Set<string>();
-            let paginaActual = 1;
-            let totalPaginas = 1;
-            const TOPE_PAGINAS = 100; // resguardo de seguridad
-
-            do {
-                const result = await getData({
-                    table: tablaOfertas(),
-                    pageSize: 500,
-                    page: paginaActual,
-                    filtros: {
-                        Selects: [{ Key: "art.Grupo" }],
-                        Order: [{ Key: "art.Grupo", Direction: "ASC" }],
-                    },
-                    signal: undefined,
-                });
-
-                if (!('data' in result) || !result.data) break;
-
+            const result = await getData({
+                table: tablaOfertas(),
+                pageSize: 10000,
+                page: 1,
+                filtros: {
+                    Selects: [{ Key: "art.Grupo" }],
+                    Order: [{ Key: "art.Grupo", Direction: "ASC" }],
+                },
+            });
+            if ('data' in result && result.data) {
                 const apiData: ApiResponse = result.data;
+                const nombres = new Set<string>();
                 (apiData.data || []).forEach((r: any) => {
                     if (r.Grupo) nombres.add(r.Grupo);
                 });
-                totalPaginas = apiData.totalPages || 1;
-                paginaActual++;
-            } while (paginaActual <= totalPaginas && paginaActual <= TOPE_PAGINAS);
-
-            setCategorias(Array.from(nombres).sort((a, b) => a.localeCompare(b)));
+                setCategorias(Array.from(nombres).sort());
+            }
         } catch (error) {
-            console.error("❌ Error obteniendo categorías de ofertas:", error);
+            console.error("Error obteniendo categorías:", error);
             setCategorias([]);
         } finally {
             setIsLoadingCategorias(false);
@@ -278,7 +262,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }}
         >
             <section className="px-4 py-4 max-w-6xl mx-auto">
-                <PromoBanner items={[
+                {/* <PromoBanner items={[
                     {
                         id: "1",
                         backgroundColor: "bg-red-600",
@@ -302,7 +286,7 @@ const Ofertas: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             buttonColor: "bg-yellow-400",
                         }
                     },
-                ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
+                ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} /> */}
                 <CategorySlider />
 
                 <section className="sticky top-2 flex aling-center gap-2 overflow-x-auto scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-2 px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">

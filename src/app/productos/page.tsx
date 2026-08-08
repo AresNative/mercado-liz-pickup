@@ -75,7 +75,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
         await removeFromLocalStorage("sucursal") // Limpiar localStorage
         dispatch(clearAll()) // Limpiar Redux
         dispatch(clearCart()) // Limpiar Redux
-        history.push('/') // Redirigir a selección
+        history.push('/#sucursales') // Redirigir a selección
     }
 
     // Categorías visibles y su estado de paginación individual: cada
@@ -125,44 +125,28 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             ]);
     }, [favoriteItems]);
 
-    // ── Descubrir qué categorías tienen artículos disponibles ───────────────
-    // No dependemos de que el backend soporte "distinct": pedimos solo la
-    // columna Grupo, pero recorremos TODAS las páginas y deduplicamos en el
-    // cliente. Así garantizamos encontrar todas las categorías aunque haya
-    // más artículos que el tamaño de una sola página.
     const fetchCategorias = useCallback(async () => {
         setIsLoadingCategorias(true);
         try {
-            const nombres = new Set<string>();
-            let paginaActual = 1;
-            let totalPaginas = 1;
-            const TOPE_PAGINAS = 100; // resguardo de seguridad
-
-            do {
-                const result = await getData({
-                    table: tablaProductos(),
-                    pageSize: 500,
-                    page: paginaActual,
-                    filtros: {
-                        Selects: [{ Key: "art.Grupo" }],
-                        Order: [{ Key: "art.Grupo", Direction: "ASC" }],
-                    },
-                    signal: undefined,
-                });
-
-                if (!('data' in result) || !result.data) break;
-
+            const result = await getData({
+                table: tablaProductos(), // o tablaOfertas()
+                pageSize: 100000,
+                page: 1,
+                filtros: {
+                    Selects: [{ Key: "art.Grupo" }],
+                    Order: [{ Key: "art.Grupo", Direction: "ASC" }],
+                },
+            });
+            if ('data' in result && result.data) {
                 const apiData: ApiResponse = result.data;
+                const nombres = new Set<string>();
                 (apiData.data || []).forEach((r: any) => {
                     if (r.Grupo) nombres.add(r.Grupo);
                 });
-                totalPaginas = apiData.totalPages || 1;
-                paginaActual++;
-            } while (paginaActual <= totalPaginas && paginaActual <= TOPE_PAGINAS);
-
-            setCategorias(Array.from(nombres).sort((a, b) => a.localeCompare(b)));
+                setCategorias(Array.from(nombres).sort());
+            }
         } catch (error) {
-            console.error("❌ Error obteniendo categorías de productos:", error);
+            console.error("Error obteniendo categorías:", error);
             setCategorias([]);
         } finally {
             setIsLoadingCategorias(false);
@@ -305,7 +289,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
             }}
         >
             <section className="px-4 py-4 max-w-6xl mx-auto md:mb-0 mb-16">
-                <PromoBanner items={[
+                {/* <PromoBanner items={[
                     {
                         id: "1",
                         backgroundColor: "bg-blue-600",
@@ -330,7 +314,7 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                             buttonColor: "bg-yellow-400",
                         }
                     },
-                ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} />
+                ]} autoPlay={true} interval={3000} showControls={true} showIndicators={true} /> */}
                 <CategorySlider />
 
                 <section className="sticky top-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2 overflow-x-auto sm:overflow-visible scrollbar-hide z-50 bg-white/70 dark:bg-black/70 py-3 px-4 sm:py-2 sm:px-2 my-4 rounded-lg backdrop-blur-md border border-gray-200 dark:border-gray-700">
@@ -352,7 +336,6 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
                         ))}
                         <IonButton
                             fill="clear"
-                            expand="full"
                             routerLink="/ofertas"
                             routerDirection="none"
                             className="custom flex items-center gap-2 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0 flex items-center gap-2 cursor-pointer focus:outline-none transition-opacity hover:opacity-90 flex-shrink-0"
@@ -363,18 +346,20 @@ const Productos: React.FC<PageProps> = ({ onScroll }: PageProps) => {
 
                     <div className="flex items-center justify-end gap-4 flex-shrink-0 sm:ml-auto">
                         {selectedBranch && (
-                            <div className="sm:flex items-center">
-                                <span className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                                    Almacén: <strong className="text-gray-700 dark:text-gray-300 ml-1">{selectedBranch.name}</strong>
-                                </span>
-                            </div>
+                            <>
+                                <div className="sm:flex items-center">
+                                    <span className="text-sm font-medium text-purple-800 dark:text-purple-300">
+                                        Almacén: <strong className="text-gray-700 dark:text-gray-300 ml-1">{selectedBranch.name}</strong>
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={changeBranch}
+                                    className="text-xs sm:text-sm text-purple-700 dark:text-purple-400 underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors whitespace-nowrap"
+                                >
+                                    Cambiar
+                                </button>
+                            </>
                         )}
-                        <button
-                            onClick={changeBranch}
-                            className="text-xs sm:text-sm text-purple-700 dark:text-purple-400 underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors whitespace-nowrap"
-                        >
-                            Cambiar
-                        </button>
                     </div>
                 </section>
 
